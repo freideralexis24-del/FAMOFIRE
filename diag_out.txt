@@ -1,3 +1,0 @@
-FAMOFIRE corriendo en http://localhost:3000
-Juega online: usa esta misma IP/puerto desde otros dispositivos o despliega el proyecto en la web.
-[MATCH] Partida match-1786606745512-194 iniciada con 2 jugador(es) reales + 33 bots

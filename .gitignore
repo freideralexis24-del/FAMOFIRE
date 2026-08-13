@@ -6,3 +6,5 @@ test_server_out.txt
 test_server_err.txt
 .env
 accounts.json
+diag_out.txt
+diag_err.txt
