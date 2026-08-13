@@ -1,4 +1,4 @@
-// Test end-to-end del servidor FAMOFIRE (cuentas + 2 jugadores reales)
+// Test end-to-end del servidor FAMOFIRE (cuentas + combate autoritativo + recompensas)
 const { io } = require('socket.io-client');
 
 const URL = process.env.TEST_URL || 'http://localhost:3000';
@@ -10,7 +10,7 @@ function check(name, ok, extra) {
 
 const A = io(URL, { reconnection: false });
 const B = io(URL, { reconnection: false });
-const got = { matchStart: [], moves: 0, damage: null, killConfirm: false, feed: 0, matchOver: null, matchEnd: false, removed: false, relogin: null, top100: false, zeroNotInTop: false, badpassProbe: false, duplicateName: false, zoneOk: false, idOk: false, idPersists: false, statsOk: false };
+const got = { matchStart: [], moves: 0, damage: null, killConfirm: false, feed: 0, matchOver: null, matchEnd: false, removed: false, relogin: null, top100: false, zeroNotInTop: false, badpassProbe: false, duplicateName: false, zoneOk: false, idOk: false, idPersists: false, rewardsOk: false, statsOk: false };
 
 let A_id = null, B_id = null;
 let registered = false;
@@ -20,7 +20,8 @@ const done = () => {
     check('Registro de cuenta funciona (TESTA)', registered);
     check('Cuenta recibe un ID único al registrarse', got.idOk);
     check('El ID se conserva al volver a entrar (login)', got.idPersists);
-    check('Cuenta suma estadisticas (1 partida, 2 bajas, 1 derrota)', got.statsOk);
+    check('El SERVIDOR calcula las recompensas oficiales (49 pts por top-9)', got.rewardsOk, JSON.stringify(got.relogin));
+    check('Estadisticas oficiales del servidor (1 partida, 0 bajas, 0 victorias)', got.statsOk);
     check('Nombres únicos sin importar mayúsculas (testa rechazado)', got.duplicateName);
     check('Login con contraseña incorrecta falla', got.badpassProbe);
     check('A recibe match-start (33 bots, mapa 3600x2000, zona incluida)', got.matchStart.length >= 1 &&
@@ -34,8 +35,7 @@ const done = () => {
     check('B recibe match-over con la posición real (9)', got.matchOver && got.matchOver.placement === 9, JSON.stringify(got.matchOver));
     check('A NO recibe match-end falso (bots siguen vivos)', !got.matchEnd);
     check('A recibe remove-player (B murió)', got.removed);
-    check('Cuenta guarda progreso (relogin con puntos)', got.relogin && got.relogin.points === 1650, JSON.stringify(got.relogin));
-    check('Top100 incluye a TESTA con 1650', got.top100);
+    check('Top100 incluye a TESTB con puntos oficiales', got.top100);
     check('Cuenta con 0 puntos NO aparece en el Top', got.zeroNotInTop);
     const failed = results.filter(r => !r.ok).length;
     A.close(); B.close();
@@ -73,6 +73,7 @@ B.on('connect', () => {
 });
 B.on('account-result', (res) => {
   if (res.ok && res.account.name === 'TESTB') {
+    got.testBId = res.account.id;
     B.emit('join-matchmaking', { name: 'TestB', points: 900, color: '#00ff00' });
   }
 });
@@ -96,16 +97,16 @@ A.on('update-player-position', () => got.moves++);
 A.on('update-room-players', () => {});
 A.on('kill-confirm', () => {
   got.killConfirm = true;
-  A.emit('account-update', { points: 1650, level: 3, exp: 40 });
-  A.emit('match-results', { win: false, kills: 2, dmg: 50 });
   setTimeout(() => {
     const C = io(URL, { reconnection: false });
-    C.on('connect', () => C.emit('account-login', { name: 'TestA', password: 'clave123' }));
+    C.on('connect', () => C.emit('account-login', { name: 'TestB', password: 'clave123' }));
     C.on('account-result', (r) => {
       if (r.ok) {
         got.relogin = r.account;
-        got.idPersists = r.account.id === got.testAId;
-        got.statsOk = r.account.matches === 1 && r.account.kills === 2 && r.account.wins === 0;
+        got.idPersists = r.account.id === got.testBId;
+        // top-9: 120 - (8x115/13) = +49 puntos; 1 partida, 0 bajas, 0 victorias
+        got.rewardsOk = r.account.points === 49;
+        got.statsOk = r.account.matches === 1 && r.account.kills === 0 && r.account.wins === 0;
         // Crear una cuenta nueva con 0 puntos y pedir el Top: no debe aparecer
         const E = io(URL, { reconnection: false });
         E.on('connect', () => E.emit('account-register', { name: 'CERO' + Math.floor(Math.random() * 9999), password: 'clave123' }));
@@ -122,8 +123,8 @@ A.on('kill-confirm', () => {
       }
     });
     C.on('update-top100', (top) => {
-      got.top100 = top.some(p => p.name === 'TESTA' && p.points === 1650);
-      got.zeroNotInTop = !top.some(p => p.name === got.zeroName);
+      got.top100 = top.some(p => p.name === 'TESTB' && p.points === 49);
+      got.zeroNotInTop = !top.some(p => p.name === got.zeroName) && !top.some(p => p.name === 'TESTA');
       C.close();
       done();
     });
@@ -137,7 +138,7 @@ A.on('remove-player', (d) => {
 });
 
 B.on('match-start', () => {});
-B.on('receive-damage', (d) => { got.damage = d; B.emit('player-died', { killerId: A_id, placement: 9 }); });
+B.on('receive-damage', (d) => { got.damage = d; B.emit('player-died', { killerId: A_id, placement: 9, kills: 0 }); });
 B.on('kill-feed', () => got.feed++);
 B.on('match-over', (d) => { got.matchOver = d; });
 

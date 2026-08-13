@@ -113,6 +113,124 @@
             box-shadow: 0px 0px 0px #000;
         }
 
+        /* PERFIL COMPACTO (arriba a la izquierda de la sala) */
+        #profile-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(10, 15, 20, 0.85);
+            border: 3px solid #ffcc00;
+            border-radius: 12px;
+            padding: 10px 14px 10px 10px;
+            box-shadow: 4px 4px 0px #000;
+            cursor: pointer;
+            transition: 0.1s;
+            z-index: 25;
+            max-width: 300px;
+        }
+        #profile-panel:hover {
+            background: rgba(20, 30, 40, 0.95);
+            transform: scale(1.02);
+        }
+        #profile-panel:active {
+            transform: scale(0.99);
+            box-shadow: 0px 0px 0px #000;
+        }
+        .profile-avatar {
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ffcc00, #ff8800);
+            color: #000;
+            font-size: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 2px solid #000;
+        }
+        .profile-info {
+            display: flex;
+            flex-direction: column;
+        }
+        .profile-name {
+            font-size: 17px;
+            font-weight: bold;
+            color: #ffcc00;
+            letter-spacing: 1px;
+        }
+        .profile-rank {
+            font-size: 13px;
+            color: #00ffff;
+            margin: 1px 0;
+        }
+        .profile-sub {
+            font-size: 12px;
+            color: #00ff00;
+        }
+        #lobby-id {
+            color: #888888;
+        }
+        .profile-chevron {
+            color: #ffcc00;
+            font-size: 26px;
+            margin-left: 4px;
+            font-weight: bold;
+        }
+
+        /* PERFIL COMPLETO */
+        #profile-card {
+            background: rgba(10, 15, 20, 0.9);
+            border: 3px solid #ffcc00;
+            border-radius: 16px;
+            padding: 24px 30px;
+            text-align: center;
+            box-shadow: 6px 6px 0px #000;
+            max-width: 420px;
+        }
+        .profile-avatar-big {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ffcc00, #ff8800);
+            color: #000;
+            font-size: 44px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto;
+            border: 3px solid #000;
+        }
+        #profile-stats {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 14px;
+        }
+        .pstat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 8px 14px;
+            min-width: 72px;
+        }
+        .pstat-num {
+            font-size: 20px;
+            font-weight: bold;
+            color: #00ffff;
+        }
+        .pstat-label {
+            font-size: 11px;
+            color: #999;
+            letter-spacing: 1px;
+            margin-top: 2px;
+        }
+
         .lobby-menu {
             display: flex;
             flex-direction: column;
@@ -542,28 +660,19 @@
     <div id="lobby-screen" class="screen" style="display: none;">
         <div id="gear-btn" onclick="openConfigMenu()">⚙️</div>
 
-        <h1 data-i18n="lobbyTitle">SALA DE COMANDO</h1>
-        <p style="font-size: 18px; margin: 0 0 2px 0;"><span data-i18n="soldierLabel">Soldado</span>: <span id="lobby-name" style="color: #ffcc00;">Jugador</span></p>
-        <p style="font-size: 15px; margin: 0 0 4px 0; color: #00ffff;">
-            <span data-i18n="rankLabel">RANGO</span>: <span id="lobby-rank">Recluta</span> (<span id="lobby-points">0</span> PTS)
-        </p>
-        
-        <div style="font-size: 15px; color: #00ff00; margin-bottom: 2px;">
-            <span data-i18n="levelLabel">NIVEL</span> <span id="lobby-level">1</span>
+        <!-- PERFIL COMPACTO (arriba a la izquierda): nombre y rango arriba, clic para ver el perfil completo -->
+        <div id="profile-panel" onclick="openProfile()" title="Ver perfil">
+            <div id="profile-avatar" class="profile-avatar">👤</div>
+            <div class="profile-info">
+                <div id="lobby-name" class="profile-name">Jugador</div>
+                <div class="profile-rank"><span data-i18n="rankLabel">RANGO</span>: <span id="lobby-rank">Recluta</span> (<span id="lobby-points">0</span> PTS)</div>
+                <div class="profile-sub"><span data-i18n="levelLabel">NIVEL</span> <span id="lobby-level">1</span> &bull; ID: <span id="lobby-id"></span></div>
+            </div>
+            <div class="profile-chevron">›</div>
         </div>
 
-        <div style="font-size: 13px; color: #888888; margin-bottom: 6px;">
-            ID: <span id="lobby-id"></span>
-        </div>
-        <div style="font-size: 13px; color: #999999; margin-bottom: 6px;">
-            PARTIDAS <span id="lobby-matches">0</span> &bull; VICTORIAS <span id="lobby-wins">0</span> &bull; BAJAS <span id="lobby-kills">0</span>
-        </div>
-        
-        <div class="exp-container">
-            <div id="exp-bar-fill"></div>
-            <div class="exp-text" data-i18n="expProgressText">PROGRESO DE NIVEL</div>
-        </div>
-        
+        <h1 data-i18n="lobbyTitle">SALA DE COMANDO</h1>
+
         <div class="lobby-menu">
             <button id="to-training-btn" class="btn-main" data-i18n="trainingBtn">MODO ENTRENAMIENTO</button>
             <button id="to-battlefield-btn" class="btn-main" data-i18n="battlefieldBtn">CAMPO DE BATALLA</button>
@@ -571,6 +680,35 @@
             <button id="to-skins-btn" class="btn-main" data-i18n="skinsBtn">PERSONALIZAR SKIN</button>
             <button id="to-ranks-btn" class="btn-main" data-i18n="ranksBtn">RANGOS MILITARES</button>
             <button id="to-ranking-btn" class="btn-main" data-i18n="rankingBtn">RANKING GLOBAL</button>
+        </div>
+    </div>
+
+    <!-- PERFIL COMPLETO (se abre desde el panel superior izquierdo) -->
+    <div id="profile-screen" class="screen" style="display: none;">
+        <h1 data-i18n="profileTitle">PERFIL DE SOLDADO</h1>
+        <div id="profile-card">
+            <div id="profile-avatar-big" class="profile-avatar-big">👤</div>
+            <h2 id="prof-name" style="color: #ffcc00; margin: 4px 0 2px 0; font-size: 28px;">Jugador</h2>
+            <p style="margin: 2px 0 8px 0; color: #00ffff;" id="prof-rank">RECLUTA</p>
+            <p style="margin: 2px 0 4px 0; font-size: 14px; color: #aaa;">ID: <span id="prof-id">————</span></p>
+            <p style="margin: 2px 0 8px 0; font-size: 15px; color: #00ff00;"><span data-i18n="levelLabel">NIVEL</span> <span id="prof-level">1</span> &bull; <span id="prof-points">0</span> PTS</p>
+
+            <div class="exp-container" style="width: 320px; height: 26px; margin: 0 auto 6px auto;">
+                <div id="profile-exp-fill" style="height: 100%; width: 0%; background: linear-gradient(90deg, #00cc00, #00ff00); transition: width 0.4s ease;"></div>
+                <div class="exp-text" id="prof-exp-text">0 / 100 EXP</div>
+            </div>
+
+            <div id="profile-stats">
+                <div class="pstat"><span class="pstat-num" id="prof-matches">0</span><span class="pstat-label">PARTIDAS</span></div>
+                <div class="pstat"><span class="pstat-num" id="prof-wins">0</span><span class="pstat-label">VICTORIAS</span></div>
+                <div class="pstat"><span class="pstat-num" id="prof-kills">0</span><span class="pstat-label">BAJAS</span></div>
+                <div class="pstat"><span class="pstat-num" id="prof-dmg">0</span><span class="pstat-label">DAÑO</span></div>
+            </div>
+
+            <div class="lobby-menu" style="margin-top: 16px;">
+                <button id="logout-from-profile" class="btn-main" style="background-color: #ff3333; color: #fff;" data-i18n="logoutBtn">CERRAR SESIÓN</button>
+                <button id="back-from-profile" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
+            </div>
         </div>
     </div>
 
@@ -955,7 +1093,7 @@
             });
         });
 
-        // Recibir daño de un jugador real (el disparador confirma el impacto en su cliente)
+        // Recibir daño de un jugador real (el daño lo valida y aplica el SERVIDOR)
         socket.on('receive-damage', (data) => {
             if (!gameStarted || currentMode !== 'battlefield' || gameOver || data.matchId !== currentMatchId) return;
             let shieldActive = (profile.selectedSkill === 'shield' && skillState.active);
@@ -966,8 +1104,21 @@
                 lastKillerName = data.killerName || 'Enemigo';
                 addKillFeedMessage(lastKillerName, profile.name, true);
                 endGame(false);
-                socket.emit('player-died', { killerId: data.killerId, placement: getCurrentPlacement() });
+                // Confirma la muerte al servidor con la posición exacta (cuenta los bots)
+                // y las bajas de la partida: el servidor calcula las recompensas oficiales.
+                socket.emit('player-died', { killerId: data.killerId, placement: getCurrentPlacement(), kills: matchStats.kills });
             }
+        });
+
+        // El SERVIDOR declara tu muerte (mata a un jugador real): la vida autoritativa
+        // llegó a 0 aunque tu cliente aún muestre vida (escudo fuera de sincronía, etc.).
+        socket.on('you-died', (data) => {
+            if (!gameStarted || currentMode !== 'battlefield' || data.matchId !== currentMatchId) return;
+            if (gameOver) return;
+            lastKillerName = data.killerName || 'Enemigo';
+            addKillFeedMessage(lastKillerName, profile.name, true);
+            endGame(false);
+            socket.emit('player-died', { killerId: data.killerId, placement: getCurrentPlacement(), kills: matchStats.kills });
         });
 
         // El servidor confirma la baja de un jugador real
@@ -993,12 +1144,29 @@
             }
         });
 
-        // Posición final exacta cuando el servidor cierra tu partida
+        // Posición final y recompensas OFICIALES cuando el servidor cierra tu partida
         socket.on('match-over', (data) => {
             if (!data || data.matchId !== currentMatchId) return;
             if (data.placement) {
                 statPos.innerText = '#' + data.placement;
-                statPos.style.color = data.placement <= 10 ? '#00ffff' : '#ff3333';
+                statPos.style.color = data.placement === 1 ? '#ffcc00' : (data.placement <= 10 ? '#00ffff' : '#ff3333');
+            }
+            // Los puntos/exp/estadísticas los calculó el SERVIDOR (anti-trampa):
+            // aplicar los totales oficiales a tu perfil local.
+            if (data.pointsEarned !== undefined && data.points !== undefined) {
+                profile.points = data.points;
+                profile.level = data.level;
+                profile.exp = data.exp;
+                profile.matches = data.matches;
+                profile.wins = data.wins;
+                profile.kills = data.kills;
+                saveProfile();
+                updateLobbyUI();
+                // Refrescar la pantalla de resultados con los valores reales
+                statPoints.innerText = (data.pointsEarned >= 0 ? "+" : "") + data.pointsEarned + " PTS";
+                statPoints.style.color = data.pointsEarned >= 0 ? "#00ff00" : "#ff3333";
+                statExp.innerText = "+" + data.expEarned + " EXP";
+                matchStats.rankPointsEarned = data.pointsEarned;
             }
         });
 
@@ -1460,6 +1628,7 @@
             matches: parseInt(localStorage.getItem('ff_matches')) || 0,
             wins: parseInt(localStorage.getItem('ff_wins')) || 0,
             kills: parseInt(localStorage.getItem('ff_kills')) || 0,
+            dmg: parseInt(localStorage.getItem('ff_dmg')) || 0,
             color: localStorage.getItem('ff_color') || "#ffffff",
             selectedSkill: localStorage.getItem('ff_skill') || "shield",
             language: localStorage.getItem('ff_lang') || "ESPAÑOL",
@@ -1615,6 +1784,22 @@
         const expBarFill = document.getElementById('exp-bar-fill');
         const lobbyRank = document.getElementById('lobby-rank');
         const lobbyPoints = document.getElementById('lobby-points');
+
+        // Pantalla de perfil completo
+        const profileScreen = document.getElementById('profile-screen');
+        const profName = document.getElementById('prof-name');
+        const profRank = document.getElementById('prof-rank');
+        const profId = document.getElementById('prof-id');
+        const profLevel = document.getElementById('prof-level');
+        const profPoints = document.getElementById('prof-points');
+        const profileExpFill = document.getElementById('profile-exp-fill');
+        const profExpText = document.getElementById('prof-exp-text');
+        const profMatches = document.getElementById('prof-matches');
+        const profWins = document.getElementById('prof-wins');
+        const profKills = document.getElementById('prof-kills');
+        const profDmg = document.getElementById('prof-dmg');
+        const backFromProfile = document.getElementById('back-from-profile');
+        const logoutFromProfile = document.getElementById('logout-from-profile');
         const skinLockMsg = document.getElementById('skin-lock-msg');
         
         const toTrainingBtn = document.getElementById('to-training-btn');
@@ -1721,6 +1906,7 @@
             localStorage.setItem('ff_matches', profile.matches);
             localStorage.setItem('ff_wins', profile.wins);
             localStorage.setItem('ff_kills', profile.kills);
+            localStorage.setItem('ff_dmg', profile.dmg);
             localStorage.setItem('ff_color', profile.color);
             localStorage.setItem('ff_skill', profile.selectedSkill);
             localStorage.setItem('ff_lang', profile.language);
@@ -1745,13 +1931,37 @@
             lobbyWins.innerText = profile.wins;
             lobbyKills.innerText = profile.kills;
 
+            // Pantalla de perfil completo
+            profName.innerText = profile.name;
+            profRank.innerText = getRankName(profile.points) + " (" + profile.points + " PTS)";
+            profId.innerText = profile.id || '————';
+            profLevel.innerText = profile.level;
+            profPoints.innerText = profile.points;
+            profMatches.innerText = profile.matches;
+            profWins.innerText = profile.wins;
+            profKills.innerText = profile.kills;
+            profDmg.innerText = profile.dmg || 0;
+
             let maxExp = getRequiredExp(profile.level);
             let percentage = Math.min(100, (profile.exp / maxExp) * 100);
             expBarFill.style.width = percentage + '%';
+            profileExpFill.style.width = percentage + '%';
+            profExpText.innerText = profile.exp + " / " + maxExp + " EXP";
 
             const dict = i18n[profile.language] || i18n["ESPAÑOL"];
             fpsStatusLabel.innerText = profile.showFps ? dict.fpsActivated : dict.fpsDeactivated;
             fpsCounterBox.style.display = profile.showFps ? 'block' : 'none';
+        }
+
+        function openProfile() {
+            updateLobbyUI();
+            lobbyScreen.style.display = 'none';
+            profileScreen.style.display = 'flex';
+        }
+
+        function closeProfile() {
+            profileScreen.style.display = 'none';
+            lobbyScreen.style.display = 'flex';
         }
 
         function updateSkillSelectionUI() {
@@ -1833,6 +2043,7 @@
                 profile.matches = account.matches;
                 profile.wins = account.wins;
                 profile.kills = account.kills;
+                profile.dmg = account.dmg || 0;
             }
             saveProfile();
             updateLobbyUI();
@@ -1975,6 +2186,35 @@
             profile.points = 0;
             saveProfile();
             configScreen.style.display = 'none';
+            loginScreen.style.display = 'flex';
+            usernameInput.value = "";
+            passwordInput.value = "";
+            showLoginMessage("");
+        });
+
+        // Botones del PERFIL COMPLETO
+        backFromProfile.addEventListener('click', () => closeProfile());
+        logoutFromProfile.addEventListener('click', () => {
+            localStorage.removeItem('ff_name');
+            localStorage.removeItem('ff_id');
+            localStorage.removeItem('ff_level');
+            localStorage.removeItem('ff_exp');
+            localStorage.removeItem('ff_points');
+            localStorage.removeItem('ff_matches');
+            localStorage.removeItem('ff_wins');
+            localStorage.removeItem('ff_kills');
+            localStorage.removeItem('ff_dmg');
+            profile.name = "";
+            profile.id = "";
+            profile.level = 1;
+            profile.exp = 0;
+            profile.points = 0;
+            profile.matches = 0;
+            profile.wins = 0;
+            profile.kills = 0;
+            profile.dmg = 0;
+            saveProfile();
+            profileScreen.style.display = 'none';
             loginScreen.style.display = 'flex';
             usernameInput.value = "";
             passwordInput.value = "";
@@ -2313,7 +2553,12 @@
                     skillState.lastUsedTime = now;
                     skillState.active = true;
                     
-                    if (profile.selectedSkill === 'shield') skillState.activeTimer = 5000;
+                    if (profile.selectedSkill === 'shield') {
+                        skillState.activeTimer = 5000;
+                        // Sincronizar el escudo con el servidor: mientras esté activo
+                        // el daño de jugadores reales no descuenta vida (igual que acá).
+                        if (socket && socket.connected) socket.emit('skill-state', { matchId: currentMatchId, skill: 'shield', active: true, duration: 5000 });
+                    }
                     else if (profile.selectedSkill === 'heal') skillState.activeTimer = 5000;
                     else if (profile.selectedSkill === 'ghost') skillState.activeTimer = 5000;
                     else if (profile.selectedSkill === 'radar') skillState.activeTimer = 5000;
@@ -3167,14 +3412,12 @@
                     }
                 }
                 saveProfile();
-                // Guardar progreso en TU cuenta del servidor (no en la de nadie más)
-                if (socket && socket.connected) socket.emit('account-update', { points: profile.points, level: profile.level, exp: profile.exp });
-                // Estadísticas históricas: partidas jugadas, victorias, bajas y daño
-                profile.matches = (profile.matches || 0) + 1;
-                if (isWin) profile.wins = (profile.wins || 0) + 1;
-                profile.kills = (profile.kills || 0) + matchStats.kills;
-                saveProfile();
-                if (socket && socket.connected) socket.emit('match-results', { win: !!isWin, kills: matchStats.kills, dmg: matchStats.damage });
+                // Los puntos/exp/estadísticas los calcula y aplica el SERVIDOR
+                // (anti-trampa): llegan por 'match-over'. En las victorias se
+                // reporta el fin para que el servidor las premie.
+                if (socket && socket.connected) {
+                    if (isWin) socket.emit('match-won', { kills: matchStats.kills });
+                }
             }
 
             statName.innerText = profile.name;

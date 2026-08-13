@@ -149,6 +149,49 @@ function getTop100() {
     .slice(0, 100);
 }
 
+// Copia servidor de la fórmula de experiencia del cliente (nivel -> exp requerida)
+function getRequiredExp(lvl) {
+  if (lvl >= 100) return 999999;
+  return Math.floor(100 + lvl * 60);
+}
+
+// Puntos y experiencia CALCULADOS POR EL SERVIDOR (misma fórmula que el cliente,
+// pero el servidor es la autoridad: un cliente tramposo ya no puede otorgarse puntos).
+function computeRewards(placement, kills, damageDealt) {
+  let basePlacementPoints = 0;
+  if (placement >= 15) {
+    basePlacementPoints = Math.round(-100 * ((placement - 15) / 20));
+  } else {
+    basePlacementPoints = Math.round(120 - ((placement - 1) * (115 / 13)));
+  }
+  let rankPointsChange = basePlacementPoints + (kills * 5) + Math.floor(damageDealt / 50);
+  if (placement === 1) rankPointsChange += 30;
+  const expEarned = (placement === 1 ? 70 : Math.max(15, 55 - placement)) + (kills * 15);
+  return { rankPointsChange, expEarned };
+}
+
+// Aplica las recompensas a la cuenta del jugador y devuelve los totales oficiales.
+function applyRewards(acc, placement, kills, damageDealt) {
+  const { rankPointsChange, expEarned } = computeRewards(placement, kills, damageDealt);
+  acc.points = clamp((Number(acc.points) || 0) + rankPointsChange, 0, 999999);
+  acc.matches = (Number(acc.matches) || 0) + 1;
+  if (placement === 1) acc.wins = (Number(acc.wins) || 0) + 1;
+  acc.kills = (Number(acc.kills) || 0) + Math.max(0, kills);
+  acc.dmg = (Number(acc.dmg) || 0) + Math.max(0, damageDealt);
+  let level = Number(acc.level) || 1;
+  let exp = (Number(acc.exp) || 0) + expEarned;
+  let required = getRequiredExp(level);
+  while (exp >= required && level < 100) {
+    exp -= required;
+    level++;
+    required = getRequiredExp(level);
+  }
+  acc.level = level;
+  acc.exp = level >= 100 ? 0 : exp;
+  acc.lastSeen = Date.now();
+  return { pointsEarned: rankPointsChange, expEarned, points: acc.points, level: acc.level, exp: acc.exp, matches: acc.matches, wins: acc.wins, kills: acc.kills, dmg: acc.dmg };
+}
+
 // ---------- Utilidades ----------
 const rand = (a, b) => a + Math.random() * (b - a);
 const dist2 = (ax, ay, bx, by) => (ax - bx) ** 2 + (ay - by) ** 2;
@@ -189,6 +232,9 @@ function startMatch() {
     players.set(q.socket.id, {
       id: q.socket.id, name: q.name, color: q.color, points: q.points,
       x: spawns[i].x, y: spawns[i].y, angle: 0, alive: true,
+      // Estado de combate autoritativo del servidor (anti-trampa):
+      // la vida de jugadores reales, el daño aplicado y el escudo viven aquí.
+      hp: 100, kills: 0, dmg: 0, shieldUntil: 0, lastHitAt: 0, deadAck: false, deathTimer: null,
     });
     q.socket.data.room = roomCode;
     q.socket.join(roomCode);
@@ -233,11 +279,15 @@ function startMatch() {
 // ---------- Partidas activas ----------
 const matches = new Map();
 
-// clientPlacement: posición real reportada por el cliente (cuenta los bots, que son locales).
-// El servidor solo conoce jugadores reales, así que no puede calcular la posición real por su cuenta.
-function endMatchFor(match, loserId, clientPlacement) {
+// clientPlacement: posición reportada por el cliente (cuenta los bots, que son locales).
+// El servidor la usa con tope inferior = muertos reales + 1, así un tramposo no puede
+// reportar una posición mejor que la que le corresponde entre jugadores reales.
+// clientKills: bajas a bots reportadas por el cliente, acotadas (no puede inflarlas
+// más allá de 40 + las bajas reales verificadas por el servidor).
+function endMatchFor(match, loserId, clientPlacement, clientKills) {
   const p = match.players.get(loserId);
   if (!p || !p.alive) return;
+  if (p.deathTimer) { clearTimeout(p.deathTimer); p.deathTimer = null; }
   p.alive = false;
   match.aliveCount = [...match.players.values()].filter(q => q.alive).length;
   io.to(match.code).emit('remove-player', { matchId: match.code, id: loserId });
@@ -245,11 +295,19 @@ function endMatchFor(match, loserId, clientPlacement) {
 
   const order = [...match.players.values()].filter(q => !q.alive).length;
   const fallback = Math.max(1, match.players.size - order + 1);
-  const placement = Math.max(1, Math.floor(num(clientPlacement, fallback)));
+  const placement = Math.max(order + 1, Math.min(35, Math.floor(num(clientPlacement, fallback))));
   io.to(match.code).emit('kill-feed', { matchId: match.code, killer: p.killedBy || 'Zona', victim: p.name });
   const loserSocket = io.sockets.sockets.get(loserId);
   if (loserSocket) {
-    loserSocket.emit('match-over', { matchId: match.code, placement });
+    // Recompensas OFICIALES del servidor: bajas reales (verificadas) + bajas a bots
+    // reportadas (acotadas) + daño real aplicado por el servidor.
+    const botKills = Math.max(0, Math.floor(num(clientKills, 0)));
+    const totalKills = Math.min((p.kills || 0) + botKills, (p.kills || 0) + 40);
+    const winPayload = { matchId: match.code, placement };
+    if (loserSocket.data.account && accounts[loserSocket.data.account]) {
+      Object.assign(winPayload, applyRewards(accounts[loserSocket.data.account], placement, totalKills, p.dmg || 0));
+    }
+    loserSocket.emit('match-over', winPayload);
     // IMPORTANTE: liberar al socket para que pueda volver a buscar partida
     loserSocket.data.room = null;
     loserSocket.data.inQueue = false;
@@ -445,9 +503,65 @@ io.on('connection', (socket) => {
     const shooter = match && match.players.get(socket.id);
     const victim = match && match.players.get(data.victimId);
     if (!match || !shooter || !shooter.alive || !victim || !victim.alive) return;
+    if (victim.id === shooter.id) return;
+    // VALIDACIÓN (anti-trampa): el daño entre jugadores reales es AUTORITATIVO.
+    // 1) Limitado a la cadencia realista de disparos (máx 12 impactos/segundo).
+    const now = Date.now();
+    if (shooter.lastHitAt && now - shooter.lastHitAt < 80) return;
+    shooter.lastHitAt = now;
+    // 2) Alcance máximo de una bala (480 + radios): sin "francotiradores" fuera del mapa.
+    const dx = shooter.x - victim.x, dy = shooter.y - victim.y;
+    if (dx * dx + dy * dy > 560 * 560) return;
+    // 3) El escudo se sincroniza con el servidor (misma ventana que el cliente).
+    if (victim.shieldUntil && victim.shieldUntil > now) return;
+    // 4) La vida la lleva el SERVIDOR: el victimario no puede spamear daño infinito.
+    victim.hp -= 25;
+    shooter.dmg += 25;
     const vSocket = io.sockets.sockets.get(victim.id);
-    if (vSocket) {
-      vSocket.emit('receive-damage', { matchId: match.code, dmg: num(data.dmg, 25), killerId: socket.id, killerName: shooter.name });
+    if (!vSocket) return;
+    vSocket.emit('receive-damage', { matchId: match.code, dmg: 25, killerId: shooter.id, killerName: shooter.name });
+    if (victim.hp <= 0) {
+      // MUERTE DECLARADA POR EL SERVIDOR: se le pide al cliente la posición exacta
+      // (él cuenta los bots, que son locales) y se cierra la partida con 3 s de
+      // gracia por si el cliente no responde (se cierra igual, sin recompensa extra).
+      vSocket.emit('you-died', { matchId: match.code, killerId: shooter.id, killerName: shooter.name });
+      if (!victim.deathTimer) {
+        victim.deathTimer = setTimeout(() => {
+          if (match.players.has(victim.id) && match.players.get(victim.id).alive) endMatchFor(match, victim.id, null, 0);
+        }, 3000);
+      }
+    }
+  });
+
+  // Sincronización del escudo con el servidor: mientras esté activo, el daño real
+  // no descuenta vida (igual que en el cliente: el escudo absorbe todo).
+  // Victoria declarada por el cliente (último vivo entre bots locales): el servidor
+  // la sanciona SOLO si ningún otro jugador real sigue vivo y entrega las
+  // recompensas oficiales (placement 1). Sin esto un tramposo ganaría puntos gratis.
+  socket.on('match-won', (data = {}) => {
+    if (!socket.data.room) return;
+    const match = matches.get(socket.data.room);
+    const p = match && match.players.get(socket.id);
+    if (!match || !p || !p.alive || p.wonClaimed) return;
+    const othersAlive = [...match.players.values()].filter(q => q.alive && q.id !== p.id);
+    if (othersAlive.length > 0) return;
+    p.wonClaimed = true;
+    const botKills = Math.max(0, Math.floor(num(data.kills, 0)));
+    const totalKills = Math.min((p.kills || 0) + botKills, (p.kills || 0) + 40);
+    const winPayload = { matchId: match.code, placement: 1 };
+    if (socket.data.account && accounts[socket.data.account]) {
+      Object.assign(winPayload, applyRewards(accounts[socket.data.account], 1, totalKills, p.dmg || 0));
+    }
+    socket.emit('match-over', winPayload);
+  });
+
+  socket.on('skill-state', (data = {}) => {
+    if (!socket.data.room) return;
+    const match = matches.get(socket.data.room);
+    const p = match && match.players.get(socket.id);
+    if (!match || !p) return;
+    if (data.skill === 'shield' && data.active) {
+      p.shieldUntil = Date.now() + Math.min(5000, Math.max(0, Math.floor(num(data.duration, 5000))));
     }
   });
 
@@ -456,13 +570,15 @@ io.on('connection', (socket) => {
     const match = matches.get(socket.data.room);
     const p = match && match.players.get(socket.id);
     if (!match || !p || !p.alive) return;
+    p.deadAck = true;
     const killer = match.players.get(data.killerId);
     p.killedBy = killer ? killer.name : null;
     if (killer && killer.alive) {
+      killer.kills += 1;
       const kSocket = io.sockets.sockets.get(killer.id);
       if (kSocket) kSocket.emit('kill-confirm', { matchId: match.code, victim: p.name });
     }
-    endMatchFor(match, socket.id, data.placement);
+    endMatchFor(match, socket.id, data.placement, data.kills);
   });
 
   // Salida voluntaria de la partida (ganaste, la cerraste, etc.): libera el socket
