@@ -590,10 +590,10 @@
             box-shadow: 0 2px 6px rgba(0,0,0,0.5);
         }
 
-        /* CONTADOR GLOBAL ONLINE (solo en la sala de comando, arriba a la derecha) */
+        /* CONTADOR GLOBAL ONLINE (solo en la sala de comando, abajo a la derecha) */
         #global-online-box {
             position: absolute;
-            top: 20px;
+            bottom: 20px;
             right: 20px;
             background: rgba(0, 0, 0, 0.75);
             border: 2px solid #ffcc00;
@@ -727,7 +727,19 @@
             <button id="login-btn" class="btn-main" data-i18n="loginBtn">CONTINUAR</button>
             <button id="register-btn" class="btn-main" style="background-color: #00ffff;" data-i18n="registerBtn">CREAR CUENTA</button>
         </div>
+        <div id="google-login-wrap" style="display: none; margin-top: 12px;"></div>
         <p id="login-msg" style="font-size: 14px; color: #ffcc00; height: 36px; margin-top: 8px; text-align: center;"></p>
+    </div>
+
+    <!-- ELECCIÓN DE NOMBRE (solo la primera vez, al crear cuenta con Google) -->
+    <div id="namepick-screen" class="screen" style="display: none;">
+        <h1 data-i18n="namepickTitle">ELIGE TU NOMBRE</h1>
+        <p style="margin-bottom: 14px; max-width: 300px;">Tu nombre dentro del juego. Solo se elige una vez y no se puede cambiar.</p>
+        <input type="text" id="namepick-input" placeholder="Tu nombre en FAMOFIRE" maxlength="12">
+        <div class="lobby-menu">
+            <button id="namepick-confirm-btn" class="btn-main" data-i18n="loginBtn">CONTINUAR</button>
+        </div>
+        <p id="namepick-msg" style="font-size: 14px; color: #ffcc00; height: 36px; margin-top: 8px; text-align: center;"></p>
     </div>
 
     <div id="lobby-screen" class="screen" style="display: none;">
@@ -1927,6 +1939,10 @@
         const loginBtn = document.getElementById('login-btn');
         const registerBtn = document.getElementById('register-btn');
         const loginMsg = document.getElementById('login-msg');
+        const namepickScreen = document.getElementById('namepick-screen');
+        const namepickInput = document.getElementById('namepick-input');
+        const namepickConfirmBtn = document.getElementById('namepick-confirm-btn');
+        const namepickMsg = document.getElementById('namepick-msg');
         const lobbyName = document.getElementById('lobby-name');
         const lobbyId = document.getElementById('lobby-id');
         const lobbyLevel = document.getElementById('lobby-level');
@@ -2326,9 +2342,61 @@
             socket.emit('account-register', { name: typedName, password: typedPass });
         });
 
+        // ---- Login con Google (se activa SOLO si el servidor tiene GOOGLE_CLIENT_ID) ----
+        const googleLoginWrap = document.getElementById('google-login-wrap');
+        let pendingNamePick = false;
+        (function initGoogleSignIn() {
+            fetch('/config').then(r => r.json()).then(cfg => {
+                if (!cfg.googleClientId) return;
+                googleLoginWrap.style.display = 'block';
+                const gs = document.createElement('script');
+                gs.src = 'https://accounts.google.com/gsi/client';
+                gs.async = true;
+                gs.onload = () => {
+                    if (typeof google === 'undefined' || !google.accounts) return;
+                    google.accounts.id.initialize({
+                        client_id: cfg.googleClientId,
+                        auto_select: false,
+                        callback: (resp) => {
+                            if (!resp || !resp.credential) return;
+                            showLoginMessage("...");
+                            socket.emit('google-login', { token: resp.credential });
+                        }
+                    });
+                    google.accounts.id.renderButton(googleLoginWrap, { theme: 'outline', size: 'large', shape: 'pill', text: 'continue_with', width: 280 });
+                };
+                document.head.appendChild(gs);
+            }).catch(() => {});
+        })();
+
+        // ---- Elección de nombre (primera vez con una cuenta de Google) ----
+        namepickConfirmBtn.addEventListener('click', () => {
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            const name = namepickInput.value.trim();
+            if (name === "") {
+                namepickMsg.innerText = dict.errShortName;
+                return;
+            }
+            if (!socket.connected) {
+                namepickMsg.innerText = dict.errGeneric;
+                return;
+            }
+            namepickMsg.innerText = "...";
+            socket.emit('account-set-name', { name });
+        });
+
         socket.on('account-result', (res) => {
             const dict = i18n[profile.language] || i18n["ESPAÑOL"];
             if (!res || !res.ok) {
+                // Durante la elección de nombre (cuenta de Google): los errores se
+                // muestran en esa pantalla, sin tocar el login normal.
+                if (pendingNamePick) {
+                    let npMsg = dict.errGeneric;
+                    if (res && res.error === 'name-taken') npMsg = dict.errNameTaken;
+                    else if (res && res.error === 'short-name') npMsg = dict.errShortName;
+                    namepickMsg.innerText = npMsg;
+                    return;
+                }
                 // AUTO-RESTAURACIÓN: si el servidor perdió las cuentas (actualización
                 // sin base de datos persistente), el juego la recrea SOLO con el mismo
                 // usuario y contraseña guardados, sin pedirte crear nada.
@@ -2354,9 +2422,23 @@
                 else if (res && res.error === 'name-taken') msg = dict.errNameTaken;
                 else if (res && res.error === 'short-pass') msg = dict.errShortPass;
                 else if (res && res.error === 'short-name') msg = dict.errShortName;
+                else if (res && res.error === 'google-unavailable') msg = "Google Sign-In no está habilitado";
+                else if (res && res.error === 'google-invalid') msg = "No se pudo verificar tu cuenta de Google";
+                else if (res && res.error === 'google-name') msg = "No se pudo crear tu cuenta con ese nombre";
                 showLoginMessage(msg);
                 return;
             }
+            // Primera vez con Google: pedir el nombre definitivo del jugador.
+            if (res.google && res.firstTime) {
+                pendingNamePick = true;
+                loginScreen.style.display = 'none';
+                namepickScreen.style.display = 'flex';
+                namepickInput.value = res.account.name || '';
+                namepickMsg.innerText = "";
+                return;
+            }
+            pendingNamePick = false;
+            namepickScreen.style.display = 'none';
             showLoginMessage("");
             enterLobbyWithAccount(res.account);
         });

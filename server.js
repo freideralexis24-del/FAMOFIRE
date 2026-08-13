@@ -8,6 +8,7 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
+const { OAuth2Client } = require('google-auth-library');
 const { Server } = require('socket.io');
 
 const PORT = process.env.PORT || 3000;
@@ -30,12 +31,17 @@ const io = new Server(server, {
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/health', (req, res) => res.send('ok'));
+// Config pública para el cliente: script de login con Google (vacío = desactivado).
+app.get('/config', (req, res) => res.json({ googleClientId: process.env.GOOGLE_CLIENT_ID || '' }));
 
 // ---------- Cuentas de jugador (cada persona tiene la suya) ----------
 // En la web (Render) las cuentas se guardan en PostgreSQL gratuito (variable
 // DATABASE_URL) para que NUNCA se borren con las actualizaciones. En local
 // (sin DATABASE_URL) se sigue usando accounts.json.
 const DATABASE_URL = process.env.DATABASE_URL || '';
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+// Verificación de ID tokens de Google Sign-In (solo se crea si está configurado)
+const googleClient = GOOGLE_CLIENT_ID ? new OAuth2Client(GOOGLE_CLIENT_ID) : null;
 let db = null;
 if (DATABASE_URL) {
   const { Pool } = require('pg');
@@ -64,16 +70,17 @@ async function initAccounts() {
       try {
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS lastseen BIGINT NOT NULL DEFAULT 0');
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS id TEXT');
+        await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS google_id TEXT');
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS matches INT NOT NULL DEFAULT 0');
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS wins INT NOT NULL DEFAULT 0');
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS kills INT NOT NULL DEFAULT 0');
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS dmg INT NOT NULL DEFAULT 0');
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS deaths INT NOT NULL DEFAULT 0');
       } catch (e) { /* versión vieja de Postgres u otro problema menor: se ignora */ }
-      const { rows } = await db.query('SELECT name, password, points, level, exp, lastseen, id, matches, wins, kills, dmg, deaths FROM accounts');
+      const { rows } = await db.query('SELECT name, password, points, level, exp, lastseen, id, google_id, matches, wins, kills, dmg, deaths FROM accounts');
       accounts = {};
       for (const r of rows) {
-        accounts[r.name] = { id: r.id || genId(), password: r.password, points: Number(r.points), level: Number(r.level), exp: Number(r.exp), lastSeen: Number(r.lastseen) || 0, matches: Number(r.matches) || 0, wins: Number(r.wins) || 0, kills: Number(r.kills) || 0, dmg: Number(r.dmg) || 0, deaths: Number(r.deaths) || 0 };
+        accounts[r.name] = { id: r.id || genId(), password: r.password, points: Number(r.points), level: Number(r.level), exp: Number(r.exp), lastSeen: Number(r.lastseen) || 0, googleId: r.google_id || '', matches: Number(r.matches) || 0, wins: Number(r.wins) || 0, kills: Number(r.kills) || 0, dmg: Number(r.dmg) || 0, deaths: Number(r.deaths) || 0 };
       }
       console.log(`[DB] ${rows.length} cuentas cargadas desde PostgreSQL`);
     } catch (e) {
@@ -116,21 +123,22 @@ async function dbSaveAll() {
   const client = await db.connect();
   try {
     await client.query('BEGIN');
-    const q = `INSERT INTO accounts (name, id, password, points, level, exp, lastseen, matches, wins, kills, dmg, deaths)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+    const q = `INSERT INTO accounts (name, id, password, points, level, exp, lastseen, google_id, matches, wins, kills, dmg, deaths)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
                ON CONFLICT (name) DO UPDATE SET
                  password = EXCLUDED.password,
                  points = EXCLUDED.points,
                  level = EXCLUDED.level,
                  exp = EXCLUDED.exp,
                  lastseen = EXCLUDED.lastseen,
+                 google_id = EXCLUDED.google_id,
                  matches = EXCLUDED.matches,
                  wins = EXCLUDED.wins,
                  kills = EXCLUDED.kills,
                  dmg = EXCLUDED.dmg,
                  deaths = EXCLUDED.deaths`;
     for (const [name, a] of Object.entries(accounts)) {
-      await client.query(q, [name, a.id || genId(), a.password, Number(a.points) || 0, Number(a.level) || 1, Number(a.exp) || 0, Number(a.lastSeen) || 0, Number(a.matches) || 0, Number(a.wins) || 0, Number(a.kills) || 0, Number(a.dmg) || 0, Number(a.deaths) || 0]);
+      await client.query(q, [name, a.id || genId(), a.password, Number(a.points) || 0, Number(a.level) || 1, Number(a.exp) || 0, Number(a.lastSeen) || 0, a.googleId || '', Number(a.matches) || 0, Number(a.wins) || 0, Number(a.kills) || 0, Number(a.dmg) || 0, Number(a.deaths) || 0]);
     }
     await client.query('COMMIT');
   } catch (e) {
@@ -423,6 +431,74 @@ io.on('connection', (socket) => {
     socket.data.name = name;
     socket.data.points = 0;
     socket.emit('account-result', { ok: true, account: { id: accounts[name].id, name, points: 0, level: 1, exp: 0, matches: 0, wins: 0, kills: 0, dmg: 0, deaths: 0 } });
+  });
+
+  // ---- Login con Google Sign-In ----
+  // El cliente envía el ID token (JWT corto, 1 h de vida); acá se verifica la
+  // firma contra el servidor de Google y se vincula/retoma la cuenta por googleId.
+  socket.on('google-login', async (data = {}) => {
+    const token = String(data.token || '');
+    if (!token || !googleClient) return socket.emit('account-result', { ok: false, error: 'google-unavailable' });
+    let payload;
+    try {
+      const ticket = await googleClient.verifyIdToken({ idToken: token, audience: GOOGLE_CLIENT_ID });
+      payload = ticket.getPayload();
+    } catch (e) {
+      return socket.emit('account-result', { ok: false, error: 'google-invalid' });
+    }
+    await ensureAccounts();
+    const sub = String(payload.sub || '');
+    if (!sub) return socket.emit('account-result', { ok: false, error: 'google-invalid' });
+    let name = null;
+    for (const [n, a] of Object.entries(accounts)) {
+      if (a && a.googleId === sub) { name = n; break; }
+    }
+    let isNew = false;
+    if (!name) {
+      // Cuenta nueva: se usa el nombre de Google (o el correo) como nickname;
+      // si está tomado, se agrega un sufijo numérico hasta encontrar uno libre.
+      const raw = String(payload.name || payload.email || 'jugador').toUpperCase().replace(/[^A-Z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+      let base = normName(raw) || ('J' + sub.slice(0, 7));
+      for (let i = 0; i < 100 && accounts[base]; i++) {
+        base = normName(raw) + String(i + 1);
+        if (base.length > 12) base = normName(raw).slice(0, 11 - String(i + 1).length) + String(i + 1);
+        if (!base) break;
+      }
+      if (!base || accounts[base]) return socket.emit('account-result', { ok: false, error: 'google-name' });
+      // Contraseña inutilizable: solo se entra con Google.
+      accounts[base] = { id: genId(), googleId: sub, password: sha(crypto.randomBytes(16).toString('hex')) + '\\google', points: 0, level: 1, exp: 0, lastSeen: Date.now(), matches: 0, wins: 0, kills: 0, dmg: 0, deaths: 0 };
+      name = base;
+      isNew = true;
+      saveAccounts();
+    }
+    const acc = accounts[name];
+    acc.lastSeen = Date.now();
+    saveAccounts();
+    socket.data.account = name;
+    socket.data.name = name;
+    socket.data.points = acc.points;
+    socket.emit('account-result', { ok: true, google: true, firstTime: isNew, account: { id: acc.id, name, points: acc.points, level: acc.level, exp: acc.exp, matches: acc.matches || 0, wins: acc.wins || 0, kills: acc.kills || 0, dmg: acc.dmg || 0, deaths: acc.deaths || 0 } });
+  });
+
+  // Renombrado ÚNICO: solo la primera vez y solo para cuentas creadas con Google.
+  // Después de confirmar, no existe ninguna forma de cambiar el nombre.
+  socket.on('account-set-name', async (data = {}) => {
+    if (!socket.data.account) return socket.emit('account-result', { ok: false, error: 'not-found' });
+    await ensureAccounts();
+    const acc = accounts[socket.data.account];
+    if (!acc || !acc.googleId) return socket.emit('account-result', { ok: false, error: 'not-renamable' });
+    const name = normName(data.name);
+    if (name.length < 2) return socket.emit('account-result', { ok: false, error: 'short-name' });
+    if (name !== socket.data.account && accounts[name]) return socket.emit('account-result', { ok: false, error: 'name-taken' });
+    if (name !== socket.data.account) {
+      accounts[name] = acc;
+      delete accounts[socket.data.account];
+      saveAccounts();
+    }
+    socket.data.account = name;
+    socket.data.name = name;
+    socket.data.points = acc.points;
+    socket.emit('account-result', { ok: true, account: { id: acc.id, name, points: acc.points, level: acc.level, exp: acc.exp, matches: acc.matches || 0, wins: acc.wins || 0, kills: acc.kills || 0, dmg: acc.dmg || 0, deaths: acc.deaths || 0 } });
   });
 
   socket.on('account-update', (data = {}) => {
