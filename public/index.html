@@ -2618,6 +2618,19 @@
             mapHeight = matchData.mapH || window.innerHeight * 4;
             totalEnemies = matchData.assignedBotsCount; 
 
+            // Reseteo TOTAL del estado de la partida anterior: sin esto, si la
+            // anterior terminó, gameOver queda true y el bucle de update no corre
+            // (pantalla congelada) aunque los eventos de feed/cuentas siguen
+            // llegando (notificaciones de muerte sobre un juego congelado).
+            gameOver = false;
+            spectateMode = false;
+            spectateId = null;
+            spectateTargetType = 'none';
+            spectateBotName = null;
+            spectateNameStr = null;
+            pendingMatchOver = null;
+            lastKillerName = null; 
+
             player.x = (matchData.you && matchData.you.x) || mapWidth / 2;
             player.y = (matchData.you && matchData.you.y) || mapHeight / 2;
             player.hp = 100;
@@ -3045,7 +3058,9 @@
 
             if (skillState.active) {
                 skillState.activeTimer -= delta;
-                if (profile.selectedSkill === 'heal' && player.hp < 100) {
+                // Sin curación en modo espectador: el cadáver no revive ni en
+                // entrenamiento ni espectando (la partida ya la cerró la muerte).
+                if (profile.selectedSkill === 'heal' && player.hp < 100 && !spectateMode) {
                     player.hp = Math.min(100, player.hp + (4 * (delta / 1000)));
                     hpBar.style.width = player.hp + '%';
                 }
@@ -3189,7 +3204,12 @@
                             if (player.hp <= 0) {
                                 lastKillerName = (b.owner && b.owner.name) ? b.owner.name : "Zona/Bot";
                                 addKillFeedMessage(lastKillerName, profile.name, true);
-                                enterSpectator(null, lastKillerName, b.owner || null);
+                                // En ENTRENAMIENTO no hay modo espectador: morir
+                                // debe cerrar la partida (antes quedaba un cadáver
+                                // inmortal recibiendo disparos sin morir jamás).
+                                if (!enterSpectator(null, lastKillerName, b.owner || null)) {
+                                    endGame(false);
+                                }
                                 if (currentMode === 'battlefield') socket.emit('player-died', { killerId: null, placement: getCurrentPlacement() });
                             }
                         }
@@ -3398,6 +3418,12 @@
                     }
                 }
 
+                // Los bots NUNCA salen del mapa de combate: se clampa su posición
+                // tras moverse (los tirones por colisiones o la huida del veneno
+                // podían empujarlos fuera del límite).
+                enemy.x = Math.max(enemy.radius, Math.min(mapWidth - enemy.radius, enemy.x));
+                enemy.y = Math.max(enemy.radius, Math.min(mapHeight - enemy.radius, enemy.y));
+
                 enemy.shootTimer++;
                 let playerInvisible = (profile.selectedSkill === 'ghost' && skillState.active);
                 let canShootPlayer = targetEntity !== 'player' || !playerInvisible;
@@ -3448,7 +3474,9 @@
                         if (player.hp <= 0) {
                             lastKillerName = enemy.name || "Cuerpo a cuerpo";
                             addKillFeedMessage(lastKillerName, profile.name, true);
-                            enterSpectator(null, lastKillerName, enemy);
+                            if (!enterSpectator(null, lastKillerName, enemy)) {
+                                endGame(false);
+                            }
                             if (currentMode === 'battlefield') socket.emit('player-died', { killerId: null, placement: getCurrentPlacement() });
                         }
                     }

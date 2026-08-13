@@ -219,7 +219,7 @@ let queueTimer = null;
 let queueDeadline = 0; // ms (Date.now()) en que arranca la partida: COMPARTIDA para toda la cola
 let queueStartAt = 0;  // momento en que entró el primer jugador de la cola (espera solitaria)
 const MIN_QUEUE_START = 2;   // no se arranca con 1 solo jugador: se espera a un compañero online
-const SOLO_MAX_WAIT = 45000; // tope de espera solitaria antes de jugar contra bots (45 s)
+const SOLO_MAX_WAIT = 60000; // tope de espera solitaria antes de jugar contra bots (60 s)
 
 // Difunde a TODOS los de la cola el mismo tiempo restante y el contador:
 // así un jugador que se une a mitad de espera ve la misma cuenta atrás que
@@ -580,7 +580,7 @@ io.on('connection', (socket) => {
     } else {
       // Un segundo jugador llega con el conteo a punto de acabar: se estira el
       // tiempo para que ambos entren a la misma partida con tiempo completo.
-      if (queue.length === 2 && queueDeadline - Date.now() < 6000) {
+      if (queue.length === 2 && queueDeadline - Date.now() < 12000) {
         clearTimeout(queueTimer);
         queueDeadline = Date.now() + QUEUE_TIMEOUT;
         queueTimer = setTimeout(maybeStartMatch, QUEUE_TIMEOUT);
