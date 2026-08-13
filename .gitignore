@@ -1,0 +1,7 @@
+node_modules/
+ranking.json
+server_out.txt
+server_err.txt
+test_server_out.txt
+test_server_err.txt
+.env

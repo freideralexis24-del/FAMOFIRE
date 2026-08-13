@@ -1,0 +1,2845 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAMOFIRE</title>
+    <!-- Librería de Socket.io importada -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #557A46;
+            font-family: 'Impact', sans-serif;
+            user-select: none;
+        }
+        canvas {
+            display: block;
+        }
+        
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle, #3b5e2b 0%, #1a2b14 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            color: white;
+            box-sizing: border-box;
+            text-shadow: 2px 2px 4px #000;
+        }
+
+        h1 {
+            font-size: 42px;
+            color: #ffcc00;
+            margin-bottom: 8px;
+            letter-spacing: 2px;
+            text-align: center;
+        }
+
+        input {
+            padding: 15px 25px;
+            font-size: 24px;
+            font-family: 'Impact', sans-serif;
+            border: 4px solid #000;
+            border-radius: 10px;
+            text-align: center;
+            outline: none;
+            margin-bottom: 20px;
+            background: #fff;
+            color: #333;
+            box-shadow: 4px 4px 0px #000;
+        }
+
+        .btn-main {
+            padding: 10px 25px;
+            font-size: 20px;
+            font-family: 'Impact', sans-serif;
+            background-color: #ffcc00;
+            color: #000;
+            border: 4px solid #000;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 4px 4px 0px #000;
+            transition: 0.1s;
+            margin: 5px;
+        }
+        .btn-main:hover {
+            background-color: #fff;
+            transform: scale(1.05);
+        }
+        .btn-main:active {
+            transform: scale(1);
+            box-shadow: 0px 0px 0px #000;
+        }
+
+        .btn-back {
+            background-color: #ff3333;
+            color: white;
+            margin-top: 15px;
+        }
+
+        #gear-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background-color: #ffcc00;
+            color: #000;
+            border: 4px solid #000;
+            border-radius: 12px;
+            font-size: 26px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 4px 4px 0px #000;
+            transition: 0.1s;
+            z-index: 25;
+        }
+        #gear-btn:hover {
+            background-color: #fff;
+            transform: scale(1.1);
+        }
+        #gear-btn:active {
+            transform: scale(1);
+            box-shadow: 0px 0px 0px #000;
+        }
+
+        .lobby-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            width: 300px;
+            align-items: center;
+        }
+
+        .lobby-menu .btn-main {
+            width: 100%;
+        }
+
+        .exp-container {
+            width: 280px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid #fff;
+            border-radius: 10px;
+            height: 20px;
+            margin: 4px 0 12px 0;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+        }
+        #exp-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00cc00, #00ff00);
+            transition: width 0.4s ease;
+        }
+        .exp-text {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+            color: #fff;
+            text-shadow: 1px 1px 2px #000;
+        }
+
+        .skin-grid {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 800px;
+        }
+        .skin-option-card {
+            background: rgba(0,0,0,0.5);
+            border: 3px solid #ffcc00;
+            border-radius: 15px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+            width: 110px;
+            position: relative;
+        }
+        .skin-option-card:hover {
+            transform: scale(1.05);
+        }
+        .skin-option-card.selected {
+            background: rgba(255, 204, 0, 0.35);
+            border: 4px solid #ffcc00;
+            box-shadow: 0px 0px 15px #ffcc00;
+        }
+        .skin-preview {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: 3px solid #fff;
+            margin: 0 auto 8px auto;
+            position: relative;
+            overflow: hidden;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+        }
+
+        .info-box {
+            background: rgba(0,0,0,0.6);
+            border: 3px solid #ffcc00;
+            border-radius: 15px;
+            width: 420px;
+            max-height: 340px;
+            overflow-y: auto;
+            padding: 15px;
+            margin-bottom: 5px;
+        }
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 18px;
+        }
+        .info-table th, .info-table td {
+            padding: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            text-align: left;
+        }
+        .info-table th {
+            color: #ffcc00;
+        }
+        .info-table td:last-child {
+            text-align: right;
+            color: #ffcc00;
+        }
+
+        .controls-table {
+            width: 460px;
+            background: rgba(0,0,0,0.6);
+            border: 3px solid #ffcc00;
+            border-radius: 15px;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border-collapse: collapse;
+        }
+        .controls-table td {
+            padding: 8px 10px;
+            font-size: 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+        .controls-table td:last-child {
+            text-align: right;
+            display: flex;
+            gap: 6px;
+            justify-content: flex-end;
+            align-items: center;
+        }
+        .key-bind-btn {
+            background: #222;
+            color: #ffcc00;
+            border: 2px solid #ffcc00;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-family: 'Impact', sans-serif;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 2px 2px 0px #000;
+            transition: 0.1s;
+            min-width: 60px;
+            text-align: center;
+        }
+        .key-bind-btn:hover {
+            background: #ffcc00;
+            color: #000;
+        }
+        .key-bind-btn.waiting {
+            background: #ff3333;
+            color: #fff;
+            animation: pulse 0.8s infinite alternate;
+        }
+        .clear-bind-btn {
+            background: #ff3333;
+            color: #fff;
+            border: 2px solid #000;
+            padding: 5px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            font-family: 'Impact', sans-serif;
+        }
+        .clear-bind-btn:hover {
+            background: #ff6666;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.08); }
+        }
+
+        #ui-top-left {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        #minimap-container {
+            width: 140px;
+            height: 140px;
+            background: rgba(20, 35, 15, 0.85);
+            border: 3px solid #ffcc00;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.7);
+        }
+
+        #minimap-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        #hp-container {
+            width: 140px;
+            height: 22px;
+            background: rgba(0,0,0,0.6);
+            border: 2px solid #fff;
+            border-radius: 5px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+        #hp-bar {
+            width: 100%;
+            height: 100%;
+            background: #ffcc00;
+            transition: width 0.2s;
+        }
+
+        #skill-hud {
+            display: none;
+            flex-direction: row;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0,0,0,0.75);
+            border: 2px solid #ffcc00;
+            border-radius: 8px;
+            padding: 6px;
+            width: 140px;
+            box-sizing: border-box;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+        }
+        #skill-icon-box {
+            width: 36px;
+            height: 36px;
+            background: rgba(0,0,0,0.9);
+            border: 2px solid #ffcc00;
+            border-radius: 6px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        #skill-cooldown-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0%;
+            background: rgba(255, 0, 0, 0.6);
+            transition: height 0.1s linear;
+        }
+        #skill-key-label {
+            font-size: 11px;
+            color: #ffcc00;
+            background: rgba(0,0,0,0.6);
+            padding: 2px 4px;
+            border-radius: 4px;
+            border: 1px solid #ffcc00;
+            text-align: center;
+            flex-grow: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #fps-counter-box {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.75);
+            border: 2px solid #ffcc00;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 16px;
+            color: #00ff00;
+            z-index: 30;
+            display: block;
+            text-shadow: 1px 1px 2px #000;
+            pointer-events: none;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+        }
+
+        /* CONTADOR GLOBAL ONLINE ABAJO A LA DERECHA */
+        #global-online-box {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.75);
+            border: 2px solid #ffcc00;
+            border-radius: 6px;
+            padding: 6px 14px;
+            font-size: 16px;
+            color: #00ffff;
+            z-index: 30;
+            text-shadow: 1px 1px 2px #000;
+            pointer-events: none;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+        }
+
+        #hud-top-right {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: none;
+            flex-direction: column;
+            align-items: flex-end;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        #pro-stats-panel {
+            background: rgba(0, 0, 0, 0.75);
+            border: 3px solid #ffcc00;
+            border-radius: 10px;
+            padding: 10px 18px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.7);
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            text-shadow: 2px 2px 3px #000;
+        }
+
+        .stat-box-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-box-label {
+            font-size: 11px;
+            color: #aaa;
+            letter-spacing: 1px;
+        }
+
+        .stat-box-value {
+            font-size: 22px;
+            color: #ffcc00;
+        }
+
+        #kill-feed {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            align-items: flex-end;
+            max-width: 320px;
+        }
+
+        .kill-msg {
+            background: rgba(20, 20, 20, 0.85);
+            border-left: 4px solid #ff3333;
+            color: #fff;
+            padding: 5px 12px;
+            font-size: 14px;
+            border-radius: 4px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+            animation: fadeInOut 4s forwards;
+            white-space: nowrap;
+            text-shadow: 1px 1px 2px #000;
+        }
+
+        .kill-msg.player-kill {
+            border-left-color: #00ff00;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(-10px); }
+            10% { opacity: 1; transform: translateY(0); }
+            80% { opacity: 1; }
+            100% { opacity: 0; transform: scale(0.95); display: none; }
+        }
+
+        #stats-screen {
+            display: none;
+            background: rgba(17, 29, 13, 0.95);
+            border: 4px solid #ffcc00;
+            border-radius: 15px;
+            padding: 25px;
+            width: 400px;
+            text-align: center;
+            z-index: 25;
+            box-shadow: 0px 10px 25px rgba(0,0,0,0.8);
+        }
+        .stats-table {
+            width: 100%;
+            margin: 10px 0;
+            border-collapse: collapse;
+            font-size: 18px;
+        }
+        .stats-table td {
+            padding: 5px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            text-align: left;
+        }
+        .stats-table td:last-child {
+            text-align: right;
+            color: #ffcc00;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen" class="screen">
+        <h1>FAMOFIRE</h1>
+        <input type="text" id="username-input" placeholder="Ingresa tu Nickname" maxlength="12" value="ALEXIS">
+        <button id="login-btn" class="btn-main" data-i18n="loginBtn">CONTINUAR</button>
+    </div>
+
+    <div id="lobby-screen" class="screen" style="display: none;">
+        <div id="gear-btn" onclick="openConfigMenu()">⚙️</div>
+
+        <h1 data-i18n="lobbyTitle">SALA DE COMANDO</h1>
+        <p style="font-size: 18px; margin: 0 0 2px 0;"><span data-i18n="soldierLabel">Soldado</span>: <span id="lobby-name" style="color: #ffcc00;">Jugador</span></p>
+        <p style="font-size: 15px; margin: 0 0 4px 0; color: #00ffff;">
+            <span data-i18n="rankLabel">RANGO</span>: <span id="lobby-rank">Recluta</span> (<span id="lobby-points">0</span> PTS)
+        </p>
+        
+        <div style="font-size: 15px; color: #00ff00; margin-bottom: 2px;">
+            <span data-i18n="levelLabel">NIVEL</span> <span id="lobby-level">1</span>
+        </div>
+        
+        <div class="exp-container">
+            <div id="exp-bar-fill"></div>
+            <div class="exp-text" data-i18n="expProgressText">PROGRESO DE NIVEL</div>
+        </div>
+        
+        <div class="lobby-menu">
+            <button id="to-training-btn" class="btn-main" data-i18n="trainingBtn">MODO ENTRENAMIENTO</button>
+            <button id="to-battlefield-btn" class="btn-main" data-i18n="battlefieldBtn">CAMPO DE BATALLA</button>
+            <button id="to-skills-btn" class="btn-main" style="background-color: #00ffff;" data-i18n="skillsBtn">HABILIDADES</button>
+            <button id="to-skins-btn" class="btn-main" data-i18n="skinsBtn">PERSONALIZAR SKIN</button>
+            <button id="to-ranks-btn" class="btn-main" data-i18n="ranksBtn">RANGOS MILITARES</button>
+            <button id="to-ranking-btn" class="btn-main" data-i18n="rankingBtn">RANKING GLOBAL</button>
+        </div>
+    </div>
+
+    <!-- PANTALLA DE EMPAREJAMIENTO GLOBAL (MATCHMAKING QUEUE / 15-30s) -->
+    <div id="matchmaking-screen" class="screen" style="display: none;">
+        <h1 data-i18n="mmHeader">BUSCANDO PARTIDA</h1>
+        <p style="font-size: 18px; color: #00ffff; margin-bottom: 20px;" id="mm-status-text">Buscando soldados en servidor LATAM...</p>
+        <div style="font-size: 32px; color: #ffcc00; margin-bottom: 30px;" id="mm-timer">30s</div>
+        <div class="lobby-menu">
+            <button id="cancel-mm-btn" class="btn-main btn-back" data-i18n="cancelBtn">CANCELAR</button>
+        </div>
+    </div>
+
+    <div id="config-screen" class="screen" style="display: none;">
+        <h1 data-i18n="configTitle">CONFIGURACIÓN</h1>
+        <p style="font-size: 15px; color: #aaa; margin-bottom: 15px;" data-i18n="configSubtitle">Ajustes del sistema</p>
+        
+        <div class="lobby-menu">
+            <button id="to-language-btn" class="btn-main" style="background-color: #00ffff;" data-i18n="langMenuBtn">IDIOMA</button>
+            <button id="to-controls-btn" class="btn-main" style="background-color: #00ff00;" data-i18n="controlsMenuBtn">CONTROLES</button>
+            <button id="toggle-fps-btn" class="btn-main"><span data-i18n="fpsBtnText">FPS</span>: <span id="fps-status-label">ACTIVADO</span></button>
+            <button id="back-from-config" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
+        </div>
+    </div>
+
+    <!-- CONTROLES CON BOTÓN DE ELIMINAR CASILLA -->
+    <div id="controls-screen" class="screen" style="display: none;">
+        <h1 data-i18n="controlsTitle">CONFIGURAR CONTROLES</h1>
+        <p style="font-size: 13px; color: #aaa; margin-bottom: 8px;" data-i18n="controlsSubtitle">[Primaria] / [Secundaria] - Clic en [X] para borrar</p>
+        
+        <table class="controls-table">
+            <tr>
+                <td data-i18n="ctrlUp">Arriba:</td>
+                <td>
+                    <button id="bind-up-0" class="key-bind-btn" onclick="startRebind('up', 0)">W</button>
+                    <button id="bind-up-1" class="key-bind-btn" onclick="startRebind('up', 1)">-</button>
+                    <button class="clear-bind-btn" onclick="clearBind('up', 1)" title="Borrar secundaria">X</button>
+                </td>
+            </tr>
+            <tr>
+                <td data-i18n="ctrlLeft">Izquierda:</td>
+                <td>
+                    <button id="bind-left-0" class="key-bind-btn" onclick="startRebind('left', 0)">A</button>
+                    <button id="bind-left-1" class="key-bind-btn" onclick="startRebind('left', 1)">-</button>
+                    <button class="clear-bind-btn" onclick="clearBind('left', 1)" title="Borrar secundaria">X</button>
+                </td>
+            </tr>
+            <tr>
+                <td data-i18n="ctrlDown">Abajo:</td>
+                <td>
+                    <button id="bind-down-0" class="key-bind-btn" onclick="startRebind('down', 0)">S</button>
+                    <button id="bind-down-1" class="key-bind-btn" onclick="startRebind('down', 1)">-</button>
+                    <button class="clear-bind-btn" onclick="clearBind('down', 1)" title="Borrar secundaria">X</button>
+                </td>
+            </tr>
+            <tr>
+                <td data-i18n="ctrlRight">Derecha:</td>
+                <td>
+                    <button id="bind-right-0" class="key-bind-btn" onclick="startRebind('right', 0)">D</button>
+                    <button id="bind-right-1" class="key-bind-btn" onclick="startRebind('right', 1)">-</button>
+                    <button class="clear-bind-btn" onclick="clearBind('right', 1)" title="Borrar secundaria">X</button>
+                </td>
+            </tr>
+            <tr>
+                <td data-i18n="ctrlSkill">Habilidad:</td>
+                <td>
+                    <button id="bind-skill-0" class="key-bind-btn" onclick="startRebind('skill', 0)">ESPACIO</button>
+                    <button id="bind-skill-1" class="key-bind-btn" onclick="startRebind('skill', 1)">CLICK DER</button>
+                    <button class="clear-bind-btn" onclick="clearBind('skill', 1)" title="Borrar secundaria">X</button>
+                </td>
+            </tr>
+        </table>
+
+        <p id="rebind-msg" style="font-size: 14px; color: #00ff00; height: 18px; margin-bottom: 5px;"></p>
+        <button id="back-from-controls" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
+    </div>
+
+    <div id="language-screen" class="screen" style="display: none;">
+        <h1 data-i18n="selectLangTitle">SELECCIONAR IDIOMA</h1>
+        <p style="font-size: 15px; color: #aaa; margin-bottom: 15px;" data-i18n="selectLangSubtitle">Escoge tu idioma preferido:</p>
+        
+        <div class="lobby-menu">
+            <button class="btn-main lang-option" onclick="setLanguage('ESPAÑOL')">ESPAÑOL</button>
+            <button class="btn-main lang-option" onclick="setLanguage('ENGLISH')">ENGLISH</button>
+            <button class="btn-main lang-option" onclick="setLanguage('中国人')">中国人</button>
+            <button class="btn-main lang-option" onclick="setLanguage('BRASIL')">BRASIL</button>
+            <button id="back-from-language" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
+        </div>
+        <p id="lang-selected-msg" style="font-size: 14px; color: #00ff00; margin-top: 10px; height: 18px;"></p>
+    </div>
+
+    <div id="battlefield-screen" class="screen" style="display: none;">
+        <h1 data-i18n="battlefieldHeader">CAMPO DE BATALLA</h1>
+        <p style="font-size: 16px; color: #aaa; margin-bottom: 15px;" data-i18n="battlefieldDesc">Gran Mapa - 35 Jugadores (Battle Royale)</p>
+        
+        <div class="lobby-menu">
+            <button id="to-battle-game-btn" class="btn-main" data-i18n="singlePlayerBtn">BUSCAR PARTIDA</button>
+            <button id="back-from-battlefield" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
+        </div>
+    </div>
+
+    <div id="skills-screen" class="screen" style="display: none;">
+        <h1 data-i18n="skillsTitleHeader">HABILIDADES TÁCTICAS</h1>
+        <p style="font-size: 15px; color: #aaa; margin-bottom: 10px;" data-i18n="skillsSubtitle">Selecciona 1 habilidad para equipar en Campo de Batalla:</p>
+        
+        <div class="skin-grid">
+            <div class="skin-option-card skill-card" data-skill="shield" onclick="selectSkill('shield', this)">
+                <div class="skin-preview" style="background: rgba(0,150,255,0.3); border-color: #00ffff;">🛡️</div>
+                <span style="font-size: 13px; color: #00ffff;" data-i18n="skillShield">Escudo</span>
+                <p style="font-size: 10px; color: #ccc; margin: 4px 0 0 0;" data-i18n="skillShieldDesc">Invulnerable 5s (No dispara)</p>
+            </div>
+            
+            <div class="skin-option-card skill-card" data-skill="heal" onclick="selectSkill('heal', this)">
+                <div class="skin-preview" style="background: rgba(0,255,0,0.3); border-color: #00ff00;">💉</div>
+                <span style="font-size: 13px; color: #00ff00;" data-i18n="skillHeal">Curación</span>
+                <p style="font-size: 10px; color: #ccc; margin: 4px 0 0 0;" data-i18n="skillHealDesc">+4 HP/s por 5s</p>
+            </div>
+
+            <div class="skin-option-card skill-card" data-skill="ghost" onclick="selectSkill('ghost', this)">
+                <div class="skin-preview" style="background: rgba(255,0,255,0.3); border-color: #ff00ff;">👻</div>
+                <span style="font-size: 13px; color: #ff00ff;" data-i18n="skillGhost">Fase Fantasma</span>
+                <p style="font-size: 10px; color: #ccc; margin: 4px 0 0 0;" data-i18n="skillGhostDesc">Muros+Invis 5s (No dispara)</p>
+            </div>
+
+            <div class="skin-option-card skill-card" data-skill="radar" onclick="selectSkill('radar', this)">
+                <div class="skin-preview" style="background: rgba(255,0,0,0.3); border-color: #ff3333;">📡</div>
+                <span style="font-size: 13px; color: #ff3333;" data-i18n="skillRadar">Radar</span>
+                <p style="font-size: 10px; color: #ccc; margin: 4px 0 0 0;" data-i18n="skillRadarDesc">Detecta enemigos 5s (Sí dispara)</p>
+            </div>
+        </div>
+
+        <p id="skill-msg" style="font-size: 14px; color: #00ff00; height: 18px; margin-top: 10px;"></p>
+        <button id="back-from-skills" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
+    </div>
+
+    <div id="skins-screen" class="screen" style="display: none;">
+        <h1 data-i18n="skinsTitleHeader">SELECCIONAR SKIN</h1>
+        <p style="font-size: 16px; margin-bottom: 5px;" data-i18n="skinsSubtitle">Elige el color para tu uniforme:</p>
+        
+        <div class="skin-grid">
+            <div class="skin-option-card" data-color="#ffffff" onclick="selectSkinColor('#ffffff', false, this)">
+                <div class="skin-preview" style="background: #ffffff;"></div>
+                <span data-i18n="skinClassic">Clásico</span>
+            </div>
+            
+            <div class="skin-option-card" data-color="multicolor" data-level="5" onclick="selectSkinColor('multicolor', true, this)">
+                <div class="lock-badge">🔒</div>
+                <div class="skin-preview" style="background: linear-gradient(135deg, #ff0000, #00ff00, #0000ff);"></div>
+                <span data-i18n="skinRainbow">Arcoíris Táctico</span>
+            </div>
+
+            <div class="skin-option-card" data-color="#00ffff" onclick="selectSkinColor('#00ffff', false, this)">
+                <div class="skin-preview" style="background: #00ffff;"></div>
+                <span data-i18n="skinCyan">Cian Neón</span>
+            </div>
+
+            <div class="skin-option-card" data-color="#ff00ff" onclick="selectSkinColor('#ff00ff', false, this)">
+                <div class="skin-preview" style="background: #ff00ff;"></div>
+                <span data-i18n="skinFuchsia">Fucsia</span>
+            </div>
+
+            <div class="skin-option-card" data-color="#00ff00" onclick="selectSkinColor('#00ff00', false, this)">
+                <div class="skin-preview" style="background: #00ff00;"></div>
+                <span data-i18n="skinGreen">Verde Neón</span>
+            </div>
+
+            <div class="skin-option-card" data-color="camo" data-level="5" onclick="selectSkinColor('camo', true, this)">
+                <div class="lock-badge">🔒</div>
+                <div class="skin-preview" id="camo-card-preview"></div>
+                <span data-i18n="skinCamo">Camu. Urbano</span>
+            </div>
+        </div>
+
+        <p id="skin-lock-msg" style="font-size: 14px; color: #ff3333; margin-top: 5px; height: 18px;"></p>
+        <button id="back-from-skins" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
+    </div>
+
+    <div id="ranks-screen" class="screen" style="display: none;">
+        <h1 data-i18n="ranksTitleHeader">JERARQUÍA MILITAR</h1>
+        <p style="font-size: 14px; color: #aaa; margin-bottom: 8px;" data-i18n="ranksSubtitle">Escala y puntos requeridos</p>
+        
+        <div class="info-box">
+            <table class="info-table">
+                <thead>
+                    <tr>
+                        <th data-i18n="rankTableHeader">Rango</th>
+                        <th data-i18n="pointsTableHeader">Puntos Req.</th>
+                    </tr>
+                </thead>
+                <tbody id="ranks-table-body"></tbody>
+            </table>
+        </div>
+
+        <button id="back-from-ranks" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
+    </div>
+
+    <!-- SALÓN DE LA FAMA - TOP 100 LATAM -->
+    <div id="ranking-screen" class="screen" style="display: none;">
+        <h1 data-i18n="rankingTitleHeader">RANKING GLOBAL</h1>
+        <p style="font-size: 15px; color: #aaa; margin-bottom: 10px;" data-i18n="rankingSubtitle">Top 100 Mejores Soldados (Servidor LATAM)</p>
+        
+        <div class="info-box">
+            <table class="info-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th data-i18n="soldierTableHeader">Soldado</th>
+                        <th data-i18n="pointsHeader">Puntos</th>
+                    </tr>
+                </thead>
+                <tbody id="ranking-table-body">
+                    <tr>
+                        <td colspan="3" style="text-align: center; color: #aaa; padding: 20px;" data-i18n="serverConnecting">
+                            Cargando Salón de la Fama LATAM...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <button id="back-from-ranking" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
+    </div>
+
+    <div id="ui-top-left">
+        <div id="minimap-container">
+            <canvas id="minimap-canvas" width="140" height="140"></canvas>
+        </div>
+        <div id="hp-container">
+            <div id="hp-bar"></div>
+        </div>
+        <div id="skill-hud">
+            <div id="skill-icon-box">
+                <span id="skill-hud-symbol">🛡️</span>
+                <div id="skill-cooldown-overlay"></div>
+            </div>
+            <div id="skill-key-label">[ESPACIO]</div>
+        </div>
+    </div>
+
+    <div id="fps-counter-box">FPS: <span id="fps-val">60</span></div>
+    
+    <!-- INDICADOR DE JUGADORES ONLINE GLOBALMENTE -->
+    <div id="global-online-box">Online: <span id="global-online-val">1</span></div>
+
+    <div id="hud-top-right">
+        <div id="pro-stats-panel">
+            <div class="stat-box-item">
+                <span class="stat-box-label" data-i18n="hudAlive">VIVOS</span>
+                <span id="hud-alive" class="stat-box-value">35</span>
+            </div>
+            <div class="stat-box-item" style="border-left: 1px solid rgba(255,255,255,0.3); padding-left: 15px;">
+                <span class="stat-box-label" data-i18n="hudKills">BAJAS (KILLS)</span>
+                <span id="hud-kills" class="stat-box-value" style="color: #00ff00;">0</span>
+            </div>
+        </div>
+        <div id="kill-feed"></div>
+    </div>
+
+    <div id="stats-screen" class="screen">
+        <h1 id="stats-title">¡BOOYAH!</h1>
+        <table class="stats-table">
+            <tr>
+                <td data-i18n="statPlacement">Posición:</td>
+                <td id="stat-pos" style="color: #ffcc00;">#1</td>
+            </tr>
+            <tr>
+                <td data-i18n="statSoldier">Soldado:</td>
+                <td id="stat-name">Jugador</td>
+            </tr>
+            <tr>
+                <td data-i18n="statKills">Kills (Bajas):</td>
+                <td id="stat-kills">0</td>
+            </tr>
+            <tr>
+                <td data-i18n="statDamage">Daño Total:</td>
+                <td id="stat-damage">0</td>
+            </tr>
+            <tr>
+                <td data-i18n="statPoints">Puntos Rango:</td>
+                <td id="stat-points" style="color: #ff9900;">0 PTS</td>
+            </tr>
+            <tr>
+                <td data-i18n="statExp">EXP Cuenta:</td>
+                <td id="stat-exp" style="color: #00ff00;">+0 EXP</td>
+            </tr>
+            <tr>
+                <td data-i18n="statLevel">Nivel Actual:</td>
+                <td id="stat-level" style="color: #00ff00;">1</td>
+            </tr>
+        </table>
+        <button id="back-to-lobby-btn" class="btn-main" style="width: 100%; margin-top: 5px;" data-i18n="returnToLobbyBtn">REGRESAR A SALA DE COMANDO</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        // --- CONEXIÓN DE SOCKET.IO AL SERVIDOR CENTRAL LATAM ---
+        // Se conecta al mismo servidor que sirvió la página (funciona en la web y en local)
+        const socket = io();
+        let remotePlayers = {}; 
+
+        socket.on('connect', () => {
+            console.log("Conectado al servidor central de FAMOFIRE (LATAM) con ID:", socket.id);
+        });
+
+        // Recibir contador global de jugadores conectados en todo el servidor
+        socket.on('update-global-online', (count) => {
+            const globalBox = document.getElementById('global-online-val');
+            if (globalBox) globalBox.innerText = count;
+        });
+
+        // Recibir el Top 100 histórico del Servidor LATAM ordenado globalmente por puntos
+        socket.on('update-top100', (topPlayers) => {
+            const rankingBody = document.getElementById('ranking-table-body');
+            if (rankingBody) {
+                rankingBody.innerHTML = '';
+                if (!topPlayers || topPlayers.length === 0) {
+                    rankingBody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #aaa; padding: 20px;">Sin registros en el Salón de la Fama</td></tr>`;
+                    return;
+                }
+                topPlayers.forEach((p, index) => {
+                    let tr = document.createElement('tr');
+                    // Si el registro coincide con tu nombre actual, lo resalta
+                    if (p.name === profile.name) {
+                        tr.style.backgroundColor = "rgba(255, 204, 0, 0.2)";
+                    }
+                    tr.innerHTML = `<td>#${index + 1}</td><td>${p.name}</td><td>${p.points || 0} PTS</td>`;
+                    rankingBody.appendChild(tr);
+                });
+            }
+        });
+
+        socket.on('update-room-players', (roomPlayers) => {
+            for (let id in roomPlayers) {
+                roomPlayers[id].hp = (remotePlayers[id] && remotePlayers[id].hp) || 100;
+            }
+            remotePlayers = roomPlayers;
+        });
+
+        socket.on('update-player-position', (playerData) => {
+            if (remotePlayers[playerData.id]) {
+                remotePlayers[playerData.id].x = playerData.x;
+                remotePlayers[playerData.id].y = playerData.y;
+                remotePlayers[playerData.id].angle = playerData.angle;
+            }
+        });
+
+        socket.on('remove-player', (id) => {
+            delete remotePlayers[id];
+            updateHUDCounters();
+        });
+
+        // Evento lanzado globalmente por el servidor cuando el matchmaking finaliza (por llenarse o por timeout)
+        socket.on('match-start', (matchData) => {
+            startBattlefieldMatch(matchData);
+        });
+
+        // Bala disparada por otro jugador real (solo visual; el daño llega por 'receive-damage')
+        socket.on('remote-shot', (data) => {
+            if (!gameStarted || currentMode !== 'battlefield') return;
+            bullets.push({
+                x: data.x, y: data.y, startX: data.x, startY: data.y,
+                dx: Math.cos(data.angle) * 12, dy: Math.sin(data.angle) * 12,
+                radius: 4, color: '#ff9999', maxRange: 550, isPlayer: false, owner: data.id
+            });
+        });
+
+        // Recibir daño de un jugador real (el disparador confirma el impacto en su cliente)
+        socket.on('receive-damage', (data) => {
+            if (!gameStarted || currentMode !== 'battlefield' || gameOver) return;
+            let shieldActive = (profile.selectedSkill === 'shield' && skillState.active);
+            if (shieldActive) return;
+            player.hp -= data.dmg || 25;
+            hpBar.style.width = Math.max(player.hp, 0) + '%';
+            if (player.hp <= 0) {
+                addKillFeedMessage(data.killerName || 'Enemigo', profile.name, true);
+                endGame(false);
+                socket.emit('player-died', { killerId: data.killerId, placement: getCurrentPlacement() });
+            }
+        });
+
+        // El servidor confirma la baja de un jugador real
+        socket.on('kill-confirm', () => {
+            if (!gameStarted || currentMode !== 'battlefield') return;
+            matchStats.kills += 1;
+            hudKills.innerText = matchStats.kills;
+        });
+
+        // Feed de bajas entre jugadores reales
+        socket.on('kill-feed', (data) => {
+            addKillFeedMessage(data.killer, data.victim, false);
+        });
+
+        // Posición final exacta cuando el servidor cierra tu partida
+        socket.on('match-over', (data) => {
+            if (data.placement) {
+                statPos.innerText = '#' + data.placement;
+                statPos.style.color = data.placement <= 10 ? '#00ffff' : '#ff3333';
+            }
+        });
+
+        // Eres el último jugador real vivo: VICTORIA
+        socket.on('match-end', () => {
+            if (gameStarted && currentMode === 'battlefield' && !gameOver) {
+                endGame(true);
+            }
+        });
+
+        // Estado de la cola de emparejamiento
+        socket.on('mm-status', (data) => {
+            if (data && data.inQueue && mmStatusText) {
+                mmStatusText.innerText = `Buscando soldados en servidor LATAM... (${data.count} en fila)`;
+            }
+        });
+
+        // Avisos de conexión
+        socket.on('connect_error', () => {
+            if (mmStatusText) mmStatusText.innerText = '⚠️ No se pudo conectar al servidor. Intenta de nuevo...';
+        });
+        socket.on('disconnect', () => {
+            if (mmStatusText) mmStatusText.innerText = '⚠️ Sin conexión al servidor. Reintentando...';
+        });
+
+        const i18n = {
+            "ESPAÑOL": {
+                loginBtn: "CONTINUAR",
+                nicknamePlaceholder: "Ingresa tu Nickname",
+                lobbyTitle: "SALA DE COMANDO",
+                soldierLabel: "Soldado",
+                rankLabel: "RANGO",
+                levelLabel: "NIVEL",
+                expProgressText: "PROGRESO DE NIVEL",
+                trainingBtn: "MODO ENTRENAMIENTO",
+                battlefieldBtn: "CAMPO DE BATALLA",
+                skillsBtn: "HABILIDADES",
+                skinsBtn: "PERSONALIZAR SKIN",
+                ranksBtn: "RANGOS MILITARES",
+                rankingBtn: "RANKING GLOBAL",
+                configTitle: "CONFIGURACIÓN",
+                configSubtitle: "Ajustes del sistema",
+                langMenuBtn: "IDIOMA",
+                controlsMenuBtn: "CONTROLES",
+                fpsBtnText: "FPS",
+                fpsActivated: "ACTIVADO",
+                fpsDeactivated: "DESACTIVADO",
+                backBtn: "REGRESAR",
+                selectLangTitle: "SELECCIONAR IDIOMA",
+                selectLangSubtitle: "Escoge tu idioma preferido:",
+                langChanged: "✓ Idioma cambiado a:",
+                controlsTitle: "CONFIGURAR CONTROLES",
+                controlsSubtitle: "[Primaria] / [Secundaria] - Clic en [X] para borrar",
+                ctrlUp: "Arriba:",
+                ctrlLeft: "Izquierda:",
+                ctrlDown: "Abajo:",
+                ctrlRight: "Derecha:",
+                ctrlSkill: "Habilidad:",
+                pressKeyMsg: "Presiona una tecla o haz clic...",
+                keyAssignedMsg: "✓ Tecla asignada correctamente",
+                keyConflictMsg: "⚠️ Esa tecla ya está en uso en otra acción",
+                battlefieldHeader: "CAMPO DE BATALLA",
+                battlefieldDesc: "Gran Mapa - 35 Jugadores (Battle Royale)",
+                singlePlayerBtn: "BUSCAR PARTIDA",
+                mmHeader: "BUSCANDO PARTIDA",
+                cancelBtn: "CANCELAR",
+                skillsTitleHeader: "HABILIDADES TÁCTICAS",
+                skillsSubtitle: "Selecciona 1 habilidad para equipar en Campo de Batalla:",
+                skillShield: "Escudo",
+                skillShieldDesc: "Invulnerable 5s (No dispara)",
+                skillHeal: "Curación",
+                skillHealDesc: "+4 HP/s por 5s",
+                skillGhost: "Fase Fantasma",
+                skillGhostDesc: "Muros+Invis 5s (No dispara)",
+                skillRadar: "Radar",
+                skillRadarDesc: "Detecta enemigos 5s (Sí dispara)",
+                skillEquippedMsg: "✓ Habilidad equipada correctamente",
+                skinsTitleHeader: "SELECCIONAR SKIN",
+                skinsSubtitle: "Elige el color para tu uniforme:",
+                skinClassic: "Clásico",
+                skinRainbow: "Arcoíris Táctico",
+                skinCyan: "Cian Neón",
+                skinFuchsia: "Fucsia",
+                skinGreen: "Verde Neón",
+                skinCamo: "Camu. Urbano",
+                ranksTitleHeader: "JERARQUÍA MILITAR",
+                ranksSubtitle: "Escala y puntos requeridos",
+                rankTableHeader: "Rango",
+                pointsTableHeader: "Puntos Req.",
+                rankingTitleHeader: "RANKING GLOBAL",
+                rankingSubtitle: "Top 100 Mejores Soldados (Servidor LATAM)",
+                soldierTableHeader: "Soldado",
+                pointsHeader: "Puntos",
+                serverConnecting: "Cargando Salón de la Fama LATAM...",
+                hudAlive: "VIVOS",
+                hudKills: "BAJAS (KILLS)",
+                statPlacement: "Posición:",
+                statSoldier: "Soldado:",
+                statKills: "Kills (Bajas):",
+                statDamage: "Daño Total:",
+                statPoints: "Puntos Rango:",
+                statExp: "EXP Cuenta:",
+                statLevel: "Nivel Actual:",
+                returnToLobbyBtn: "REGRESAR A SALA DE COMANDO",
+                trainingModeText: "0 PTS (Entrenamiento)",
+                rankNames: [
+                    "1. Recluta", "2. Regular", "3. Profesional", 
+                    "4. Dragoneante Profesional", "5. Cabo Tercero", "6. Cabo Segundo", 
+                    "7. Cabo Primero", "8. Sargento Segundo", "9. Sargento Viceprimero", 
+                    "10. Sargento Primero", "11. Sargento Mayor"
+                ]
+            },
+            "ENGLISH": {
+                loginBtn: "CONTINUE",
+                nicknamePlaceholder: "Enter your Nickname",
+                lobbyTitle: "COMMAND ROOM",
+                soldierLabel: "Soldier",
+                rankLabel: "RANK",
+                levelLabel: "LEVEL",
+                expProgressText: "LEVEL PROGRESS",
+                trainingBtn: "TRAINING MODE",
+                battlefieldBtn: "BATTLEFIELD",
+                skillsBtn: "SKILLS",
+                skinsBtn: "CUSTOMIZE SKIN",
+                ranksBtn: "MILITARY RANKS",
+                rankingBtn: "GLOBAL RANKING",
+                configTitle: "SETTINGS",
+                configSubtitle: "System adjustments",
+                langMenuBtn: "LANGUAGE",
+                controlsMenuBtn: "CONTROLS",
+                fpsBtnText: "FPS",
+                fpsActivated: "ENABLED",
+                fpsDeactivated: "DISABLED",
+                backBtn: "BACK",
+                selectLangTitle: "SELECT LANGUAGE",
+                selectLangSubtitle: "Choose your preferred language:",
+                langChanged: "✓ Language changed to:",
+                controlsTitle: "CONFIGURE CONTROLS",
+                controlsSubtitle: "[Primary] / [Secondary] - Click [X] to clear",
+                ctrlUp: "Up:",
+                ctrlLeft: "Left:",
+                ctrlDown: "Down:",
+                ctrlRight: "Right:",
+                ctrlSkill: "Skill:",
+                pressKeyMsg: "Press a key or click...",
+                keyAssignedMsg: "✓ Key assigned successfully",
+                keyConflictMsg: "⚠️ That key is already in use elsewhere",
+                battlefieldHeader: "BATTLEFIELD",
+                battlefieldDesc: "Large Map - 35 Players (Battle Royale)",
+                singlePlayerBtn: "FIND MATCH",
+                mmHeader: "FINDING MATCH",
+                cancelBtn: "CANCEL",
+                skillsTitleHeader: "TACTICAL SKILLS",
+                skillsSubtitle: "Select 1 skill to equip in Battlefield:",
+                skillShield: "Shield",
+                skillShieldDesc: "Invulnerable 5s (No shooting)",
+                skillHeal: "Healing",
+                skillHealDesc: "+4 HP/s for 5s",
+                skillGhost: "Ghost Phase",
+                skillGhostDesc: "Walls+Invis 5s (No shooting)",
+                skillRadar: "Radar",
+                skillRadarDesc: "Detect enemies 5s (Can shoot)",
+                skillEquippedMsg: "✓ Skill equipped successfully",
+                skinsTitleHeader: "SELECT SKIN",
+                skinsSubtitle: "Choose your uniform color:",
+                skinClassic: "Classic",
+                skinRainbow: "Tactical Rainbow",
+                skinCyan: "Neon Cyan",
+                skinFuchsia: "Fuchsia",
+                skinGreen: "Neon Green",
+                skinCamo: "Urban Camo",
+                ranksTitleHeader: "MILITARY HIERARCHY",
+                ranksSubtitle: "Scale and required points",
+                rankTableHeader: "Rank",
+                pointsTableHeader: "Req. Points",
+                rankingTitleHeader: "GLOBAL RANKING",
+                rankingSubtitle: "Top 100 Best Soldiers (LATAM Server)",
+                soldierTableHeader: "Soldier",
+                pointsHeader: "Points",
+                serverConnecting: "Loading LATAM Hall of Fame...",
+                hudAlive: "ALIVE",
+                hudKills: "KILLS",
+                statPlacement: "Placement:",
+                statSoldier: "Soldier:",
+                statKills: "Kills:",
+                statDamage: "Total Damage:",
+                statPoints: "Rank Points:",
+                statExp: "Account EXP:",
+                statLevel: "Current Level:",
+                returnToLobbyBtn: "RETURN TO COMMAND ROOM",
+                trainingModeText: "0 PTS (Training)",
+                rankNames: [
+                    "1. Recruit", "2. Regular", "3. Professional", 
+                    "4. Professional Lance Corporal", "5. Corporal Third Class", "6. Corporal Second Class", 
+                    "7. Corporal First Class", "8. Sergeant Second Class", "9. Staff Sergeant", 
+                    "10. First Sergeant", "11. Sergeant Major"
+                ]
+            },
+            "中国人": {
+                loginBtn: "继续",
+                nicknamePlaceholder: "输入您的昵称",
+                lobbyTitle: "指挥室",
+                soldierLabel: "士兵",
+                rankLabel: "军衔",
+                levelLabel: "等级",
+                expProgressText: "等级进度",
+                trainingBtn: "训练模式",
+                battlefieldBtn: "战场",
+                skillsBtn: "技能",
+                skinsBtn: "定制皮肤",
+                ranksBtn: "军衔等级",
+                rankingBtn: "全球排名",
+                configTitle: "设置",
+                configSubtitle: "系统调整",
+                langMenuBtn: "语言",
+                controlsMenuBtn: "控制",
+                fpsBtnText: "帧率 (FPS)",
+                fpsActivated: "已启用",
+                fpsDeactivated: "已禁用",
+                backBtn: "返回",
+                selectLangTitle: "选择语言",
+                selectLangSubtitle: "选择您首选的语言：",
+                langChanged: "✓ 语言已更改为：",
+                controlsTitle: "配置控制",
+                controlsSubtitle: "[主键] / [副键] - 点击 [X] 清除",
+                ctrlUp: "向上:",
+                ctrlLeft: "向左:",
+                ctrlDown: "向下:",
+                ctrlRight: "向右:",
+                ctrlSkill: "技能:",
+                pressKeyMsg: "请按下按键或点击...",
+                keyAssignedMsg: "✓ 按键分配成功",
+                keyConflictMsg: "⚠️ 该按键已被其他操作占用",
+                battlefieldHeader: "战场",
+                battlefieldDesc: "大地图 - 35名玩家 (大逃杀)",
+                singlePlayerBtn: "寻找比赛",
+                mmHeader: "正在匹配",
+                cancelBtn: "取消",
+                skillsTitleHeader: "战术技能",
+                skillsSubtitle: "选择1个技能在战场上装备：",
+                skillShield: "护盾",
+                skillShieldDesc: "无敌5秒 (无法射击)",
+                skillHeal: "治疗",
+                skillHealDesc: "每秒+4生命值持续5秒",
+                skillGhost: "幽灵阶段",
+                skillGhostDesc: "穿墙+隐身5秒 (无法射击)",
+                skillRadar: "雷达",
+                skillRadarDesc: "检测敌人5秒 (可射击)",
+                skillEquippedMsg: "✓ 技能装备成功",
+                skinsTitleHeader: "选择皮肤",
+                skinsSubtitle: "选择您的制服颜色：",
+                skinClassic: "经典",
+                skinRainbow: "战术彩虹",
+                skinCyan: "霓虹青",
+                skinFuchsia: "紫红",
+                skinGreen: "霓虹绿",
+                skinCamo: "城市迷彩",
+                ranksTitleHeader: "军事阶层",
+                ranksSubtitle: "等级与所需积分",
+                rankTableHeader: "军衔",
+                pointsTableHeader: "所需积分",
+                rankingTitleHeader: "全球排名",
+                rankingSubtitle: "拉美服务器前100名最佳士兵",
+                soldierTableHeader: "士兵",
+                pointsHeader: "积分",
+                serverConnecting: "正在加载拉美名人堂...",
+                hudAlive: "存活",
+                hudKills: "击杀",
+                statPlacement: "名次：",
+                statSoldier: "士兵：",
+                statKills: "击杀数：",
+                statDamage: "总伤害：",
+                statPoints: "军衔积分：",
+                statExp: "账号经验：",
+                statLevel: "当前等级：",
+                returnToLobbyBtn: "返回指挥室",
+                trainingModeText: "0 积分 (训练)",
+                rankNames: [
+                    "1. 新兵", "2. 正规兵", "3. 专业兵", 
+                    "4. 专业下士", "5. 三等下士", "6. 二等下士", 
+                    "7. 一等下士", "8. 二等中士", "9. 副排长", 
+                    "10. 一等中士", "11. 军士长"
+                ]
+            },
+            "BRASIL": {
+                loginBtn: "CONTINUAR",
+                nicknamePlaceholder: "Digite seu Apelido",
+                lobbyTitle: "SALA DE COMANDO",
+                soldierLabel: "Soldado",
+                rankLabel: "PATENTE",
+                levelLabel: "NÍVEL",
+                expProgressText: "PROGRESSO DE NÍVEL",
+                trainingBtn: "MODO TREINAMENTO",
+                battlefieldBtn: "CAMPO DE BATALHA",
+                skillsBtn: "HABILIDADES",
+                skinsBtn: "PERSONALIZAR SKIN",
+                ranksBtn: "PATENTES MILITARES",
+                rankingBtn: "RANKING GLOBAL",
+                configTitle: "CONFIGURAÇÕES",
+                configSubtitle: "Ajustes do sistema",
+                langMenuBtn: "IDIOMA",
+                controlsMenuBtn: "CONTROLES",
+                fpsBtnText: "FPS",
+                fpsActivated: "ATIVADO",
+                fpsDeactivated: "DESATIVADO",
+                backBtn: "VOLTAR",
+                selectLangTitle: "SELECIONAR IDIOMA",
+                selectLangSubtitle: "Escolha seu idioma preferido:",
+                langChanged: "✓ Idioma alterado para:",
+                controlsTitle: "CONFIGURAR CONTROLES",
+                controlsSubtitle: "[Primária] / [Secundária] - Clique em [X] para limpar",
+                ctrlUp: "Cima:",
+                ctrlLeft: "Esquerda:",
+                ctrlDown: "Baixo:",
+                ctrlRight: "Direita:",
+                ctrlSkill: "Habilidade:",
+                pressKeyMsg: "Pressione uma tecla ou clique...",
+                keyAssignedMsg: "✓ Tecla atribuída com sucesso",
+                keyConflictMsg: "⚠️ Essa tecla já está em uso em outra ação",
+                battlefieldHeader: "CAMPO DE BATALHA",
+                battlefieldDesc: "Mapa Grande - 35 Jogadores (Battle Royale)",
+                singlePlayerBtn: "PROCURAR PARTIDA",
+                mmHeader: "PROCURANDO PARTIDA",
+                cancelBtn: "CANCELAR",
+                skillsTitleHeader: "HABILIDADES TÁTICAS",
+                skillsSubtitle: "Selecione 1 habilidade para equipar no Campo de Batalha:",
+                skillShield: "Escudo",
+                skillShieldDesc: "Invulnerável 5s (Não dispara)",
+                skillHeal: "Cura",
+                skillHealDesc: "+4 HP/s por 5s",
+                skillGhost: "Fase Fantasma",
+                skillGhostDesc: "Paredes+Invis 5s (Não dispara)",
+                skillRadar: "Radar",
+                skillRadarDesc: "Detecta inimigos 5s (Dispara normalmente)",
+                skillEquippedMsg: "✓ Habilidade equipada com sucesso",
+                skinsTitleHeader: "SELECIONAR SKIN",
+                skinsSubtitle: "Escolha a cor para o seu uniforme:",
+                skinClassic: "Clássico",
+                skinRainbow: "Arco-íris Tático",
+                skinCyan: "Ciano Neon",
+                skinFuchsia: "Fúcsia",
+                skinGreen: "Verde Neon",
+                skinCamo: "Camu. Urbano",
+                ranksTitleHeader: "HIERARQUIA MILITAR",
+                ranksSubtitle: "Escala e pontos necessários",
+                rankTableHeader: "Patente",
+                pointsTableHeader: "Pontos Req.",
+                rankingTitleHeader: "RANKING GLOBAL",
+                rankingSubtitle: "Top 100 Melhores Soldados (Servidor LATAM)",
+                soldierTableHeader: "Soldado",
+                pointsHeader: "Pontos",
+                serverConnecting: "Carregando Hall da Fama LATAM...",
+                hudAlive: "VIVOS",
+                hudKills: "ABATES (KILLS)",
+                statPlacement: "Posición:",
+                statSoldier: "Soldado:",
+                statKills: "Abates (Kills):",
+                statDamage: "Dano Total:",
+                statPoints: "Pontos de Patente:",
+                statExp: "EXP da Conta:",
+                statLevel: "Nível Atual:",
+                returnToLobbyBtn: "RETORNAR À SALA DE COMANDO",
+                trainingModeText: "0 PTS (Treinamento)",
+                rankNames: [
+                    "1. Recruta", "2. Regular", "3. Profissional", 
+                    "4. Taifeiro / Dragoneante", "5. Cabo Terceiro", "6. Cabo Segundo", 
+                    "7. Cabo Primeiro", "8. Sargento Segundo", "9. Primeiro-Sargento", 
+                    "10. Subtenente", "11. Sargento Maior"
+                ]
+            }
+        };
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const minimapCanvas = document.getElementById('minimap-canvas');
+        const mCtx = minimapCanvas.getContext('2d');
+
+        const camoImg = new Image();
+        camoImg.crossOrigin = "anonymous";
+        camoImg.src = "https://media.istockphoto.com/id/1330860875/es/vector/camuflaje-militar-gris-pálido-patrón-sin-costuras-vector.jpg?s=170667a&w=0&k=20&c=yBQbtVe9vqfY8lau-mHKvBVdOkuK8iSvmEjxDX50lzs=";
+        
+        let camoPatternLoaded = false;
+        let camoPatternObj = null;
+
+        camoImg.onload = function() {
+            camoPatternObj = ctx.createPattern(camoImg, 'repeat');
+            camoPatternLoaded = true;
+            const previewEl = document.getElementById('camo-card-preview');
+            if(previewEl) previewEl.style.backgroundImage = `url(${camoImg.src})`;
+        };
+
+        let gameStarted = false;
+        let gameOver = false;
+        let currentMode = 'training';
+        let keys = {};
+        
+        let savedControls;
+        try {
+            savedControls = {
+                up: JSON.parse(localStorage.getItem('ff_ctrl_up')),
+                left: JSON.parse(localStorage.getItem('ff_ctrl_left')),
+                down: JSON.parse(localStorage.getItem('ff_ctrl_down')),
+                right: JSON.parse(localStorage.getItem('ff_ctrl_right')),
+                skill: JSON.parse(localStorage.getItem('ff_ctrl_skill'))
+            };
+        } catch(e) {
+            savedControls = null;
+        }
+
+        let profile = {
+            name: localStorage.getItem('ff_name') || "ALEXIS",
+            level: parseInt(localStorage.getItem('ff_level')) || 6,
+            exp: parseInt(localStorage.getItem('ff_exp')) || 0,
+            points: parseInt(localStorage.getItem('ff_points')) || 1688,
+            color: localStorage.getItem('ff_color') || "#ffffff",
+            selectedSkill: localStorage.getItem('ff_skill') || "shield",
+            language: localStorage.getItem('ff_lang') || "ESPAÑOL",
+            showFps: localStorage.getItem('ff_showfps') !== 'false',
+            controls: (savedControls && savedControls.up && savedControls.left && savedControls.down && savedControls.right && savedControls.skill) ? savedControls : {
+                up: ['w', ''],
+                left: ['a', ''],
+                down: ['s', ''],
+                right: ['d', ''],
+                skill: [' ', 'mouse2']
+            }
+        };
+
+        let activeRebind = { action: null, index: null };
+
+        let skillState = {
+            active: false,
+            activeTimer: 0,
+            cooldownTimer: 0,
+            maxCooldown: 20000,
+            lastUsedTime: -20000
+        };
+
+        function getRequiredExp(lvl) {
+            if (lvl >= 100) return 999999;
+            return Math.floor(100 + lvl * 60);
+        }
+
+        let matchStats = { kills: 0, damage: 0, expEarned: 0, rankPointsEarned: 0, finalPlacement: 1 };
+
+        const ranksData = [
+            { minPoints: 0 }, { minPoints: 300 }, { minPoints: 800 }, 
+            { minPoints: 1400 }, { minPoints: 2200 }, { minPoints: 3100 }, 
+            { minPoints: 4200 }, { minPoints: 5500 }, { minPoints: 6900 }, 
+            { minPoints: 8400 }, { minPoints: 10000 }
+        ];
+
+        function getRankName(pts) {
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            let rankIdx = 0;
+            for (let i = 0; i < ranksData.length; i++) {
+                if (pts >= ranksData[i].minPoints) {
+                    rankIdx = i;
+                } else {
+                    break;
+                }
+            }
+            return dict.rankNames[rankIdx];
+        }
+
+        function getKeyDisplayLabel(k) {
+            if (!k || k === '') return '-';
+            if (k === ' ') return 'ESPACIO';
+            if (k === 'mouse2') return 'CLICK DER';
+            return k.toUpperCase();
+        }
+
+        function updateControlsUI() {
+            document.getElementById('bind-up-0').innerText = getKeyDisplayLabel(profile.controls.up[0]);
+            document.getElementById('bind-up-1').innerText = getKeyDisplayLabel(profile.controls.up[1]);
+            document.getElementById('bind-left-0').innerText = getKeyDisplayLabel(profile.controls.left[0]);
+            document.getElementById('bind-left-1').innerText = getKeyDisplayLabel(profile.controls.left[1]);
+            document.getElementById('bind-down-0').innerText = getKeyDisplayLabel(profile.controls.down[0]);
+            document.getElementById('bind-down-1').innerText = getKeyDisplayLabel(profile.controls.down[1]);
+            document.getElementById('bind-right-0').innerText = getKeyDisplayLabel(profile.controls.right[0]);
+            document.getElementById('bind-right-1').innerText = getKeyDisplayLabel(profile.controls.right[1]);
+            document.getElementById('bind-skill-0').innerText = getKeyDisplayLabel(profile.controls.skill[0]);
+            document.getElementById('bind-skill-1').innerText = getKeyDisplayLabel(profile.controls.skill[1]);
+            
+            const skillKeyLabel = document.getElementById('skill-key-label');
+            if(skillKeyLabel) {
+                let s1 = getKeyDisplayLabel(profile.controls.skill[0]);
+                let s2 = getKeyDisplayLabel(profile.controls.skill[1]);
+                skillKeyLabel.innerText = s2 !== '-' ? `[${s1}/${s2}]` : `[${s1}]`;
+            }
+        }
+
+        function applyTranslations() {
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (dict[key]) {
+                    el.innerHTML = dict[key];
+                }
+            });
+            if (usernameInput) usernameInput.placeholder = dict.nicknamePlaceholder;
+
+            const ranksTableBody = document.getElementById('ranks-table-body');
+            if (ranksTableBody) {
+                ranksTableBody.innerHTML = '';
+                for (let i = 0; i < ranksData.length; i++) {
+                    let tr = document.createElement('tr');
+                    let tdName = document.createElement('td');
+                    let tdPts = document.createElement('td');
+                    
+                    tdName.innerText = dict.rankNames[i];
+                    tdPts.innerText = ranksData[i].minPoints.toLocaleString() + " PTS";
+                    if (i === ranksData.length - 1) {
+                        tdName.style.color = "#ff3333";
+                        tdPts.style.color = "#ff3333";
+                    }
+                    tr.appendChild(tdName);
+                    tr.appendChild(tdPts);
+                    ranksTableBody.appendChild(tr);
+                }
+            }
+            updateControlsUI();
+        }
+        
+        const loginScreen = document.getElementById('login-screen');
+        const lobbyScreen = document.getElementById('lobby-screen');
+        const matchmakingScreen = document.getElementById('matchmaking-screen');
+        const mmStatusText = document.getElementById('mm-status-text');
+        const mmTimer = document.getElementById('mm-timer');
+        const cancelMmBtn = document.getElementById('cancel-mm-btn');
+
+        const configScreen = document.getElementById('config-screen');
+        const controlsScreen = document.getElementById('controls-screen');
+        const languageScreen = document.getElementById('language-screen');
+        const battlefieldScreen = document.getElementById('battlefield-screen');
+        const skillsScreen = document.getElementById('skills-screen');
+        const skinsScreen = document.getElementById('skins-screen');
+        const ranksScreen = document.getElementById('ranks-screen');
+        const rankingScreen = document.getElementById('ranking-screen');
+        const statsScreen = document.getElementById('stats-screen');
+        const uiTopLeft = document.getElementById('ui-top-left');
+        const hudTopRight = document.getElementById('hud-top-right');
+        const hudAlive = document.getElementById('hud-alive');
+        const hudKills = document.getElementById('hud-kills');
+        const killFeedContainer = document.getElementById('kill-feed');
+        const fpsCounterBox = document.getElementById('fps-counter-box');
+        const fpsVal = document.getElementById('fps-val');
+        const fpsStatusLabel = document.getElementById('fps-status-label');
+        const skillHud = document.getElementById('skill-hud');
+        const skillHudSymbol = document.getElementById('skill-hud-symbol');
+        const skillCooldownOverlay = document.getElementById('skill-cooldown-overlay');
+        const skillMsg = document.getElementById('skill-msg');
+        const langSelectedMsg = document.getElementById('lang-selected-msg');
+        const rebindMsg = document.getElementById('rebind-msg');
+
+        const usernameInput = document.getElementById('username-input');
+        const loginBtn = document.getElementById('login-btn');
+        const lobbyName = document.getElementById('lobby-name');
+        const lobbyLevel = document.getElementById('lobby-level');
+        const expBarFill = document.getElementById('exp-bar-fill');
+        const lobbyRank = document.getElementById('lobby-rank');
+        const lobbyPoints = document.getElementById('lobby-points');
+        const skinLockMsg = document.getElementById('skin-lock-msg');
+        
+        const toTrainingBtn = document.getElementById('to-training-btn');
+        const toBattlefieldBtn = document.getElementById('to-battlefield-btn');
+        const toBattleGameBtn = document.getElementById('to-battle-game-btn');
+        const toSkillsBtn = document.getElementById('to-skills-btn');
+        const toSkinsBtn = document.getElementById('to-skins-btn');
+        const toRanksBtn = document.getElementById('to-ranks-btn');
+        const toRankingBtn = document.getElementById('to-ranking-btn');
+        const toLanguageBtn = document.getElementById('to-language-btn');
+        const toControlsBtn = document.getElementById('to-controls-btn');
+        const toggleFpsBtn = document.getElementById('toggle-fps-btn');
+
+        const backFromConfig = document.getElementById('back-from-config');
+        const backFromControls = document.getElementById('back-from-controls');
+        const backFromLanguage = document.getElementById('back-from-language');
+        const backFromBattlefield = document.getElementById('back-from-battlefield');
+        const backFromSkills = document.getElementById('back-from-skills');
+        const backFromSkins = document.getElementById('back-from-skins');
+        const backFromRanks = document.getElementById('back-from-ranks');
+        const backFromRanking = document.getElementById('back-from-ranking');
+
+        const hpBar = document.getElementById('hp-bar');
+        
+        const statsTitle = document.getElementById('stats-title');
+        const statPos = document.getElementById('stat-pos');
+        const statName = document.getElementById('stat-name');
+        const statKills = document.getElementById('stat-kills');
+        const statDamage = document.getElementById('stat-damage');
+        const statPoints = document.getElementById('stat-points');
+        const statExp = document.getElementById('stat-exp');
+        const statLevel = document.getElementById('stat-level');
+        const backToLobbyBtn = document.getElementById('back-to-lobby-btn');
+
+        const botNames = ["Alpha", "Viper", "Shadow", "Ghost", "SniperX", "Crusher", "Killer99", "Storm", "Zero", "Phoenix", "Blaze", "Titan", "Rogue", "Hunter", "Apex", "Falcon", "Wolf", "Cobra", "Titanium", "Spectre", "Venom", "Reaper", "Matrix", "Blade", "Cyclone", "Striker", "Demon", "Slayer", "Havoc", "Omega", "Ragnarok", "Chaos", "Titanium", "Frost"];
+
+        const player = {
+            x: 0, y: 0, radius: 15, color: profile.color, speed: 4, hp: 100, angle: 0, shootCooldown: 0
+        };
+
+        const bullets = [];
+        const enemies = [];
+        const obstacles = [];
+        
+        let mapWidth = window.innerWidth;
+        let mapHeight = window.innerHeight;
+        let totalEnemies = 34;
+
+        let safeZone = { x: 0, y: 0, radius: 0, maxRadius: 0, targetRadius: 0, timer: 0 };
+
+        let lastTime = performance.now();
+        let frameCount = 0;
+        let fpsTimer = 0;
+        let matchmakingInterval = null;
+
+        function masterGameLoop(now) {
+            let delta = now - lastTime;
+            lastTime = now;
+            frameCount++;
+            fpsTimer += delta;
+
+            if (fpsTimer >= 400) {
+                let currentFps = Math.round((frameCount * 1000) / fpsTimer);
+                fpsVal.innerText = currentFps;
+                frameCount = 0;
+                fpsTimer = 0;
+            }
+
+            if (gameStarted && !gameOver) {
+                update(delta);
+            }
+            draw();
+
+            requestAnimationFrame(masterGameLoop);
+        }
+
+        if (localStorage.getItem('ff_name')) {
+            usernameInput.value = profile.name;
+        }
+
+        applyTranslations();
+
+        function saveProfile() {
+            localStorage.setItem('ff_name', profile.name);
+            localStorage.setItem('ff_level', profile.level);
+            localStorage.setItem('ff_exp', profile.exp);
+            localStorage.setItem('ff_points', profile.points);
+            localStorage.setItem('ff_color', profile.color);
+            localStorage.setItem('ff_skill', profile.selectedSkill);
+            localStorage.setItem('ff_lang', profile.language);
+            localStorage.setItem('ff_showfps', profile.showFps);
+            localStorage.setItem('ff_ctrl_up', JSON.stringify(profile.controls.up));
+            localStorage.setItem('ff_ctrl_left', JSON.stringify(profile.controls.left));
+            localStorage.setItem('ff_ctrl_down', JSON.stringify(profile.controls.down));
+            localStorage.setItem('ff_ctrl_right', JSON.stringify(profile.controls.right));
+            localStorage.setItem('ff_ctrl_skill', JSON.stringify(profile.controls.skill));
+        }
+
+        function updateLobbyUI() {
+            lobbyName.innerText = profile.name;
+            lobbyLevel.innerText = profile.level;
+            lobbyPoints.innerText = profile.points;
+            lobbyRank.innerText = getRankName(profile.points);
+
+            let maxExp = getRequiredExp(profile.level);
+            let percentage = Math.min(100, (profile.exp / maxExp) * 100);
+            expBarFill.style.width = percentage + '%';
+
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            fpsStatusLabel.innerText = profile.showFps ? dict.fpsActivated : dict.fpsDeactivated;
+            fpsCounterBox.style.display = profile.showFps ? 'block' : 'none';
+        }
+
+        function updateSkillSelectionUI() {
+            const cards = document.querySelectorAll('.skill-card');
+            cards.forEach(card => {
+                if (card.getAttribute('data-skill') === profile.selectedSkill) {
+                    card.classList.add('selected');
+                } else {
+                    card.classList.remove('selected');
+                }
+            });
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            skillMsg.innerText = dict.skillEquippedMsg;
+        }
+
+        function selectSkill(skillKey, cardElement) {
+            profile.selectedSkill = skillKey;
+            saveProfile();
+            updateSkillSelectionUI();
+        }
+
+        function updateSkinSelectionUI() {
+            skinLockMsg.innerText = "";
+            const cards = document.querySelectorAll('.skin-option-card:not(.skill-card)');
+            cards.forEach(card => {
+                let requiredLevel = parseInt(card.getAttribute('data-level')) || 1;
+                let lockBadge = card.querySelector('.lock-badge');
+
+                if (profile.level < requiredLevel) {
+                    card.classList.add('locked');
+                    if(lockBadge) lockBadge.style.display = 'flex';
+                } else {
+                    card.classList.remove('locked');
+                    if(lockBadge) lockBadge.style.display = 'none';
+                }
+
+                if (card.getAttribute('data-color') === profile.color) {
+                    card.classList.add('selected');
+                } else {
+                    card.classList.remove('selected');
+                }
+            });
+        }
+
+        function addKillFeedMessage(killer, victim, isPlayerInvolved) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'kill-msg' + (isPlayerInvolved ? ' player-kill' : '');
+            msgDiv.innerText = `${killer} ➔ ${victim}`;
+            killFeedContainer.appendChild(msgDiv);
+
+            if (killFeedContainer.children.length > 4) {
+                killFeedContainer.removeChild(killFeedContainer.firstChild);
+            }
+
+            setTimeout(() => {
+                if (msgDiv.parentNode) {
+                    msgDiv.parentNode.removeChild(msgDiv);
+                }
+            }, 4000);
+        }
+
+        function updateHUDCounters() {
+            let totalAlive = enemies.length + 1 + Object.keys(remotePlayers).length;
+            hudAlive.innerText = totalAlive;
+            hudKills.innerText = matchStats.kills;
+        }
+
+        loginBtn.addEventListener('click', () => {
+            let typedName = usernameInput.value.trim();
+            if(typedName !== "") {
+                profile.name = typedName;
+                saveProfile();
+            }
+            updateLobbyUI();
+            
+            // Enviar perfil completo y puntos reales al servidor central para registrarse en el ranking global
+            socket.emit('player-join', { name: profile.name, color: profile.color, points: profile.points });
+
+            loginScreen.style.display = 'none';
+            lobbyScreen.style.display = 'flex';
+        });
+
+        function openConfigMenu() {
+            lobbyScreen.style.display = 'none';
+            configScreen.style.display = 'flex';
+        }
+
+        backFromConfig.addEventListener('click', () => {
+            configScreen.style.display = 'none';
+            lobbyScreen.style.display = 'flex';
+        });
+
+        toLanguageBtn.addEventListener('click', () => {
+            configScreen.style.display = 'none';
+            languageScreen.style.display = 'flex';
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            langSelectedMsg.innerText = `${dict.langChanged} ${profile.language}`;
+        });
+
+        backFromLanguage.addEventListener('click', () => {
+            languageScreen.style.display = 'none';
+            configScreen.style.display = 'flex';
+        });
+
+        toControlsBtn.addEventListener('click', () => {
+            configScreen.style.display = 'none';
+            controlsScreen.style.display = 'flex';
+            rebindMsg.innerText = "";
+            activeRebind = { action: null, index: null };
+            updateControlsUI();
+        });
+
+        backFromControls.addEventListener('click', () => {
+            controlsScreen.style.display = 'none';
+            configScreen.style.display = 'flex';
+        });
+
+        function startRebind(actionKey, slotIndex) {
+            activeRebind = { action: actionKey, index: slotIndex };
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            rebindMsg.innerText = dict.pressKeyMsg;
+            
+            document.querySelectorAll('.key-bind-btn').forEach(b => b.classList.remove('waiting'));
+            document.getElementById(`bind-${actionKey}-${slotIndex}`).classList.add('waiting');
+        }
+
+        function clearBind(actionKey, slotIndex) {
+            profile.controls[actionKey][slotIndex] = '';
+            saveProfile();
+            updateControlsUI();
+            if (activeRebind.action === actionKey && activeRebind.index === slotIndex) {
+                activeRebind = { action: null, index: null };
+                document.querySelectorAll('.key-bind-btn').forEach(b => b.classList.remove('waiting'));
+            }
+            rebindMsg.innerText = "✓ Casilla borrada";
+        }
+
+        function setLanguage(lang) {
+            profile.language = lang;
+            saveProfile();
+            applyTranslations();
+            updateLobbyUI();
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            langSelectedMsg.innerText = `${dict.langChanged} ${lang}`;
+        }
+
+        toggleFpsBtn.addEventListener('click', () => {
+            profile.showFps = !profile.showFps;
+            saveProfile();
+            updateLobbyUI();
+        });
+
+        toTrainingBtn.addEventListener('click', () => {
+            currentMode = 'training';
+            mapWidth = window.innerWidth;
+            mapHeight = window.innerHeight;
+            totalEnemies = 9;
+            player.x = mapWidth / 2;
+            player.y = mapHeight / 2;
+            player.hp = 100;
+            player.shootCooldown = 0;
+
+            generateObstacles();
+            lobbyScreen.style.display = 'none';
+            uiTopLeft.style.display = 'flex';
+            hudTopRight.style.display = 'flex';
+            skillHud.style.display = 'none';
+            killFeedContainer.innerHTML = '';
+            gameStarted = true;
+            matchStats.kills = 0;
+            matchStats.damage = 0;
+            spawnEnemies();
+            updateHUDCounters();
+        });
+
+        toBattlefieldBtn.addEventListener('click', () => {
+            lobbyScreen.style.display = 'none';
+            battlefieldScreen.style.display = 'flex';
+        });
+
+        backFromBattlefield.addEventListener('click', () => {
+            battlefieldScreen.style.display = 'none';
+            lobbyScreen.style.display = 'flex';
+        });
+
+        // --- SISTEMA DE EMPAREJAMIENTO GLOBAL (MATCHMAKING) ---
+        toBattleGameBtn.addEventListener('click', () => {
+            battlefieldScreen.style.display = 'none';
+            matchmakingScreen.style.display = 'flex';
+            
+            let timeLeft = 30; // 30 segundos de tiempo de espera máximo
+            mmTimer.innerText = timeLeft + "s";
+            
+            socket.emit('join-matchmaking', { name: profile.name, points: profile.points, color: profile.color });
+
+            if (matchmakingInterval) clearInterval(matchmakingInterval);
+            matchmakingInterval = setInterval(() => {
+                timeLeft--;
+                mmTimer.innerText = timeLeft + "s";
+                if (timeLeft <= 0) {
+                    clearInterval(matchmakingInterval);
+                }
+            }, 1000);
+        });
+
+        cancelMmBtn.addEventListener('click', () => {
+            if (matchmakingInterval) clearInterval(matchmakingInterval);
+            socket.emit('cancel-matchmaking');
+            matchmakingScreen.style.display = 'none';
+            battlefieldScreen.style.display = 'flex';
+        });
+
+        function startBattlefieldMatch(matchData) {
+            if (matchmakingInterval) clearInterval(matchmakingInterval);
+            matchmakingScreen.style.display = 'none';
+
+            currentMode = 'battlefield';
+            mapWidth = matchData.mapW || window.innerWidth * 4;
+            mapHeight = matchData.mapH || window.innerHeight * 4;
+            totalEnemies = matchData.assignedBotsCount; 
+
+            player.x = (matchData.you && matchData.you.x) || mapWidth / 2;
+            player.y = (matchData.you && matchData.you.y) || mapHeight / 2;
+            player.hp = 100;
+            player.shootCooldown = 0;
+
+            remotePlayers = {};
+            if (matchData.players && matchData.players.length) {
+                matchData.players.forEach(p => {
+                    if (p.id !== socket.id) {
+                        remotePlayers[p.id] = { id: p.id, name: p.name, color: p.color, x: p.x, y: p.y, angle: 0, hp: 100, radius: 15 };
+                    }
+                });
+            }
+
+            safeZone.x = mapWidth / 2;
+            safeZone.y = mapHeight / 2;
+            safeZone.maxRadius = Math.hypot(mapWidth, mapHeight) * 1.2;
+            safeZone.radius = safeZone.maxRadius;
+            safeZone.targetRadius = Math.min(mapWidth, mapHeight) * 0.20;
+            safeZone.timer = 0;
+
+            skillState.active = false;
+            skillState.activeTimer = 0;
+            skillState.cooldownTimer = 0;
+            skillState.lastUsedTime = -20000;
+
+            if (profile.selectedSkill === 'shield') skillHudSymbol.innerText = '🛡️';
+            else if (profile.selectedSkill === 'heal') skillHudSymbol.innerText = '💉';
+            else if (profile.selectedSkill === 'ghost') skillHudSymbol.innerText = '👻';
+            else if (profile.selectedSkill === 'radar') skillHudSymbol.innerText = '📡';
+
+            generateObstacles();
+            uiTopLeft.style.display = 'flex';
+            hudTopRight.style.display = 'flex';
+            skillHud.style.display = 'flex';
+            killFeedContainer.innerHTML = '';
+            gameStarted = true;
+            matchStats.kills = 0;
+            matchStats.damage = 0;
+            spawnEnemies();
+            updateHUDCounters();
+        }
+
+        toSkillsBtn.addEventListener('click', () => {
+            updateSkillSelectionUI();
+            lobbyScreen.style.display = 'none';
+            skillsScreen.style.display = 'flex';
+        });
+
+        backFromSkills.addEventListener('click', () => {
+            skillsScreen.style.display = 'none';
+            lobbyScreen.style.display = 'flex';
+        });
+
+        toSkinsBtn.addEventListener('click', () => {
+            updateSkinSelectionUI();
+            lobbyScreen.style.display = 'none';
+            skinsScreen.style.display = 'flex';
+        });
+
+        backFromSkins.addEventListener('click', () => {
+            skinsScreen.style.display = 'none';
+            lobbyScreen.style.display = 'flex';
+        });
+
+        toRanksBtn.addEventListener('click', () => {
+            lobbyScreen.style.display = 'none';
+            ranksScreen.style.display = 'flex';
+        });
+
+        backFromRanks.addEventListener('click', () => {
+            ranksScreen.style.display = 'none';
+            lobbyScreen.style.display = 'flex';
+        });
+
+        toRankingBtn.addEventListener('click', () => {
+            lobbyScreen.style.display = 'none';
+            rankingScreen.style.display = 'flex';
+            // Solicitar el Top 100 global del servidor LATAM
+            socket.emit('get-top100');
+        });
+
+        backFromRanking.addEventListener('click', () => {
+            rankingScreen.style.display = 'none';
+            lobbyScreen.style.display = 'flex';
+        });
+
+        function selectSkinColor(colorHex, isLocked, cardElement) {
+            let requiredLevel = isLocked ? 5 : 1;
+            if (profile.level < requiredLevel) {
+                skinLockMsg.innerText = `⚠️ Requiere Nivel ${requiredLevel} para desbloquear esta skin.`;
+                return;
+            }
+            skinLockMsg.innerText = "";
+            profile.color = colorHex;
+            player.color = colorHex;
+            saveProfile();
+            updateSkinSelectionUI();
+        }
+
+        backToLobbyBtn.addEventListener('click', () => {
+            statsScreen.style.display = 'none';
+            updateLobbyUI();
+            lobbyScreen.style.display = 'flex';
+        });
+
+        function generateObstacles() {
+            obstacles.length = 0;
+            let count = currentMode === 'training' ? 5 : 32;
+            let minDistanceBetweenObs = 200;
+
+            for (let i = 0; i < count; i++) {
+                let attempts = 0;
+                let placed = false;
+                let w = Math.random() * 80 + 70;
+                let h = Math.random() * 80 + 70;
+                let ox, oy;
+
+                while (!placed && attempts < 100) {
+                    attempts++;
+                    ox = Math.random() * (mapWidth - 300) + 150;
+                    oy = Math.random() * (mapHeight - 300) + 150;
+
+                    if (Math.hypot(ox - player.x, oy - player.y) < 250) continue;
+
+                    let tooClose = false;
+                    for (let obs of obstacles) {
+                        let dist = Math.hypot((ox + w/2) - (obs.x + obs.width/2), (oy + h/2) - (obs.y + obs.height/2));
+                        if (dist < minDistanceBetweenObs) {
+                            tooClose = true;
+                            break;
+                        }
+                    }
+
+                    if (!tooClose) {
+                        obstacles.push({ x: ox, y: oy, width: w, height: h });
+                        placed = true;
+                    }
+                }
+            }
+        }
+
+        function checkRectCollision(x, y, radius, rect) {
+            let closestX = Math.max(rect.x, Math.min(x, rect.x + rect.width));
+            let closestY = Math.max(rect.y, Math.min(y, rect.y + rect.height));
+            let dist = Math.hypot(x - closestX, y - closestY);
+            return dist < radius;
+        }
+
+        function spawnEnemies() {
+            enemies.length = 0;
+            let shuffledNames = [...botNames].sort(() => Math.random() - 0.5);
+
+            for (let i = 0; i < totalEnemies; i++) {
+                let ex, ey;
+                let validSpawn = false;
+                let attempts = 0;
+
+                while (!validSpawn && attempts < 100) {
+                    attempts++;
+                    ex = Math.random() * (mapWidth - 150) + 75;
+                    ey = Math.random() * (mapHeight - 150) + 75;
+
+                    if (Math.hypot(ex - player.x, ey - player.y) >= 300) {
+                        let insideObstacle = false;
+                        for (let obs of obstacles) {
+                            if (checkRectCollision(ex, ey, 15, obs)) {
+                                insideObstacle = true;
+                                break;
+                            }
+                        }
+                        if (!insideObstacle) validSpawn = true;
+                    }
+                }
+
+                let botHp = (currentMode === 'battlefield') ? 100 : 200;
+
+                enemies.push({
+                    x: ex, y: ey, radius: 15, color: '#ff3333',
+                    speed: 1.4 + Math.random() * 0.6, hp: botHp, maxHp: botHp,
+                    name: shuffledNames[i] || `Bot_${i}`, shootTimer: Math.random() * 40,
+                    flankSide: i % 2 === 0 ? 1 : -1, tacticalTimer: Math.random() * 100, unstickTimer: 0
+                });
+            }
+            updateHUDCounters();
+        }
+
+        function triggerSkillAction() {
+            if (gameStarted && currentMode === 'battlefield' && !gameOver) {
+                let now = performance.now();
+                if (now - skillState.lastUsedTime >= skillState.maxCooldown) {
+                    skillState.lastUsedTime = now;
+                    skillState.active = true;
+                    
+                    if (profile.selectedSkill === 'shield') skillState.activeTimer = 5000;
+                    else if (profile.selectedSkill === 'heal') skillState.activeTimer = 5000;
+                    else if (profile.selectedSkill === 'ghost') skillState.activeTimer = 5000;
+                    else if (profile.selectedSkill === 'radar') skillState.activeTimer = 5000;
+                }
+            }
+        }
+
+        function isKeyAlreadyUsed(newKey) {
+            for (let action in profile.controls) {
+                let slots = profile.controls[action];
+                if (slots.includes(newKey)) return true;
+            }
+            return false;
+        }
+
+        window.addEventListener('keydown', e => {
+            let pressedKey = e.key.toLowerCase();
+            if (e.code === 'Space') pressedKey = ' ';
+
+            if (activeRebind.action !== null) {
+                const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+                
+                if (e.key === 'Escape' || e.key === 'Backspace') {
+                    clearBind(activeRebind.action, activeRebind.index);
+                } else if (isKeyAlreadyUsed(pressedKey)) {
+                    rebindMsg.innerText = dict.keyConflictMsg;
+                } else {
+                    profile.controls[activeRebind.action][activeRebind.index] = pressedKey;
+                    saveProfile();
+                    updateControlsUI();
+                    rebindMsg.innerText = dict.keyAssignedMsg;
+                }
+                activeRebind = { action: null, index: null };
+                document.querySelectorAll('.key-bind-btn').forEach(b => b.classList.remove('waiting'));
+                return;
+            }
+
+            keys[pressedKey] = true;
+
+            if (profile.controls.skill.includes(pressedKey)) {
+                triggerSkillAction();
+            }
+        });
+
+        window.addEventListener('keyup', e => {
+            let releasedKey = e.key.toLowerCase();
+            if (e.code === 'Space') releasedKey = ' ';
+            keys[releasedKey] = false;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if(!gameStarted) return;
+            let mouseX = e.clientX;
+            let mouseY = e.clientY;
+
+            if (currentMode === 'battlefield') {
+                mouseX += player.x - canvas.width / 2;
+                mouseY += player.y - canvas.height / 2;
+            }
+
+            const dx = mouseX - player.x;
+            const dy = mouseY - player.y;
+            player.angle = Math.atan2(dy, dx);
+        });
+
+        window.addEventListener('mousedown', (e) => {
+            if (activeRebind.action !== null) {
+                const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+                let mouseKey = e.button === 2 ? 'mouse2' : '';
+                if (mouseKey) {
+                    if (isKeyAlreadyUsed(mouseKey)) {
+                        rebindMsg.innerText = dict.keyConflictMsg;
+                    } else {
+                        profile.controls[activeRebind.action][activeRebind.index] = mouseKey;
+                        saveProfile();
+                        updateControlsUI();
+                        rebindMsg.innerText = dict.keyAssignedMsg;
+                    }
+                }
+                activeRebind = { action: null, index: null };
+                document.querySelectorAll('.key-bind-btn').forEach(b => b.classList.remove('waiting'));
+                return;
+            }
+
+            if(!gameStarted || gameOver) return;
+
+            if (e.button === 2 && profile.controls.skill.includes('mouse2')) {
+                triggerSkillAction();
+                return;
+            }
+
+            let isShieldActive = (profile.selectedSkill === 'shield' && skillState.active);
+            let isGhostActive = (profile.selectedSkill === 'ghost' && skillState.active);
+            if (isShieldActive || isGhostActive) return;
+
+            if (e.button === 0 && player.shootCooldown <= 0) {
+                bullets.push({
+                    x: player.x, y: player.y, startX: player.x, startY: player.y,
+                    dx: Math.cos(player.angle) * 12, dy: Math.sin(player.angle) * 12,
+                    radius: 4, color: '#ffff00', maxRange: 550, isPlayer: true, owner: 'player'
+                });
+                player.shootCooldown = 15;
+                if (currentMode === 'battlefield') {
+                    socket.emit('player-shot', { x: player.x, y: player.y, angle: player.angle });
+                }
+            }
+        });
+
+        window.addEventListener('contextmenu', e => e.preventDefault());
+
+        function isActionPressed(actionName) {
+            let keysArr = profile.controls[actionName];
+            for (let k of keysArr) {
+                if (k && keys[k]) return true;
+            }
+            return false;
+        }
+
+        function hasLineOfSight(x1, y1, x2, y2) {
+            let steps = Math.ceil(Math.hypot(x2 - x1, y2 - y1) / 10);
+            for (let i = 1; i <= steps; i++) {
+                let t = i / steps;
+                let px = x1 + (x2 - x1) * t;
+                let py = y1 + (y2 - y1) * t;
+                for (let obs of obstacles) {
+                    if (px >= obs.x && px <= obs.x + obs.width && py >= obs.y && py <= obs.y + obs.height) return false;
+                }
+            }
+            return true;
+        }
+
+        function findNearestCover(bot) {
+            let closestObs = null;
+            let minDist = Infinity;
+            for (let obs of obstacles) {
+                let obsCenterX = obs.x + obs.width / 2;
+                let obsCenterY = obs.y + obs.height / 2;
+                let dist = Math.hypot(bot.x - obsCenterX, bot.y - obsCenterY);
+                if (dist < minDist) {
+                    minDist = dist;
+                    closestObs = { x: obsCenterX, y: obsCenterY };
+                }
+            }
+            return (minDist < 250) ? closestObs : null;
+        }
+
+        function update(delta) {
+            if(gameOver || !gameStarted) return;
+
+            if (player.shootCooldown > 0) player.shootCooldown--;
+
+            let wasGhostActive = skillState.active && profile.selectedSkill === 'ghost';
+
+            if (skillState.active) {
+                skillState.activeTimer -= delta;
+                if (profile.selectedSkill === 'heal' && player.hp < 100) {
+                    player.hp = Math.min(100, player.hp + (4 * (delta / 1000)));
+                    hpBar.style.width = player.hp + '%';
+                }
+                if (skillState.activeTimer <= 0) skillState.active = false;
+            }
+
+            if (wasGhostActive && !skillState.active && profile.selectedSkill === 'ghost') {
+                for (let obs of obstacles) {
+                    if (checkRectCollision(player.x, player.y, player.radius, obs)) {
+                        let leftDist = Math.abs(player.x - obs.x);
+                        let rightDist = Math.abs((obs.x + obs.width) - player.x);
+                        let topDist = Math.abs(player.y - obs.y);
+                        let bottomDist = Math.abs((obs.y + obs.height) - player.y);
+                        let minDist = Math.min(leftDist, rightDist, topDist, bottomDist);
+
+                        if (minDist === leftDist) player.x = obs.x - player.radius - 2;
+                        else if (minDist === rightDist) player.x = obs.x + obs.width + player.radius + 2;
+                        else if (minDist === topDist) player.y = obs.y - player.radius - 2;
+                        else player.y = obs.y + obs.height + player.radius + 2;
+                    }
+                }
+            }
+
+            let timeSinceUsed = performance.now() - skillState.lastUsedTime;
+            let cooldownPercent = Math.max(0, 100 - (timeSinceUsed / skillState.maxCooldown) * 100);
+            skillCooldownOverlay.style.height = cooldownPercent + '%';
+
+            if (currentMode === 'battlefield') {
+                safeZone.timer++;
+                if (safeZone.timer > 900) { 
+                    let closureProgress = Math.min(1, (safeZone.timer - 900) / 5760);
+                    safeZone.radius = (safeZone.maxRadius * (1 - closureProgress)) + (safeZone.targetRadius * closureProgress);
+                } else {
+                    safeZone.radius = safeZone.maxRadius;
+                }
+
+                if (Math.hypot(player.x - safeZone.x, player.y - safeZone.y) > safeZone.radius) {
+                    player.hp -= 0.15;
+                    hpBar.style.width = Math.max(player.hp, 0) + '%';
+                    if (player.hp <= 0) {
+                        endGame(false);
+                        if (currentMode === 'battlefield') socket.emit('player-died', { killerId: null, placement: getCurrentPlacement() });
+                    }
+                }
+            }
+
+            let nextX = player.x;
+            let nextY = player.y;
+            if (isActionPressed('up')) nextY -= player.speed;
+            if (isActionPressed('down')) nextY += player.speed;
+            if (isActionPressed('left')) nextX -= player.speed;
+            if (isActionPressed('right')) nextX += player.speed;
+
+            let canMoveX = true;
+            let canMoveY = true;
+            let isGhostActive = (profile.selectedSkill === 'ghost' && skillState.active);
+
+            if (!isGhostActive) {
+                for (let obs of obstacles) {
+                    if (checkRectCollision(nextX, player.y, player.radius, obs)) canMoveX = false;
+                    if (checkRectCollision(player.x, nextY, player.radius, obs)) canMoveY = false;
+                }
+            }
+
+            if (canMoveX && nextX - player.radius > 0 && nextX + player.radius < mapWidth) player.x = nextX;
+            if (canMoveY && nextY - player.radius > 0 && nextY + player.radius < mapHeight) player.y = nextY;
+
+            if (currentMode === 'battlefield') socket.emit('player-move', { x: player.x, y: player.y, angle: player.angle });
+
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                const b = bullets[i];
+                b.x += b.dx;
+                b.y += b.dy;
+                
+                if (Math.hypot(b.x - b.startX, b.y - b.startY) > b.maxRange || b.x < 0 || b.x > mapWidth || b.y < 0 || b.y > mapHeight) {
+                    bullets.splice(i, 1);
+                    continue;
+                }
+
+                let hitObstacle = false;
+                for (let obs of obstacles) {
+                    if (b.x >= obs.x && b.x <= obs.x + obs.width && b.y >= obs.y && b.y <= obs.y + obs.height) {
+                        hitObstacle = true;
+                        break;
+                    }
+                }
+                if (hitObstacle) {
+                    bullets.splice(i, 1);
+                    continue;
+                }
+
+                if (b.owner !== 'player' && typeof b.owner !== 'string') {
+                    const distToPlayer = Math.hypot(player.x - b.x, player.y - b.y);
+                    if (distToPlayer - player.radius - b.radius < 1) {
+                        let shieldActive = (profile.selectedSkill === 'shield' && skillState.active);
+                        if (!shieldActive) {
+                            player.hp -= 10;
+                            hpBar.style.width = Math.max(player.hp, 0) + '%';
+                            if (player.hp <= 0) {
+                                let killerName = (b.owner && b.owner.name) ? b.owner.name : "Zona/Bot";
+                                addKillFeedMessage(killerName, profile.name, true);
+                                endGame(false);
+                                if (currentMode === 'battlefield') socket.emit('player-died', { killerId: null, placement: getCurrentPlacement() });
+                            }
+                        }
+                        bullets.splice(i, 1);
+                        continue;
+                    }
+                }
+
+                let bulletHitBot = false;
+                for (let k = 0; k < enemies.length; k++) {
+                    const enemy = enemies[k];
+                    if (b.owner === enemy) continue;
+
+                    const distBulletBot = Math.hypot(b.x - enemy.x, b.y - enemy.y);
+                    if (distBulletBot - enemy.radius - b.radius < 1) {
+                        let damageDealt = b.owner === 'player' ? 25 : 20;
+                        enemy.hp -= damageDealt;
+                        if (b.owner === 'player') matchStats.damage += damageDealt;
+
+                        bullets.splice(i, 1);
+                        bulletHitBot = true;
+
+                        if (enemy.hp <= 0) {
+                            let killerName = "Desconocido";
+                            let isPlayerInvolved = false;
+
+                            if (b.owner === 'player') {
+                                matchStats.kills += 1;
+                                killerName = profile.name;
+                                isPlayerInvolved = true;
+                            } else if (b.owner && b.owner.name) {
+                                killerName = b.owner.name;
+                            }
+
+                            addKillFeedMessage(killerName, enemy.name, isPlayerInvolved);
+                            enemies.splice(k, 1);
+                            updateHUDCounters();
+
+                            if (enemies.length === 0 && currentMode === 'battlefield' && Object.keys(remotePlayers).length === 0) {
+                                draw();
+                                endGame(true);
+                                return;
+                            }
+                        }
+                        break;
+                    }
+                }
+                if (bulletHitBot) continue;
+
+                // Impactos contra jugadores reales (el daño lo confirma el servidor a la víctima)
+                if (currentMode === 'battlefield' && b.owner === 'player') {
+                    for (let id in remotePlayers) {
+                        const rp = remotePlayers[id];
+                        if (!rp) continue;
+                        const distRemote = Math.hypot(b.x - rp.x, b.y - rp.y);
+                        if (distRemote - (rp.radius || 15) - b.radius < 1) {
+                            rp.hp = (rp.hp || 100) - 25;
+                            matchStats.damage += 25;
+                            socket.emit('damage', { victimId: id, dmg: 25 });
+                            bullets.splice(i, 1);
+                            bulletHitBot = true;
+                            break;
+                        }
+                    }
+                    if (bulletHitBot) continue;
+                }
+            }
+
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const enemy = enemies[i];
+
+                if (currentMode === 'battlefield') {
+                    if (Math.hypot(enemy.x - safeZone.x, enemy.y - safeZone.y) > safeZone.radius) {
+                        enemy.hp -= 0.2;
+                        if (enemy.hp <= 0) {
+                            addKillFeedMessage("Zona de Veneno", enemy.name, false);
+                            enemies.splice(i, 1);
+                            updateHUDCounters();
+                            if (enemies.length === 0 && Object.keys(remotePlayers).length === 0) {
+                                draw();
+                                endGame(true);
+                                return;
+                            }
+                            continue;
+                        }
+                    }
+                }
+
+                let targetX = player.x;
+                let targetY = player.y;
+                let distToPlayer = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+                let closestDist = distToPlayer;
+                let targetEntity = 'player';
+
+                if (currentMode === 'battlefield') {
+                    for (let otherBot of enemies) {
+                        if (otherBot === enemy) continue;
+                        let d = Math.hypot(otherBot.x - enemy.x, otherBot.y - enemy.y);
+                        if (d < closestDist) {
+                            closestDist = d;
+                            targetX = otherBot.x;
+                            targetY = otherBot.y;
+                            targetEntity = otherBot;
+                        }
+                    }
+                }
+
+                const directAngle = Math.atan2(targetY - enemy.y, targetX - enemy.x);
+                let moveAngle = directAngle;
+                let isLowHealth = enemy.hp < (enemy.maxHp * 0.35);
+
+                if (isLowHealth && currentMode === 'battlefield' && targetEntity === 'player') {
+                    enemy.unstickTimer++;
+                    let cover = findNearestCover(enemy);
+                    if (cover && enemy.unstickTimer < 60) {
+                        moveAngle = Math.atan2(cover.y - enemy.y, cover.x - enemy.x);
+                    } else {
+                        if (enemy.unstickTimer > 100) enemy.unstickTimer = 0;
+                        moveAngle = directAngle;
+                    }
+                } else {
+                    enemy.unstickTimer = 0;
+                    enemy.tacticalTimer++;
+                    let flankOffset = (Math.PI / 2) * enemy.flankSide; 
+                    if (Math.floor(enemy.tacticalTimer / 120) % 2 === 0) flankOffset *= -1;
+                    moveAngle = directAngle + flankOffset * 0.7;
+                }
+
+                let eNextX = enemy.x + Math.cos(moveAngle) * enemy.speed;
+                let eNextY = enemy.y + Math.sin(moveAngle) * enemy.speed;
+
+                let collidedX = false;
+                let collidedY = false;
+
+                for (let obs of obstacles) {
+                    if (checkRectCollision(eNextX, enemy.y, enemy.radius, obs)) collidedX = true;
+                    if (checkRectCollision(enemy.x, eNextY, enemy.radius, obs)) collidedY = true;
+                }
+
+                if (!collidedX && eNextX > 0 && eNextX < mapWidth) enemy.x = eNextX;
+                else enemy.y += (Math.random() > 0.5 ? 1 : -1) * enemy.speed;
+
+                if (!collidedY && eNextY > 0 && eNextY < mapHeight) enemy.y = eNextY;
+                else enemy.x += (Math.random() > 0.5 ? 1 : -1) * enemy.speed;
+
+                for (let obs of obstacles) {
+                    if (checkRectCollision(enemy.x, enemy.y, enemy.radius, obs)) {
+                        let leftDist = Math.abs(enemy.x - obs.x);
+                        let rightDist = Math.abs((obs.x + obs.width) - enemy.x);
+                        let topDist = Math.abs(enemy.y - obs.y);
+                        let bottomDist = Math.abs((obs.y + obs.height) - enemy.y);
+                        let minDist = Math.min(leftDist, rightDist, topDist, bottomDist);
+
+                        if (minDist === leftDist) enemy.x = obs.x - enemy.radius - 2;
+                        else if (minDist === rightDist) enemy.x = obs.x + obs.width + enemy.radius + 2;
+                        else if (minDist === topDist) enemy.y = obs.y - enemy.radius - 2;
+                        else enemy.y = obs.y + obs.height + enemy.radius + 2;
+                    }
+                }
+
+                enemy.shootTimer++;
+                let hasLOS = hasLineOfSight(enemy.x, enemy.y, targetX, targetY);
+                let playerInvisible = (profile.selectedSkill === 'ghost' && skillState.active);
+                let canShootPlayer = targetEntity !== 'player' || !playerInvisible;
+
+                if (enemy.shootTimer > 40 && closestDist < 450 && hasLOS && canShootPlayer) {
+                    enemy.shootTimer = 0;
+                    let accuracy = (currentMode === 'battlefield') ? 0.70 : 0.80;
+                    let finalAngle = directAngle + (Math.random() - 0.5) * ((1 - accuracy) * 0.8);
+
+                    bullets.push({
+                        x: enemy.x, y: enemy.y, startX: enemy.x, startY: enemy.y,
+                        dx: Math.cos(finalAngle) * 9, dy: Math.sin(finalAngle) * 9,
+                        radius: 4, color: targetEntity === 'player' ? '#ff9999' : '#ff6666',
+                        maxRange: 450, isPlayer: false, owner: enemy
+                    });
+                }
+
+                if (targetEntity === 'player' && distToPlayer - player.radius - enemy.radius < 1 && !playerInvisible) {
+                    let shieldActive = (profile.selectedSkill === 'shield' && skillState.active);
+                    if (!shieldActive) {
+                        player.hp -= 0.4;
+                        hpBar.style.width = Math.max(player.hp, 0) + '%';
+                        if (player.hp <= 0) {
+                            addKillFeedMessage("Cuerpo a cuerpo", profile.name, true);
+                            endGame(false);
+                            if (currentMode === 'battlefield') socket.emit('player-died', { killerId: null, placement: getCurrentPlacement() });
+                        }
+                    }
+                }
+            }
+        }
+
+        function drawMinimap() {
+            mCtx.clearRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+            mCtx.fillStyle = '#3a542e';
+            mCtx.fillRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+
+            let scaleX = minimapCanvas.width / mapWidth;
+            let scaleY = minimapCanvas.height / mapHeight;
+
+            if (currentMode === 'battlefield') {
+                mCtx.beginPath();
+                mCtx.arc(safeZone.x * scaleX, safeZone.y * scaleY, safeZone.radius * scaleX, 0, Math.PI * 2);
+                mCtx.fillStyle = 'rgba(128, 0, 128, 0.35)';
+                mCtx.fill();
+                mCtx.strokeStyle = '#bf00ff';
+                mCtx.lineWidth = 1.5;
+                mCtx.stroke();
+                mCtx.closePath();
+            }
+
+            mCtx.fillStyle = '#26190c';
+            obstacles.forEach(obs => {
+                mCtx.fillRect(obs.x * scaleX, obs.y * scaleY, obs.width * scaleX, obs.height * scaleY);
+            });
+
+            let isRadarActive = (profile.selectedSkill === 'radar' && skillState.active);
+            if (isRadarActive) {
+                enemies.forEach(enemy => {
+                    mCtx.beginPath();
+                    mCtx.arc(enemy.x * scaleX, enemy.y * scaleY, 4, 0, Math.PI * 2);
+                    mCtx.fillStyle = '#ff0000';
+                    mCtx.fill();
+                    mCtx.strokeStyle = '#ffffff';
+                    mCtx.lineWidth = 1;
+                    mCtx.stroke();
+                    mCtx.closePath();
+                });
+            }
+
+            mCtx.beginPath();
+            mCtx.arc(player.x * scaleX, player.y * scaleY, 3.5, 0, Math.PI * 2);
+            mCtx.fillStyle = '#00ff00';
+            mCtx.fill();
+            mCtx.strokeStyle = '#000';
+            mCtx.lineWidth = 1;
+            mCtx.stroke();
+            mCtx.closePath();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.save();
+            if (currentMode === 'battlefield') {
+                let camX = canvas.width / 2 - player.x;
+                let camY = canvas.height / 2 - player.y;
+                ctx.translate(camX, camY);
+
+                ctx.fillStyle = 'rgba(128, 0, 128, 0.45)';
+                ctx.fillRect(0, 0, mapWidth, mapHeight);
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(safeZone.x, safeZone.y, safeZone.radius, 0, Math.PI * 2);
+                ctx.clip();
+                
+                ctx.fillStyle = '#557A46';
+                ctx.fillRect(0, 0, mapWidth, mapHeight);
+
+                obstacles.forEach(obs => {
+                    ctx.fillStyle = '#4a3319';
+                    ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                    ctx.strokeStyle = '#26190c';
+                    ctx.lineWidth = 4;
+                    ctx.strokeRect(obs.x, obs.y, obs.width, obs.height);
+                });
+                ctx.restore();
+
+                ctx.beginPath();
+                ctx.arc(safeZone.x, safeZone.y, safeZone.radius, 0, Math.PI * 2);
+                ctx.strokeStyle = '#bf00ff';
+                ctx.lineWidth = 8;
+                ctx.stroke();
+                ctx.closePath();
+
+                ctx.strokeStyle = '#2b4720';
+                ctx.lineWidth = 15;
+                ctx.strokeRect(0, 0, mapWidth, mapHeight);
+            }
+
+            if (currentMode === 'training') {
+                obstacles.forEach(obs => {
+                    ctx.fillStyle = '#4a3319';
+                    ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                    ctx.strokeStyle = '#26190c';
+                    ctx.lineWidth = 4;
+                    ctx.strokeRect(obs.x, obs.y, obs.width, obs.height);
+                });
+            }
+
+            bullets.forEach(bullet => {
+                ctx.beginPath();
+                ctx.arc(bullet.x, bullet.y, bullet.radius, 0, Math.PI * 2);
+                ctx.fillStyle = bullet.color;
+                ctx.fill();
+                ctx.closePath();
+            });
+
+            enemies.forEach(enemy => {
+                ctx.beginPath();
+                ctx.arc(enemy.x, enemy.y, enemy.radius, 0, Math.PI * 2);
+                ctx.fillStyle = enemy.color;
+                ctx.fill();
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                ctx.closePath();
+
+                ctx.fillStyle = '#fff';
+                ctx.font = '12px Impact';
+                ctx.textAlign = 'center';
+                ctx.fillText(enemy.name, enemy.x, enemy.y - 23);
+
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.fillRect(enemy.x - 15, enemy.y - 19, 30, 4);
+                ctx.fillStyle = '#00ff00';
+                ctx.fillRect(enemy.x - 15, enemy.y - 19, 30 * (enemy.hp / enemy.maxHp), 4);
+            });
+
+            for (let id in remotePlayers) {
+                if (id === socket.id) continue;
+                let rp = remotePlayers[id];
+
+                ctx.save();
+                ctx.translate(rp.x, rp.y);
+                ctx.beginPath();
+                ctx.arc(0, 0, 15, 0, Math.PI * 2);
+                ctx.fillStyle = rp.color || '#ffffff';
+                ctx.fill();
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                ctx.closePath();
+
+                ctx.rotate(rp.angle || 0);
+                ctx.fillStyle = '#333';
+                ctx.fillRect(10, -3, 15, 6);
+                ctx.restore();
+
+                ctx.fillStyle = '#00ffff';
+                ctx.font = '13px Impact';
+                ctx.textAlign = 'center';
+                ctx.fillText(rp.name || "Soldado", rp.x, rp.y - 23);
+            }
+
+            ctx.save();
+            ctx.translate(player.x, player.y);
+            
+            if (skillState.active) {
+                ctx.beginPath();
+                if (profile.selectedSkill === 'shield') {
+                    ctx.arc(0, 0, player.radius + 8, 0, Math.PI * 2);
+                    ctx.strokeStyle = '#00ffff';
+                    ctx.lineWidth = 4;
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = '#00ffff';
+                    ctx.stroke();
+                } else if (profile.selectedSkill === 'heal') {
+                    ctx.arc(0, 0, player.radius + 6, 0, Math.PI * 2);
+                    ctx.strokeStyle = '#00ff00';
+                    ctx.lineWidth = 3;
+                    ctx.shadowBlur = 12;
+                    ctx.shadowColor = '#00ff00';
+                    ctx.stroke();
+                } else if (profile.selectedSkill === 'ghost') {
+                    ctx.arc(0, 0, player.radius + 6, 0, Math.PI * 2);
+                    ctx.strokeStyle = '#ff00ff';
+                    ctx.lineWidth = 3;
+                    ctx.setLineDash([4, 4]);
+                    ctx.shadowBlur = 12;
+                    ctx.shadowColor = '#ff00ff';
+                    ctx.stroke();
+                } else if (profile.selectedSkill === 'radar') {
+                    ctx.arc(0, 0, player.radius + 10, 0, Math.PI * 2);
+                    ctx.strokeStyle = '#ff3333';
+                    ctx.lineWidth = 3;
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = '#ff3333';
+                    ctx.stroke();
+                }
+                ctx.closePath();
+                ctx.shadowBlur = 0;
+                ctx.setLineDash([]);
+            }
+
+            ctx.beginPath();
+            ctx.arc(0, 0, player.radius, 0, Math.PI * 2);
+            
+            let isGhostActive = (profile.selectedSkill === 'ghost' && skillState.active);
+            ctx.globalAlpha = isGhostActive ? 0.2 : 1.0;
+
+            if (player.color === 'camo' && camoPatternLoaded && camoPatternObj) {
+                ctx.save();
+                ctx.scale(0.35, 0.35);
+                ctx.fillStyle = camoPatternObj;
+                ctx.fill();
+                ctx.restore();
+            } else if (player.color === 'multicolor') {
+                let grad = ctx.createLinearGradient(-player.radius, -player.radius, player.radius, player.radius);
+                grad.addColorStop(0, '#ff0000');
+                grad.addColorStop(0.5, '#00ff00');
+                grad.addColorStop(1, '#0000ff');
+                ctx.fillStyle = grad;
+                ctx.fill();
+            } else if (player.color === 'camo') {
+                ctx.fillStyle = '#888888';
+                ctx.fill();
+            } else {
+                ctx.fillStyle = player.color;
+                ctx.fill();
+            }
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.closePath();
+
+            ctx.rotate(player.angle);
+            ctx.fillStyle = '#333';
+            ctx.fillRect(10, -3, 15, 6);
+            ctx.restore();
+
+            if (!isGhostActive) {
+                ctx.fillStyle = '#ffcc00';
+                ctx.font = '13px Impact';
+                ctx.textAlign = 'center';
+                ctx.fillText(profile.name, player.x, player.y - 23);
+            }
+
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(player.x - 15, player.y - 19, 30, 4);
+            ctx.fillStyle = '#ffcc00';
+            ctx.fillRect(player.x - 15, player.y - 19, 30 * (player.hp / 100), 4);
+
+            ctx.restore();
+            drawMinimap();
+        }
+
+        // Posición actual en la partida (jugador + bots + jugadores reales vivos)
+        function getCurrentPlacement() {
+            return enemies.length + 1 + Object.keys(remotePlayers).length;
+        }
+
+        function endGame(isWin) {
+            // Evita doble ejecución (p.ej. 'match-end' tardío o dos impactos en el mismo frame):
+            // si la partida ya cerró y la pantalla de resultados está visible, se ignora.
+            if (!gameStarted && statsScreen.style.display === 'flex') return;
+
+            gameOver = true;
+            uiTopLeft.style.display = 'none';
+            hudTopRight.style.display = 'none';
+            skillHud.style.display = 'none';
+
+            skillState.active = false;
+            skillState.activeTimer = 0;
+            skillState.lastUsedTime = -20000;
+
+            let placement = getCurrentPlacement();
+            matchStats.finalPlacement = placement;
+
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+
+            if(isWin || placement === 1) {
+                statsTitle.innerText = "¡BOOYAH!";
+                statsTitle.style.color = "#ffcc00";
+                statPos.innerText = "#1";
+                statPos.style.color = "#ffcc00";
+            } else {
+                statsTitle.innerText = "PARTIDA FINALIZADA";
+                statsTitle.style.color = "#ff3333";
+                statPos.innerText = "#" + placement;
+                statPos.style.color = placement <= 10 ? "#00ffff" : "#ff3333";
+            }
+
+            let expEarned = 0;
+            let rankPointsChange = 0;
+
+            if (currentMode === 'battlefield') {
+                let basePlacementPoints = 0;
+                if (placement >= 15) {
+                    basePlacementPoints = Math.round(-100 * ((placement - 15) / 20));
+                } else {
+                    basePlacementPoints = Math.round(120 - ((placement - 1) * (115 / 13)));
+                }
+
+                let killBonus = matchStats.kills * 5; 
+                let damageBonus = Math.floor(matchStats.damage / 50);
+                
+                rankPointsChange = basePlacementPoints + killBonus + damageBonus;
+                if (placement === 1) rankPointsChange += 30; 
+
+                profile.points = Math.max(0, profile.points + rankPointsChange);
+                matchStats.rankPointsEarned = rankPointsChange;
+
+                expEarned = (placement === 1 ? 70 : Math.max(15, 55 - placement)) + (matchStats.kills * 15);
+                matchStats.expEarned = expEarned;
+
+                if (profile.level < 100) {
+                    profile.exp += expEarned;
+                    let requiredExp = getRequiredExp(profile.level);
+                    while (profile.exp >= requiredExp && profile.level < 100) {
+                        profile.exp -= requiredExp;
+                        profile.level++;
+                        requiredExp = getRequiredExp(profile.level);
+                    }
+                    if (profile.level >= 100) {
+                        profile.level = 100;
+                        profile.exp = 0;
+                    }
+                }
+                saveProfile();
+                // Reportar puntos al servidor para actualizar el Ranking Global (Top 100)
+                if (socket && socket.connected) socket.emit('update-points', { points: profile.points });
+            }
+
+            statName.innerText = profile.name;
+            statKills.innerText = matchStats.kills;
+            statDamage.innerText = matchStats.damage;
+            
+            if (currentMode === 'battlefield') {
+                statPoints.innerText = (rankPointsChange >= 0 ? "+" : "") + rankPointsChange + " PTS";
+                statPoints.style.color = rankPointsChange >= 0 ? "#00ff00" : "#ff3333";
+                statExp.innerText = "+" + expEarned + " EXP";
+            } else {
+                statPoints.innerText = dict.trainingModeText;
+                statExp.innerText = "0 EXP";
+            }
+            
+            statLevel.innerText = `${dict.levelLabel} ${profile.level}`;
+
+            statsScreen.style.display = 'flex';
+
+            player.x = canvas.width / 2;
+            player.y = canvas.height / 2;
+            player.hp = 100;
+            hpBar.style.width = '100%';
+            bullets.length = 0;
+            gameOver = false;
+            gameStarted = false;
+        }
+
+        requestAnimationFrame(masterGameLoop);
+    </script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "name": "famofire",
+  "version": "1.0.0",
+  "description": "FAMOFIRE - juego battle royale multijugador online (LATAM)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test-client.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.1"
+  }
+}
