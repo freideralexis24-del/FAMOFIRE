@@ -208,6 +208,20 @@ function broadcastOnline() {
 // ---------- Cola de emparejamiento ----------
 const queue = [];
 let queueTimer = null;
+let queueDeadline = 0; // ms (Date.now()) en que arranca la partida: COMPARTIDA para toda la cola
+
+// Difunde a TODOS los de la cola el mismo tiempo restante y el contador:
+// así un jugador que se une a mitad de espera ve la misma cuenta atrás que
+// el primero (antes cada uno veía sus propios 15s locales y no coincidían).
+function broadcastQueueStatus() {
+  if (queue.length === 0) return;
+  const remaining = Math.max(0, Math.ceil((queueDeadline - Date.now()) / 1000));
+  for (const q of queue) {
+    const s = q.socket;
+    if (s.connected) s.emit('mm-status', { inQueue: true, count: queue.length, remaining: remaining * 1000 });
+  }
+}
+setInterval(broadcastQueueStatus, 500);
 
 function assignSpawns(players) {
   const spawns = [];
@@ -225,6 +239,7 @@ function assignSpawns(players) {
 
 function startMatch() {
   if (queueTimer) { clearTimeout(queueTimer); queueTimer = null; }
+  queueDeadline = 0;
   const taken = queue.splice(0, MATCH_SIZE);
   if (taken.length === 0) return;
 
@@ -460,13 +475,15 @@ io.on('connection', (socket) => {
     socket.data.color = data.color || socket.data.color;
     socket.data.inQueue = true;
     queue.push({ socket, name: socket.data.name, points: socket.data.points, color: socket.data.color });
-    socket.emit('mm-status', { inQueue: true, count: queue.length });
+    socket.emit('mm-status', { inQueue: true, count: queue.length, remaining: Math.max(0, (queueDeadline || Date.now() + QUEUE_TIMEOUT) - Date.now()) });
     if (queue.length >= MATCH_SIZE) {
       startMatch();
     } else if (!queueTimer) {
+      queueDeadline = Date.now() + QUEUE_TIMEOUT;
       queueTimer = setTimeout(() => {
         if (queue.length > 0) startMatch();
       }, QUEUE_TIMEOUT);
+      broadcastQueueStatus();
     }
   });
 
@@ -474,7 +491,8 @@ io.on('connection', (socket) => {
     const i = queue.findIndex(q => q.socket.id === socket.id);
     if (i >= 0) queue.splice(i, 1);
     socket.data.inQueue = false;
-    if (queue.length === 0 && queueTimer) { clearTimeout(queueTimer); queueTimer = null; }
+    if (queue.length === 0 && queueTimer) { clearTimeout(queueTimer); queueTimer = null; queueDeadline = 0; }
+    broadcastQueueStatus();
   });
 
   socket.on('player-move', (data = {}) => {
@@ -612,7 +630,8 @@ io.on('connection', (socket) => {
     if (i >= 0) {
       queue.splice(i, 1);
       socket.data.inQueue = false;
-      if (queue.length === 0 && queueTimer) { clearTimeout(queueTimer); queueTimer = null; }
+      if (queue.length === 0 && queueTimer) { clearTimeout(queueTimer); queueTimer = null; queueDeadline = 0; }
+      broadcastQueueStatus();
     }
     const code = socket.data.room;
     if (code && matches.has(code)) {

@@ -1304,11 +1304,14 @@
             }
         });
 
-        // Estado de la cola de emparejamiento
+        // Estado de la cola de emparejamiento. El SERVIDOR envía cada 500 ms el
+        // mismo tiempo restante a TODA la cola: si te unes cuando otro ya lleva
+        // esperando, ves SU cuenta atrás (la real), no 15s desde cero.
         socket.on('mm-status', (data) => {
-            if (data && data.inQueue && mmStatusText) {
-                mmStatusText.innerText = `Buscando soldados en servidor LATAM... (${data.count} en fila)`;
-            }
+            if (!data || !data.inQueue || !mmStatusText) return;
+            const secs = Math.max(0, Math.ceil((data.remaining || 0) / 1000));
+            mmTimer.innerText = secs + 's';
+            mmStatusText.innerText = `Buscando soldados en servidor LATAM... (${data.count} en fila · la partida inicia en ${secs}s)`;
         });
 
         // Avisos de conexión
@@ -2491,20 +2494,11 @@
         toBattleGameBtn.addEventListener('click', () => {
             battlefieldScreen.style.display = 'none';
             matchmakingScreen.style.display = 'flex';
-            
-            let timeLeft = 15; // 15 segundos de tiempo de espera máximo
-            mmTimer.innerText = timeLeft + "s";
-            
+            mmTimer.innerText = '15s';
+            mmStatusText.innerText = 'Buscando soldados en servidor LATAM...';
             socket.emit('join-matchmaking', { name: profile.name, points: profile.points, color: profile.color });
-
-            if (matchmakingInterval) clearInterval(matchmakingInterval);
-            matchmakingInterval = setInterval(() => {
-                timeLeft--;
-                mmTimer.innerText = timeLeft + "s";
-                if (timeLeft <= 0) {
-                    clearInterval(matchmakingInterval);
-                }
-            }, 1000);
+            // La cuenta atrás la manda el servidor (mm-status): es la misma para
+            // todos los de la cola, así el que se une tarde ve el tiempo real.
         });
 
         cancelMmBtn.addEventListener('click', () => {
