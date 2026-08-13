@@ -10,18 +10,20 @@ function check(name, ok, extra) {
 
 const A = io(URL, { reconnection: false });
 const B = io(URL, { reconnection: false });
-const got = { matchStart: [], moves: 0, damage: null, killConfirm: false, feed: 0, matchOver: null, matchEnd: false, removed: false, relogin: null, top100: false, badpassProbe: false };
+const got = { matchStart: [], moves: 0, damage: null, killConfirm: false, feed: 0, matchOver: null, matchEnd: false, removed: false, relogin: null, top100: false, badpassProbe: false, duplicateName: false, zoneOk: false };
 
 let A_id = null, B_id = null;
 let registered = false;
 
 const done = () => {
   setTimeout(() => {
-    check('Registro de cuenta funciona (TestA)', registered);
+    check('Registro de cuenta funciona (TESTA)', registered);
+    check('Nombres únicos sin importar mayúsculas (testa rechazado)', got.duplicateName);
     check('Login con contraseña incorrecta falla', got.badpassProbe);
-    check('A recibe match-start (33 bots, mapa 3600x2000, con B en players)', got.matchStart.length >= 1 &&
+    check('A recibe match-start (33 bots, mapa 3600x2000, zona incluida)', got.matchStart.length >= 1 &&
       got.matchStart.every(d => d.assignedBotsCount === 33 && d.mapW === 3600 && d.mapH === 2000 && d.you),
       JSON.stringify(got.matchStart[0] && { bots: got.matchStart[0].assignedBotsCount }));
+    check('Zona de veneno viene del servidor (cierra en punto aleatorio)', got.zoneOk);
     check('Posiciones del jugador B llegan a A', got.moves > 0, got.moves + ' updates');
     check('B recibe receive-damage (25)', got.damage && got.damage.dmg === 25, JSON.stringify(got.damage));
     check('A recibe kill-confirm', got.killConfirm);
@@ -30,7 +32,7 @@ const done = () => {
     check('A NO recibe match-end falso (bots siguen vivos)', !got.matchEnd);
     check('A recibe remove-player (B murió)', got.removed);
     check('Cuenta guarda progreso (relogin con puntos)', got.relogin && got.relogin.points === 1650, JSON.stringify(got.relogin));
-    check('Top100 incluye a TestA con 1650', got.top100);
+    check('Top100 incluye a TESTA con 1650', got.top100);
     const failed = results.filter(r => !r.ok).length;
     A.close(); B.close();
     console.log(failed === 0 ? 'TODO OK' : `${failed} PRUEBA(S) FALLARON`);
@@ -43,8 +45,15 @@ A.on('connect', () => {
   A.emit('account-register', { name: 'TestA', password: 'clave123' });
 });
 A.on('account-result', (res) => {
-  if (res.ok && res.account.name === 'TestA' && res.account.points === 0) {
+  if (res.ok && res.account.name === 'TESTA' && res.account.points === 0) {
     registered = true;
+    // Intento de duplicar el nombre con distintas mayúsculas (debe fallar)
+    const D = io(URL, { reconnection: false });
+    D.on('connect', () => D.emit('account-register', { name: 'testa', password: 'otra123' }));
+    D.on('account-result', (r) => {
+      got.duplicateName = !r.ok && r.error === 'name-taken';
+      D.close();
+    });
     A.emit('account-login', { name: 'TestA', password: 'INCORRECTA' });
   } else if (!res.ok && res.error === 'bad-pass') {
     got.badpassProbe = true;
@@ -57,13 +66,18 @@ B.on('connect', () => {
   B.emit('account-register', { name: 'TestB', password: 'clave123' });
 });
 B.on('account-result', (res) => {
-  if (res.ok && res.account.name === 'TestB') {
+  if (res.ok && res.account.name === 'TESTB') {
     B.emit('join-matchmaking', { name: 'TestB', points: 900, color: '#00ff00' });
   }
 });
 
 A.on('match-start', (d) => {
   got.matchStart.push(d);
+  const z = d.zone;
+  got.zoneOk = !!(z && z.targetRadius === 120 && z.maxRadius > 0 &&
+    z.targetX >= 3600 * 0.2 && z.targetX <= 3600 * 0.8 &&
+    z.targetY >= 2000 * 0.2 && z.targetY <= 2000 * 0.8 &&
+    z.startDelay === 900 && z.duration === 5760);
   if (!A_id || !B_id) return;
   A.emit('player-move', { x: 500, y: 600, angle: 0.5 });
   B.emit('player-move', { x: 900, y: 800, angle: 1.2 });
@@ -87,7 +101,7 @@ A.on('kill-confirm', () => {
       }
     });
     C.on('update-top100', (top) => {
-      got.top100 = top.some(p => p.name === 'TestA' && p.points === 1650);
+      got.top100 = top.some(p => p.name === 'TESTA' && p.points === 1650);
       C.close();
       done();
     });

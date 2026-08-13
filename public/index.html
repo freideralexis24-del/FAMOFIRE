@@ -576,6 +576,7 @@
             <button id="to-language-btn" class="btn-main" style="background-color: #00ffff;" data-i18n="langMenuBtn">IDIOMA</button>
             <button id="to-controls-btn" class="btn-main" style="background-color: #00ff00;" data-i18n="controlsMenuBtn">CONTROLES</button>
             <button id="toggle-fps-btn" class="btn-main"><span data-i18n="fpsBtnText">FPS</span>: <span id="fps-status-label">ACTIVADO</span></button>
+            <button id="logout-btn" class="btn-main" style="background-color: #ff3333; color: #fff;" data-i18n="logoutBtn">CERRAR SESIÓN</button>
             <button id="back-from-config" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
         </div>
     </div>
@@ -1009,6 +1010,7 @@
                 fpsBtnText: "FPS",
                 fpsActivated: "ACTIVADO",
                 fpsDeactivated: "DESACTIVADO",
+                logoutBtn: "CERRAR SESIÓN",
                 backBtn: "REGRESAR",
                 selectLangTitle: "SELECCIONAR IDIOMA",
                 selectLangSubtitle: "Escoge tu idioma preferido:",
@@ -1104,6 +1106,7 @@
                 fpsBtnText: "FPS",
                 fpsActivated: "ENABLED",
                 fpsDeactivated: "DISABLED",
+                logoutBtn: "LOG OUT",
                 backBtn: "BACK",
                 selectLangTitle: "SELECT LANGUAGE",
                 selectLangSubtitle: "Choose your preferred language:",
@@ -1199,6 +1202,7 @@
                 fpsBtnText: "帧率 (FPS)",
                 fpsActivated: "已启用",
                 fpsDeactivated: "已禁用",
+                logoutBtn: "退出登录",
                 backBtn: "返回",
                 selectLangTitle: "选择语言",
                 selectLangSubtitle: "选择您首选的语言：",
@@ -1294,6 +1298,7 @@
                 fpsBtnText: "FPS",
                 fpsActivated: "ATIVADO",
                 fpsDeactivated: "DESATIVADO",
+                logoutBtn: "SAIR DA CONTA",
                 backBtn: "VOLTAR",
                 selectLangTitle: "SELECIONAR IDIOMA",
                 selectLangSubtitle: "Escolha seu idioma preferido:",
@@ -1569,6 +1574,7 @@
         const toLanguageBtn = document.getElementById('to-language-btn');
         const toControlsBtn = document.getElementById('to-controls-btn');
         const toggleFpsBtn = document.getElementById('toggle-fps-btn');
+        const logoutBtn = document.getElementById('logout-btn');
 
         const backFromConfig = document.getElementById('back-from-config');
         const backFromControls = document.getElementById('back-from-controls');
@@ -1605,7 +1611,7 @@
         let mapHeight = window.innerHeight;
         let totalEnemies = 34;
 
-        let safeZone = { x: 0, y: 0, radius: 0, maxRadius: 0, targetRadius: 0, timer: 0 };
+        let safeZone = { x: 0, y: 0, radius: 0, maxRadius: 0, targetRadius: 0, startX: 0, startY: 0, targetX: 0, targetY: 0, startDelay: 900, duration: 5760, timer: 0 };
 
         let lastTime = performance.now();
         let frameCount = 0;
@@ -1873,6 +1879,24 @@
             updateLobbyUI();
         });
 
+        // Cerrar sesión: olvida la cuenta local y permite entrar con otra
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('ff_name');
+            localStorage.removeItem('ff_level');
+            localStorage.removeItem('ff_exp');
+            localStorage.removeItem('ff_points');
+            profile.name = "";
+            profile.level = 1;
+            profile.exp = 0;
+            profile.points = 0;
+            saveProfile();
+            configScreen.style.display = 'none';
+            loginScreen.style.display = 'flex';
+            usernameInput.value = "";
+            passwordInput.value = "";
+            showLoginMessage("");
+        });
+
         toTrainingBtn.addEventListener('click', () => {
             currentMode = 'training';
             mapWidth = window.innerWidth;
@@ -1956,11 +1980,32 @@
                 });
             }
 
-            safeZone.x = mapWidth / 2;
-            safeZone.y = mapHeight / 2;
-            safeZone.maxRadius = Math.hypot(mapWidth, mapHeight) * 1.2;
+            // Zona de veneno: la envía el servidor (sincronizada para todos).
+            // Si no viene (modo viejo), se genera aleatoria: cierra en cualquier parte del mapa.
+            if (matchData.zone) {
+                safeZone.x = matchData.zone.startX;
+                safeZone.y = matchData.zone.startY;
+                safeZone.startX = matchData.zone.startX;
+                safeZone.startY = matchData.zone.startY;
+                safeZone.targetX = matchData.zone.targetX;
+                safeZone.targetY = matchData.zone.targetY;
+                safeZone.maxRadius = matchData.zone.maxRadius;
+                safeZone.targetRadius = matchData.zone.targetRadius;
+                safeZone.startDelay = matchData.zone.startDelay || 900;
+                safeZone.duration = matchData.zone.duration || 5760;
+            } else {
+                safeZone.startX = mapWidth / 2;
+                safeZone.startY = mapHeight / 2;
+                safeZone.x = safeZone.startX;
+                safeZone.y = safeZone.startY;
+                safeZone.targetX = mapWidth * (0.20 + Math.random() * 0.60);
+                safeZone.targetY = mapHeight * (0.20 + Math.random() * 0.60);
+                safeZone.maxRadius = Math.hypot(mapWidth, mapHeight) * 1.2;
+                safeZone.targetRadius = 120;
+                safeZone.startDelay = 900;
+                safeZone.duration = 5760;
+            }
             safeZone.radius = safeZone.maxRadius;
-            safeZone.targetRadius = Math.min(mapWidth, mapHeight) * 0.20;
             safeZone.timer = 0;
 
             skillState.active = false;
@@ -2115,6 +2160,37 @@
                         }
                         if (!insideObstacle) validSpawn = true;
                     }
+                }
+
+                // Garantía: SIEMPRE una posición válida y finita, para que ningún bot
+                // quede invisible (aparece en el HUD pero nunca se ve ni muere).
+                if (!validSpawn || !isFinite(ex) || !isFinite(ey)) {
+                    validSpawn = false;
+                    attempts = 0;
+                    while (!validSpawn && attempts < 200) {
+                        attempts++;
+                        ex = Math.random() * (mapWidth - 300) + 150;
+                        ey = Math.random() * (mapHeight - 300) + 150;
+                        let insideObstacle = false;
+                        for (let obs of obstacles) {
+                            if (checkRectCollision(ex, ey, 15, obs)) { insideObstacle = true; break; }
+                        }
+                        if (!insideObstacle) validSpawn = true;
+                    }
+                    // Último recurso: empujar fuera de cualquier obstáculo
+                    if (!validSpawn) {
+                        ex = 150 + Math.random() * (mapWidth - 300);
+                        ey = 150 + Math.random() * (mapHeight - 300);
+                        for (let obs of obstacles) {
+                            if (checkRectCollision(ex, ey, 15, obs)) {
+                                ex = obs.x - 40;
+                                ey = obs.y - 40;
+                                break;
+                            }
+                        }
+                    }
+                    ex = Math.max(75, Math.min(mapWidth - 75, ex));
+                    ey = Math.max(75, Math.min(mapHeight - 75, ey));
                 }
 
                 let botHp = (currentMode === 'battlefield') ? 100 : 200;
@@ -2322,9 +2398,12 @@
 
             if (currentMode === 'battlefield') {
                 safeZone.timer++;
-                if (safeZone.timer > 900) { 
-                    let closureProgress = Math.min(1, (safeZone.timer - 900) / 5760);
+                if (safeZone.timer > safeZone.startDelay) { 
+                    let closureProgress = Math.min(1, (safeZone.timer - safeZone.startDelay) / safeZone.duration);
                     safeZone.radius = (safeZone.maxRadius * (1 - closureProgress)) + (safeZone.targetRadius * closureProgress);
+                    // El centro de la zona se desplaza hacia su destino final (punto aleatorio)
+                    safeZone.x = safeZone.startX + (safeZone.targetX - safeZone.startX) * closureProgress;
+                    safeZone.y = safeZone.startY + (safeZone.targetY - safeZone.startY) * closureProgress;
                 } else {
                     safeZone.radius = safeZone.maxRadius;
                 }

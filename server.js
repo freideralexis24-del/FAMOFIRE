@@ -89,10 +89,25 @@ function startMatch() {
   matches.set(roomCode, match);
 
   const assignedBotsCount = Math.max(0, MATCH_SIZE - players.size);
+  // Zona de veneno sincronizada para TODOS los jugadores de la partida:
+  // cierra casi del todo en un punto aleatorio del mapa (no siempre al centro)
+  const zone = {
+    x: MAP.w / 2,
+    y: MAP.h / 2,
+    startX: MAP.w / 2,
+    startY: MAP.h / 2,
+    targetX: Math.round(rand(MAP.w * 0.20, MAP.w * 0.80)),
+    targetY: Math.round(rand(MAP.h * 0.20, MAP.h * 0.80)),
+    maxRadius: Math.hypot(MAP.w, MAP.h) * 1.2,
+    targetRadius: 120,
+    startDelay: 900,
+    duration: 5760,
+  };
   const payload = {
     mapW: MAP.w,
     mapH: MAP.h,
     assignedBotsCount,
+    zone,
     you: null,
     players: [...players.values()].map(p => ({ id: p.id, name: p.name, color: p.color, x: p.x, y: p.y })),
   };
@@ -164,8 +179,12 @@ io.on('connection', (socket) => {
   broadcastOnline();
 
   // ---------- Sistema de cuentas (cada jugador la suya) ----------
+  // Los nombres se normalizan a MAYÚSCULAS: "alexis" y "ALEXIS" son la misma cuenta,
+  // así ningún nombre se puede repetir aunque cambien mayúsculas o espacios.
+  const normName = (n) => String(n || '').trim().toUpperCase().slice(0, 12);
+
   socket.on('account-login', (data = {}) => {
-    const name = String(data.name || '').trim().slice(0, 12);
+    const name = normName(data.name);
     const acc = accounts[name];
     if (!acc) return socket.emit('account-result', { ok: false, error: 'not-found' });
     if (acc.password !== sha(data.password)) return socket.emit('account-result', { ok: false, error: 'bad-pass' });
@@ -176,7 +195,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('account-register', (data = {}) => {
-    const name = String(data.name || '').trim().slice(0, 12);
+    const name = normName(data.name);
     if (name.length < 2) return socket.emit('account-result', { ok: false, error: 'short-name' });
     if (accounts[name]) return socket.emit('account-result', { ok: false, error: 'name-taken' });
     if (String(data.password || '').length < 4) return socket.emit('account-result', { ok: false, error: 'short-pass' });
@@ -200,7 +219,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('player-join', (data = {}) => {
-    socket.data.name = String(data.name || socket.data.name).slice(0, 12);
+    socket.data.name = normName(data.name || socket.data.name);
     socket.data.color = data.color || '#ffffff';
     if (socket.data.account) {
       socket.data.points = accounts[socket.data.account] ? accounts[socket.data.account].points : 0;
@@ -215,7 +234,7 @@ io.on('connection', (socket) => {
 
   socket.on('join-matchmaking', (data = {}) => {
     if (socket.data.inQueue || socket.data.room) return;
-    socket.data.name = String(data.name || socket.data.name).slice(0, 12);
+    socket.data.name = normName(data.name || socket.data.name);
     socket.data.points = Math.max(0, Math.floor(num(data.points, socket.data.points)));
     socket.data.color = data.color || socket.data.color;
     socket.data.inQueue = true;
