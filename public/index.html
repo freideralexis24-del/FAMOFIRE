@@ -1111,7 +1111,8 @@
         let spectateMode = false;
         let spectateId = null;
         let spectateNameStr = null;
-        let spectateSeenTarget = false;
+        let spectateTargetType = 'none'; // 'player' | 'bot' | 'none' (zona)
+        let spectateBotName = null;
         let pendingMatchOver = null;
 
         socket.on('connect', () => {
@@ -2114,12 +2115,23 @@
         }
 
         // --- MODO ESPECTADOR: observas en vivo al jugador real que te eliminó ---
-        function enterSpectator(killerId, killerName) {
-            if (!killerId || currentMode !== 'battlefield' || gameOver || spectateMode) return false;
+        function enterSpectator(killerId, killerName, killerBot) {
+            if (currentMode !== 'battlefield' || gameOver || spectateMode) return false;
             spectateMode = true;
-            spectateId = killerId;
-            spectateNameStr = killerName || '—';
-            spectateSeenTarget = false;
+            spectateTargetType = 'none';
+            spectateBotName = null;
+            if (killerBot) {
+                spectateTargetType = 'bot';
+                spectateBotName = killerBot.name || '';
+                spectateNameStr = killerBot.name || 'Bot';
+            } else if (killerId) {
+                spectateTargetType = 'player';
+                spectateId = killerId;
+                spectateNameStr = killerName || '—';
+            } else {
+                spectateTargetType = 'none';
+                spectateNameStr = killerName || '—';
+            }
             pendingMatchOver = null;
             spectateNameEl.innerText = spectateNameStr;
             spectatorScreen.style.display = 'flex';
@@ -2459,6 +2471,8 @@
             gameStarted = true;
             spectateMode = false;
             spectateId = null;
+            spectateTargetType = 'none';
+            spectateBotName = null;
             pendingMatchOver = null;
             spectatorScreen.style.display = 'none';
 
@@ -2990,7 +3004,7 @@
                     hpBar.style.width = Math.max(player.hp, 0) + '%';
                     if (player.hp <= 0) {
                         lastKillerName = 'Zona de Veneno';
-                        endGame(false);
+                        enterSpectator(null, 'Zona de Veneno', null);
                         if (currentMode === 'battlefield') socket.emit('player-died', { killerId: null, placement: getCurrentPlacement() });
                     }
                 }
@@ -3000,13 +3014,29 @@
             plPrevY = player.y;
 
             // MODO ESPECTADOR: el jugador muerto no se mueve, no dispara y no usa la
-            // habilidad; si el objetivo se veía en pantalla y DESAPARECE (murió por zona,
-            // ganó o salió), se cierran los resultados. Se ignora el primer parpadeo
-            // (el killer aún no ha llegado en el broadcast de 1 s).
+            // habilidad. La cámara sigue al que te eliminó (jugador real O bot);
+            // si ese objetivo muere o desaparece, se re-apunta a otro jugador vivo
+            // (o se queda en la última posición). Se sigue espectando HASTA QUE LA
+            // PARTIDA TERMINA: sin jugadores reales y con ≤1 bot, llegan los resultados.
             if (spectateMode) {
-                if (remotePlayers[spectateId]) {
-                    spectateSeenTarget = true;
-                } else if (spectateSeenTarget) {
+                let targetGone = false;
+                if (spectateTargetType === 'player') {
+                    if (!remotePlayers[spectateId]) targetGone = true;
+                } else if (spectateTargetType === 'bot') {
+                    if (!enemies.some(e => e.name === spectateBotName)) targetGone = true;
+                }
+                if (targetGone) {
+                    const next = Object.values(remotePlayers)[0] || null;
+                    if (next) {
+                        spectateTargetType = 'player';
+                        spectateId = next.id;
+                        spectateNameStr = next.name || '—';
+                        spectateNameEl.innerText = spectateNameStr;
+                    } else {
+                        spectateTargetType = 'none';
+                    }
+                }
+                if (Object.keys(remotePlayers).length === 0 && enemies.length <= 1) {
                     finishSpectator();
                 }
             }
@@ -3076,7 +3106,7 @@
                             if (player.hp <= 0) {
                                 lastKillerName = (b.owner && b.owner.name) ? b.owner.name : "Zona/Bot";
                                 addKillFeedMessage(lastKillerName, profile.name, true);
-                                endGame(false);
+                                enterSpectator(null, lastKillerName, b.owner || null);
                                 if (currentMode === 'battlefield') socket.emit('player-died', { killerId: null, placement: getCurrentPlacement() });
                             }
                         }
@@ -3115,7 +3145,7 @@
                             enemies.splice(k, 1);
                             updateHUDCounters();
 
-                            if (enemies.length === 0) {
+                            if (enemies.length === 0 && !spectateMode) {
                                 if (currentMode === 'battlefield' && Object.keys(remotePlayers).length === 0) {
                                     draw();
                                     endGame(true);
@@ -3313,7 +3343,7 @@
                         if (player.hp <= 0) {
                             lastKillerName = enemy.name || "Cuerpo a cuerpo";
                             addKillFeedMessage(lastKillerName, profile.name, true);
-                            endGame(false);
+                            enterSpectator(null, lastKillerName, enemy);
                             if (currentMode === 'battlefield') socket.emit('player-died', { killerId: null, placement: getCurrentPlacement() });
                         }
                     }
@@ -3376,9 +3406,17 @@
             if (currentMode === 'battlefield') {
                 // La cámara sigue al jugador espectado en lugar del cuerpo muerto
                 let followX = player.x, followY = player.y;
-                if (spectateMode && remotePlayers[spectateId]) {
-                    followX = remotePlayers[spectateId].x;
-                    followY = remotePlayers[spectateId].y;
+                if (spectateMode) {
+                    if (spectateTargetType === 'player' && remotePlayers[spectateId]) {
+                        followX = remotePlayers[spectateId].x;
+                        followY = remotePlayers[spectateId].y;
+                    } else if (spectateTargetType === 'bot') {
+                        const spectatedBot = enemies.find(e => e.name === spectateBotName);
+                        if (spectatedBot) {
+                            followX = spectatedBot.x;
+                            followY = spectatedBot.y;
+                        }
+                    }
                 }
                 let camX = canvas.width / 2 - followX;
                 let camY = canvas.height / 2 - followY;
@@ -3587,6 +3625,8 @@
 
             gameOver = true;
             spectateMode = false;
+            spectateTargetType = 'none';
+            spectateBotName = null;
             spectatorScreen.style.display = 'none';
 
             // Liberar la partida en el servidor SIEMPRE (ganes, pierdas o salgas):
