@@ -10,7 +10,7 @@ function check(name, ok, extra) {
 
 const A = io(URL, { reconnection: false });
 const B = io(URL, { reconnection: false });
-const got = { matchStart: [], moves: 0, damage: null, killConfirm: false, feed: 0, matchOver: null, matchEnd: false, removed: false, relogin: null, top100: false, zeroNotInTop: false, badpassProbe: false, duplicateName: false, zoneOk: false, idOk: false, idPersists: false };
+const got = { matchStart: [], moves: 0, damage: null, killConfirm: false, feed: 0, matchOver: null, matchEnd: false, removed: false, relogin: null, top100: false, zeroNotInTop: false, badpassProbe: false, duplicateName: false, zoneOk: false, idOk: false, idPersists: false, statsOk: false };
 
 let A_id = null, B_id = null;
 let registered = false;
@@ -20,6 +20,7 @@ const done = () => {
     check('Registro de cuenta funciona (TESTA)', registered);
     check('Cuenta recibe un ID único al registrarse', got.idOk);
     check('El ID se conserva al volver a entrar (login)', got.idPersists);
+    check('Cuenta suma estadisticas (1 partida, 2 bajas, 1 derrota)', got.statsOk);
     check('Nombres únicos sin importar mayúsculas (testa rechazado)', got.duplicateName);
     check('Login con contraseña incorrecta falla', got.badpassProbe);
     check('A recibe match-start (33 bots, mapa 3600x2000, zona incluida)', got.matchStart.length >= 1 &&
@@ -96,6 +97,7 @@ A.on('update-room-players', () => {});
 A.on('kill-confirm', () => {
   got.killConfirm = true;
   A.emit('account-update', { points: 1650, level: 3, exp: 40 });
+  A.emit('match-results', { win: false, kills: 2, dmg: 50 });
   setTimeout(() => {
     const C = io(URL, { reconnection: false });
     C.on('connect', () => C.emit('account-login', { name: 'TestA', password: 'clave123' }));
@@ -103,6 +105,7 @@ A.on('kill-confirm', () => {
       if (r.ok) {
         got.relogin = r.account;
         got.idPersists = r.account.id === got.testAId;
+        got.statsOk = r.account.matches === 1 && r.account.kills === 2 && r.account.wins === 0;
         // Crear una cuenta nueva con 0 puntos y pedir el Top: no debe aparecer
         const E = io(URL, { reconnection: false });
         E.on('connect', () => E.emit('account-register', { name: 'CERO' + Math.floor(Math.random() * 9999), password: 'clave123' }));

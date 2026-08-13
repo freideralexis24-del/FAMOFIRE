@@ -7,6 +7,7 @@ const http = require('http');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const { Server } = require('socket.io');
 
 const PORT = process.env.PORT || 3000;
@@ -63,11 +64,15 @@ async function initAccounts() {
       try {
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS lastseen BIGINT NOT NULL DEFAULT 0');
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS id TEXT');
+        await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS matches INT NOT NULL DEFAULT 0');
+        await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS wins INT NOT NULL DEFAULT 0');
+        await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS kills INT NOT NULL DEFAULT 0');
+        await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS dmg INT NOT NULL DEFAULT 0');
       } catch (e) { /* versión vieja de Postgres u otro problema menor: se ignora */ }
-      const { rows } = await db.query('SELECT name, password, points, level, exp, lastseen, id FROM accounts');
+      const { rows } = await db.query('SELECT name, password, points, level, exp, lastseen, id, matches, wins, kills, dmg FROM accounts');
       accounts = {};
       for (const r of rows) {
-        accounts[r.name] = { id: r.id || genId(), password: r.password, points: Number(r.points), level: Number(r.level), exp: Number(r.exp), lastSeen: Number(r.lastseen) || 0 };
+        accounts[r.name] = { id: r.id || genId(), password: r.password, points: Number(r.points), level: Number(r.level), exp: Number(r.exp), lastSeen: Number(r.lastseen) || 0, matches: Number(r.matches) || 0, wins: Number(r.wins) || 0, kills: Number(r.kills) || 0, dmg: Number(r.dmg) || 0 };
       }
       console.log(`[DB] ${rows.length} cuentas cargadas desde PostgreSQL`);
     } catch (e) {
@@ -108,16 +113,20 @@ async function dbSaveAll() {
   const client = await db.connect();
   try {
     await client.query('BEGIN');
-    const q = `INSERT INTO accounts (name, id, password, points, level, exp, lastseen)
-               VALUES ($1, $2, $3, $4, $5, $6, $7)
+    const q = `INSERT INTO accounts (name, id, password, points, level, exp, lastseen, matches, wins, kills, dmg)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
                ON CONFLICT (name) DO UPDATE SET
                  password = EXCLUDED.password,
                  points = EXCLUDED.points,
                  level = EXCLUDED.level,
                  exp = EXCLUDED.exp,
-                 lastseen = EXCLUDED.lastseen`;
+                 lastseen = EXCLUDED.lastseen,
+                 matches = EXCLUDED.matches,
+                 wins = EXCLUDED.wins,
+                 kills = EXCLUDED.kills,
+                 dmg = EXCLUDED.dmg`;
     for (const [name, a] of Object.entries(accounts)) {
-      await client.query(q, [name, a.id || genId(), a.password, Number(a.points) || 0, Number(a.level) || 1, Number(a.exp) || 0, Number(a.lastSeen) || 0]);
+      await client.query(q, [name, a.id || genId(), a.password, Number(a.points) || 0, Number(a.level) || 1, Number(a.exp) || 0, Number(a.lastSeen) || 0, Number(a.matches) || 0, Number(a.wins) || 0, Number(a.kills) || 0, Number(a.dmg) || 0]);
     }
     await client.query('COMMIT');
   } catch (e) {
@@ -301,13 +310,26 @@ io.on('connection', (socket) => {
     const name = normName(data.name);
     const acc = accounts[name];
     if (!acc) return socket.emit('account-result', { ok: false, error: 'not-found' });
-    if (acc.password !== sha(data.password)) return socket.emit('account-result', { ok: false, error: 'bad-pass' });
+    const stored = String(acc.password || '');
+    // Contraseñas nuevas: hash bcrypt con sal. Las viejas (hash SHA-256 sin sal,
+    // de la era inicial del juego) todavía se validan y se MIGRAN a bcrypt en
+    // el primer login de cada jugador.
+    let ok = false;
+    if (stored.startsWith('$2')) {
+      try { ok = await bcrypt.compare(String(data.password || ''), stored); } catch (e) { ok = false; }
+    } else {
+      ok = stored === sha(data.password);
+      if (ok) {
+        try { acc.password = await bcrypt.hash(String(data.password || ''), 10); saveAccounts(); } catch (e) { /* se ignora */ }
+      }
+    }
+    if (!ok) return socket.emit('account-result', { ok: false, error: 'bad-pass' });
     acc.lastSeen = Date.now();
     saveAccounts();
     socket.data.account = name;
     socket.data.name = name;
     socket.data.points = acc.points;
-    socket.emit('account-result', { ok: true, account: { id: acc.id, name, points: acc.points, level: acc.level, exp: acc.exp } });
+    socket.emit('account-result', { ok: true, account: { id: acc.id, name, points: acc.points, level: acc.level, exp: acc.exp, matches: acc.matches || 0, wins: acc.wins || 0, kills: acc.kills || 0, dmg: acc.dmg || 0 } });
   });
 
   socket.on('account-register', async (data = {}) => {
@@ -316,12 +338,14 @@ io.on('connection', (socket) => {
     if (name.length < 2) return socket.emit('account-result', { ok: false, error: 'short-name' });
     if (accounts[name]) return socket.emit('account-result', { ok: false, error: 'name-taken' });
     if (String(data.password || '').length < 4) return socket.emit('account-result', { ok: false, error: 'short-pass' });
-    accounts[name] = { id: genId(), password: sha(data.password), points: 0, level: 1, exp: 0, lastSeen: Date.now() };
+    let passHash;
+    try { passHash = await bcrypt.hash(String(data.password || ''), 10); } catch (e) { passHash = sha(data.password); }
+    accounts[name] = { id: genId(), password: passHash, points: 0, level: 1, exp: 0, lastSeen: Date.now(), matches: 0, wins: 0, kills: 0, dmg: 0 };
     saveAccounts();
     socket.data.account = name;
     socket.data.name = name;
     socket.data.points = 0;
-    socket.emit('account-result', { ok: true, account: { id: accounts[name].id, name, points: 0, level: 1, exp: 0 } });
+    socket.emit('account-result', { ok: true, account: { id: accounts[name].id, name, points: 0, level: 1, exp: 0, matches: 0, wins: 0, kills: 0, dmg: 0 } });
   });
 
   socket.on('account-update', (data = {}) => {
@@ -333,6 +357,22 @@ io.on('connection', (socket) => {
     acc.exp = clamp(Math.floor(num(data.exp, acc.exp)), 0, 999999);
     acc.lastSeen = Date.now();
     socket.data.points = acc.points;
+    saveAccounts();
+  });
+
+  // Estadísticas históricas por cuenta: partidas, victorias, bajas y daño total.
+  // El cliente reporta al terminar cada partida; el rate-limit evita inflarlas a mano.
+  socket.on('match-results', (data = {}) => {
+    if (!socket.data.account) return;
+    if (socket.data.lastStatsAt && Date.now() - socket.data.lastStatsAt < 5000) return;
+    socket.data.lastStatsAt = Date.now();
+    const acc = accounts[socket.data.account];
+    if (!acc) return;
+    acc.matches = (Number(acc.matches) || 0) + 1;
+    if (data.win) acc.wins = (Number(acc.wins) || 0) + 1;
+    acc.kills = (Number(acc.kills) || 0) + Math.max(0, Math.floor(num(data.kills, 0)));
+    acc.dmg = (Number(acc.dmg) || 0) + Math.max(0, Math.floor(num(data.dmg, 0)));
+    acc.lastSeen = Date.now();
     saveAccounts();
   });
 
