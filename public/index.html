@@ -723,6 +723,9 @@
 </head>
 <body>
 
+    <!-- Efectos de sonido (el audio requiere el primer clic/tecla del usuario) -->
+    <audio id="sfx-shot" preload="auto" src="sounds/shot.wav"></audio>
+
     <div id="login-screen" class="screen">
         <h1>FAMOFIRE</h1>
         <input type="text" id="username-input" placeholder="Ingresa tu Nickname" maxlength="12">
@@ -2035,7 +2038,7 @@
             // se registra y el siguiente frame SIEMPRE se programa, así la partida
             // nunca se queda congelada en pantalla.
             try {
-                let delta = now - lastTime;
+                let delta = Math.min(now - lastTime, 5000);
                 lastTime = now;
                 frameCount++;
                 fpsTimer += delta;
@@ -2048,7 +2051,15 @@
                 }
 
                 if (gameStarted && !gameOver) {
-                    update(delta);
+                    // PESTAÑA EN SEGUNDO PLANO: el navegador congela requestAnimationFrame
+                    // y la partida se "pausaba" (bots, zona y balas detenidos). Acá, si
+                    // pasó mucho tiempo real, se simulan varios pasos del juego para
+                    // que el combate siga avanzando mientras no estás mirando.
+                    const steps = Math.max(1, Math.min(600, Math.round(delta / 16.67)));
+                    for (let s = 0; s < steps; s++) {
+                        update(16.67);
+                        if (gameOver) break;
+                    }
                 }
                 draw();
             } catch (err) {
@@ -3005,6 +3016,7 @@
                     radius: 4, color: '#ffff00', maxRange: 550, isPlayer: true, owner: 'player'
                 });
                 player.shootCooldown = 15;
+                playShotSound();
                 if (currentMode === 'battlefield') {
                     socket.emit('player-shot', { x: player.x, y: player.y, angle: player.angle });
                 }
@@ -3012,6 +3024,29 @@
         });
 
         window.addEventListener('contextmenu', e => e.preventDefault());
+
+        // ---- Sonido de disparo ----
+        const sfxShot = document.getElementById('sfx-shot');
+        function playShotSound() {
+            if (!sfxShot || sfxShot.muted) return;
+            try {
+                sfxShot.currentTime = 0;
+                sfxShot.volume = 0.35;
+                const p = sfxShot.play();
+                if (p && p.catch) p.catch(() => {});
+            } catch (e) { /* sin audio: se ignora */ }
+        }
+        document.addEventListener('pointerdown', () => {
+            try {
+                // Desbloqueo de audio (Safari/iOS): toca el elemento en silencio
+                // para que los próximos disparos sí suenen.
+                sfxShot.volume = 0;
+                const p = sfxShot.play();
+                if (p && p.catch) p.catch(() => {});
+                sfxShot.pause();
+                sfxShot.volume = 0.35;
+            } catch (e) {}
+        }, { once: true, capture: true });
 
         function isActionPressed(actionName) {
             let keysArr = profile.controls[actionName];
@@ -3890,6 +3925,13 @@
         }
 
         requestAnimationFrame(masterGameLoop);
+
+        // Pestaña en segundo plano: rAF queda congelado, así que un timer de
+        // respaldo mantiene la simulación viva (el navegador lo deja correr
+        // ~1 vez por segundo y el catch-up de masterGameLoop avanza la partida).
+        setInterval(() => {
+            if (document.hidden) masterGameLoop(performance.now());
+        }, 250);
     </script>
 </body>
 </html>
