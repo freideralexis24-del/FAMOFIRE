@@ -521,8 +521,13 @@
 
     <div id="login-screen" class="screen">
         <h1>FAMOFIRE</h1>
-        <input type="text" id="username-input" placeholder="Ingresa tu Nickname" maxlength="12" value="ALEXIS">
-        <button id="login-btn" class="btn-main" data-i18n="loginBtn">CONTINUAR</button>
+        <input type="text" id="username-input" placeholder="Ingresa tu Nickname" maxlength="12">
+        <input type="password" id="password-input" placeholder="Contraseña" maxlength="20" style="margin-bottom: 8px;">
+        <div class="lobby-menu">
+            <button id="login-btn" class="btn-main" data-i18n="loginBtn">CONTINUAR</button>
+            <button id="register-btn" class="btn-main" style="background-color: #00ffff;" data-i18n="registerBtn">CREAR CUENTA</button>
+        </div>
+        <p id="login-msg" style="font-size: 14px; color: #ffcc00; height: 36px; margin-top: 8px; text-align: center;"></p>
     </div>
 
     <div id="lobby-screen" class="screen" style="display: none;">
@@ -976,6 +981,15 @@
         const i18n = {
             "ESPAÑOL": {
                 loginBtn: "CONTINUAR",
+                registerBtn: "CREAR CUENTA",
+                passwordPlaceholder: "Contraseña",
+                errFillFields: "Ingresa tu nickname y tu contraseña",
+                errShortPass: "⚠️ La contraseña debe tener al menos 4 caracteres",
+                errShortName: "⚠️ El nickname debe tener al menos 2 caracteres",
+                errNoAccount: "⚠️ Esa cuenta no existe. Crea una con CREAR CUENTA",
+                errBadPass: "⚠️ Contraseña incorrecta",
+                errNameTaken: "⚠️ Ese nickname ya está registrado. Inicia sesión con tu contraseña",
+                errGeneric: "⚠️ Sin conexión con el servidor. Intenta de nuevo",
                 nicknamePlaceholder: "Ingresa tu Nickname",
                 lobbyTitle: "SALA DE COMANDO",
                 soldierLabel: "Soldado",
@@ -1062,6 +1076,15 @@
             },
             "ENGLISH": {
                 loginBtn: "CONTINUE",
+                registerBtn: "CREATE ACCOUNT",
+                passwordPlaceholder: "Password",
+                errFillFields: "Enter your nickname and password",
+                errShortPass: "⚠️ Password must be at least 4 characters",
+                errShortName: "⚠️ Nickname must be at least 2 characters",
+                errNoAccount: "⚠️ That account doesn't exist. Create one with CREATE ACCOUNT",
+                errBadPass: "⚠️ Incorrect password",
+                errNameTaken: "⚠️ That nickname is already registered. Log in with your password",
+                errGeneric: "⚠️ No server connection. Try again",
                 nicknamePlaceholder: "Enter your Nickname",
                 lobbyTitle: "COMMAND ROOM",
                 soldierLabel: "Soldier",
@@ -1148,6 +1171,15 @@
             },
             "中国人": {
                 loginBtn: "继续",
+                registerBtn: "创建账户",
+                passwordPlaceholder: "密码",
+                errFillFields: "请输入昵称和密码",
+                errShortPass: "⚠️ 密码至少需要4个字符",
+                errShortName: "⚠️ 昵称至少需要2个字符",
+                errNoAccount: "⚠️ 该账户不存在。使用创建账户注册",
+                errBadPass: "⚠️ 密码错误",
+                errNameTaken: "⚠️ 该昵称已被注册。请使用密码登录",
+                errGeneric: "⚠️ 无法连接服务器，请重试",
                 nicknamePlaceholder: "输入您的昵称",
                 lobbyTitle: "指挥室",
                 soldierLabel: "士兵",
@@ -1234,6 +1266,15 @@
             },
             "BRASIL": {
                 loginBtn: "CONTINUAR",
+                registerBtn: "CRIAR CONTA",
+                passwordPlaceholder: "Senha",
+                errFillFields: "Digite seu apelido e senha",
+                errShortPass: "⚠️ A senha deve ter pelo menos 4 caracteres",
+                errShortName: "⚠️ O apelido deve ter pelo menos 2 caracteres",
+                errNoAccount: "⚠️ Essa conta não existe. Crie uma com CRIAR CONTA",
+                errBadPass: "⚠️ Senha incorreta",
+                errNameTaken: "⚠️ Esse apelido já está registrado. Faça login com sua senha",
+                errGeneric: "⚠️ Sem conexão com o servidor. Tente novamente",
                 nicknamePlaceholder: "Digite seu Apelido",
                 lobbyTitle: "SALA DE COMANDO",
                 soldierLabel: "Soldado",
@@ -1361,10 +1402,10 @@
         }
 
         let profile = {
-            name: localStorage.getItem('ff_name') || "ALEXIS",
-            level: parseInt(localStorage.getItem('ff_level')) || 6,
+            name: localStorage.getItem('ff_name') || "",
+            level: parseInt(localStorage.getItem('ff_level')) || 1,
             exp: parseInt(localStorage.getItem('ff_exp')) || 0,
-            points: parseInt(localStorage.getItem('ff_points')) || 1688,
+            points: parseInt(localStorage.getItem('ff_points')) || 0,
             color: localStorage.getItem('ff_color') || "#ffffff",
             selectedSkill: localStorage.getItem('ff_skill') || "shield",
             language: localStorage.getItem('ff_lang') || "ESPAÑOL",
@@ -1451,6 +1492,7 @@
                 }
             });
             if (usernameInput) usernameInput.placeholder = dict.nicknamePlaceholder;
+            if (passwordInput) passwordInput.placeholder = dict.passwordPlaceholder;
 
             const ranksTableBody = document.getElementById('ranks-table-body');
             if (ranksTableBody) {
@@ -1506,7 +1548,10 @@
         const rebindMsg = document.getElementById('rebind-msg');
 
         const usernameInput = document.getElementById('username-input');
+        const passwordInput = document.getElementById('password-input');
         const loginBtn = document.getElementById('login-btn');
+        const registerBtn = document.getElementById('register-btn');
+        const loginMsg = document.getElementById('login-msg');
         const lobbyName = document.getElementById('lobby-name');
         const lobbyLevel = document.getElementById('lobby-level');
         const expBarFill = document.getElementById('exp-bar-fill');
@@ -1690,19 +1735,72 @@
             hudKills.innerText = matchStats.kills;
         }
 
-        loginBtn.addEventListener('click', () => {
-            let typedName = usernameInput.value.trim();
-            if(typedName !== "") {
-                profile.name = typedName;
-                saveProfile();
-            }
-            updateLobbyUI();
-            
-            // Enviar perfil completo y puntos reales al servidor central para registrarse en el ranking global
-            socket.emit('player-join', { name: profile.name, color: profile.color, points: profile.points });
+        function showLoginMessage(msg) {
+            if (loginMsg) loginMsg.innerText = msg;
+        }
 
+        function enterLobbyWithAccount(account) {
+            profile.name = account.name;
+            profile.points = account.points;
+            profile.level = account.level;
+            profile.exp = account.exp;
+            saveProfile();
+            updateLobbyUI();
+            socket.emit('player-join', { name: profile.name, color: profile.color });
             loginScreen.style.display = 'none';
             lobbyScreen.style.display = 'flex';
+        }
+
+        loginBtn.addEventListener('click', () => {
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            let typedName = usernameInput.value.trim();
+            let typedPass = passwordInput.value;
+            if (typedName === "" || typedPass === "") {
+                showLoginMessage(dict.errFillFields);
+                return;
+            }
+            if (!socket.connected) {
+                showLoginMessage(dict.errGeneric);
+                return;
+            }
+            showLoginMessage("...");
+            socket.emit('account-login', { name: typedName, password: typedPass });
+        });
+
+        registerBtn.addEventListener('click', () => {
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            let typedName = usernameInput.value.trim();
+            let typedPass = passwordInput.value;
+            if (typedName === "" || typedPass === "") {
+                showLoginMessage(dict.errFillFields);
+                return;
+            }
+            if (typedPass.length < 4) {
+                showLoginMessage(dict.errShortPass);
+                return;
+            }
+            if (!socket.connected) {
+                showLoginMessage(dict.errGeneric);
+                return;
+            }
+            showLoginMessage("...");
+            socket.emit('account-register', { name: typedName, password: typedPass });
+        });
+
+        socket.on('account-result', (res) => {
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            if (!res || !res.ok) {
+                let msg = dict.errGeneric;
+                if (res && res.error === 'not-found') msg = dict.errNoAccount;
+                else if (res && res.error === 'bad-pass') msg = dict.errBadPass;
+                else if (res && res.error === 'name-taken') msg = dict.errNameTaken;
+                else if (res && res.error === 'short-pass') msg = dict.errShortPass;
+                else if (res && res.error === 'short-name') msg = dict.errShortName;
+                showLoginMessage(msg);
+                return;
+            }
+            showLoginMessage("");
+            enterLobbyWithAccount(res.account);
         });
 
         function openConfigMenu() {
@@ -2809,8 +2907,8 @@
                     }
                 }
                 saveProfile();
-                // Reportar puntos al servidor para actualizar el Ranking Global (Top 100)
-                if (socket && socket.connected) socket.emit('update-points', { points: profile.points });
+                // Guardar progreso en TU cuenta del servidor (no en la de nadie más)
+                if (socket && socket.connected) socket.emit('account-update', { points: profile.points, level: profile.level, exp: profile.exp });
             }
 
             statName.innerText = profile.name;

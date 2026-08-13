@@ -6,6 +6,7 @@ const express = require('express');
 const http = require('http');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const { Server } = require('socket.io');
 
 const PORT = process.env.PORT || 3000;
@@ -13,7 +14,7 @@ const MATCH_SIZE = 35;                              // cupos por partida (jugado
 const QUEUE_TIMEOUT = parseInt(process.env.MM_TIMEOUT_MS || '30000', 10); // espera máxima en cola
 const MAP = { w: 3600, h: 2000 };                   // mapa fijo del Campo de Batalla (sincronizado)
 const SPAWN_MIN_DIST = 400;                         // distancia mínima entre apariciones
-const RANKING_FILE = path.join(__dirname, 'ranking.json');
+const ACCOUNTS_FILE = path.join(__dirname, 'accounts.json');
 
 const app = express();
 const server = http.createServer(app);
@@ -22,16 +23,20 @@ const io = new Server(server, { maxHttpBufferSize: 1e6 });
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/health', (req, res) => res.send('ok'));
 
-// ---------- Ranking persistente (Top 100) ----------
-let ranking = {};
-try { ranking = JSON.parse(fs.readFileSync(RANKING_FILE, 'utf8')); } catch (e) { ranking = {}; }
-function saveRanking() {
-  try { fs.writeFileSync(RANKING_FILE, JSON.stringify(ranking)); } catch (e) { /* sin permiso de escritura en algunos hosts */ }
+// ---------- Cuentas de jugador (cada persona tiene la suya) ----------
+let accounts = {};
+try { accounts = JSON.parse(fs.readFileSync(ACCOUNTS_FILE, 'utf8')); } catch (e) { accounts = {}; }
+function saveAccounts() {
+  try { fs.writeFileSync(ACCOUNTS_FILE, JSON.stringify(accounts)); } catch (e) { /* sin permiso de escritura en algunos hosts */ }
 }
+function sha(text) {
+  return crypto.createHash('sha256').update(String(text || '')).digest('hex');
+}
+const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 function getTop100() {
-  return Object.entries(ranking)
-    .map(([name, points]) => ({ name, points }))
-    .sort((a, b) => b.points - a.points)
+  return Object.entries(accounts)
+    .map(([name, a]) => ({ name, points: a.points }))
+    .sort((x, y) => y.points - x.points)
     .slice(0, 100);
 }
 
@@ -120,14 +125,12 @@ function endMatchFor(match, loserId, clientPlacement) {
   const loserSocket = io.sockets.sockets.get(loserId);
   if (loserSocket) loserSocket.emit('match-over', { placement });
 
+  // IMPORTANTE: el servidor NO declara ganador. Los bots viven en el cliente, así que
+  // la victoria real la decide cada cliente (último vivo entre bots + jugadores reales).
+  // De lo contrario, al morir/desconectarse el único rival real, se ganaba "top 1" falso
+  // con bots todavía vivos.
   const alive = [...match.players.values()].filter(q => q.alive);
-  if (alive.length === 1) {
-    const w = io.sockets.sockets.get(alive[0].id);
-    if (w) w.emit('match-end', { placement: 1 });
-    match.endedAt = Date.now();
-  } else if (alive.length === 0) {
-    match.endedAt = Date.now();
-  }
+  if (alive.length === 0) match.endedAt = Date.now();
 }
 
 setInterval(() => {
@@ -157,26 +160,57 @@ io.on('connection', (socket) => {
   socket.data.name = 'Jugador';
   socket.data.points = 0;
   socket.data.color = '#ffffff';
+  socket.data.account = null; // nombre de la cuenta logueada (si hay)
   broadcastOnline();
 
+  // ---------- Sistema de cuentas (cada jugador la suya) ----------
+  socket.on('account-login', (data = {}) => {
+    const name = String(data.name || '').trim().slice(0, 12);
+    const acc = accounts[name];
+    if (!acc) return socket.emit('account-result', { ok: false, error: 'not-found' });
+    if (acc.password !== sha(data.password)) return socket.emit('account-result', { ok: false, error: 'bad-pass' });
+    socket.data.account = name;
+    socket.data.name = name;
+    socket.data.points = acc.points;
+    socket.emit('account-result', { ok: true, account: { name, points: acc.points, level: acc.level, exp: acc.exp } });
+  });
+
+  socket.on('account-register', (data = {}) => {
+    const name = String(data.name || '').trim().slice(0, 12);
+    if (name.length < 2) return socket.emit('account-result', { ok: false, error: 'short-name' });
+    if (accounts[name]) return socket.emit('account-result', { ok: false, error: 'name-taken' });
+    if (String(data.password || '').length < 4) return socket.emit('account-result', { ok: false, error: 'short-pass' });
+    accounts[name] = { password: sha(data.password), points: 0, level: 1, exp: 0 };
+    saveAccounts();
+    socket.data.account = name;
+    socket.data.name = name;
+    socket.data.points = 0;
+    socket.emit('account-result', { ok: true, account: { name, points: 0, level: 1, exp: 0 } });
+  });
+
+  socket.on('account-update', (data = {}) => {
+    if (!socket.data.account) return;
+    const acc = accounts[socket.data.account];
+    if (!acc) return;
+    acc.points = clamp(Math.floor(num(data.points, acc.points)), 0, 999999);
+    acc.level = clamp(Math.floor(num(data.level, acc.level)), 1, 100);
+    acc.exp = clamp(Math.floor(num(data.exp, acc.exp)), 0, 999999);
+    socket.data.points = acc.points;
+    saveAccounts();
+  });
+
   socket.on('player-join', (data = {}) => {
-    socket.data.name = String(data.name || 'Jugador').slice(0, 12);
-    socket.data.points = Math.max(0, Math.floor(num(data.points, 0)));
+    socket.data.name = String(data.name || socket.data.name).slice(0, 12);
     socket.data.color = data.color || '#ffffff';
-    if (!ranking[socket.data.name]) ranking[socket.data.name] = socket.data.points;
-    else ranking[socket.data.name] = Math.max(ranking[socket.data.name], socket.data.points);
-    saveRanking();
+    if (socket.data.account) {
+      socket.data.points = accounts[socket.data.account] ? accounts[socket.data.account].points : 0;
+    } else {
+      socket.data.points = Math.max(0, Math.floor(num(data.points, 0)));
+    }
   });
 
   socket.on('get-top100', () => {
     socket.emit('update-top100', getTop100());
-  });
-
-  socket.on('update-points', (data = {}) => {
-    const pts = Math.max(0, Math.floor(num(data.points, 0)));
-    socket.data.points = pts;
-    ranking[socket.data.name] = Math.max(ranking[socket.data.name] || 0, pts);
-    saveRanking();
   });
 
   socket.on('join-matchmaking', (data = {}) => {
@@ -266,14 +300,8 @@ io.on('connection', (socket) => {
       io.to(code).emit('remove-player', socket.id);
       match.aliveCount = [...match.players.values()].filter(q => q.alive).length;
       io.to(code).emit('update-room-alive', match.aliveCount);
-      const alive = [...match.players.values()].filter(q => q.alive);
-      if (alive.length === 1) {
-        const w = io.sockets.sockets.get(alive[0].id);
-        if (w) w.emit('match-end', { placement: 1 });
-        match.endedAt = Date.now();
-      } else if (alive.length === 0) {
-        match.endedAt = Date.now();
-      }
+      // Sin victoria automática: la decide cada cliente (los bots son locales)
+      if (match.aliveCount === 0) match.endedAt = Date.now();
     }
     broadcastOnline();
   });
