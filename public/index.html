@@ -181,6 +181,51 @@
             font-weight: bold;
         }
 
+        /* PESTAÑAS DE PERSONALIZAR (SKIN / AVATAR) */
+        .customize-tabs {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 14px;
+        }
+        .avatar-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            max-width: 360px;
+            margin: 0 auto;
+        }
+        .avatar-option {
+            aspect-ratio: 1 / 1;
+            background: rgba(30, 35, 50, 0.9);
+            border: 2px solid #555;
+            border-radius: 12px;
+            font-size: 34px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.1s ease, border-color 0.1s ease;
+        }
+        .avatar-option:hover {
+            border-color: #ffcc00;
+            transform: scale(1.06);
+        }
+        .avatar-option.selected {
+            border-color: #ffcc00;
+            box-shadow: 0px 0px 10px #ffcc00;
+            background: rgba(255, 204, 0, 0.15);
+        }
+        .rank-player-name {
+            color: #00ffff;
+            cursor: pointer;
+        }
+        .rank-player-name:hover {
+            color: #ffcc00;
+            text-decoration: underline;
+        }
+
         /* PERFIL COMPLETO */
         #profile-card {
             background: rgba(10, 15, 20, 0.9);
@@ -833,9 +878,27 @@
             <button id="to-language-btn" class="btn-main" style="background-color: #00ffff;" data-i18n="langMenuBtn">IDIOMA</button>
             <button id="to-controls-btn" class="btn-main" style="background-color: #00ff00;" data-i18n="controlsMenuBtn">CONTROLES</button>
             <button id="toggle-fps-btn" class="btn-main"><span data-i18n="fpsBtnText">FPS</span>: <span id="fps-status-label">ACTIVADO</span></button>
+            <div class="fps-cap-box">
+                <span style="font-size: 14px; color: #fff; font-weight: bold;" data-i18n="fpsLimitText">LÍMITE DE FPS:</span>
+                <div id="fps-cap-row" style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 8px;"></div>
+            </div>
             <button id="logout-btn" class="btn-main" style="background-color: #ff3333; color: #fff;" data-i18n="logoutBtn">CERRAR SESIÓN</button>
+            <button id="delete-account-btn" class="btn-main" style="background-color: #880000; color: #fff;" data-i18n="deleteBtn">ELIMINAR CUENTA</button>
             <button id="back-from-config" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
         </div>
+    </div>
+
+    <!-- ELIMINAR CUENTA -->
+    <div id="delete-screen" class="screen" style="display: none;">
+        <h1 data-i18n="deleteTitle">ELIMINAR CUENTA</h1>
+        <p style="font-size: 14px; color: #ff6666; margin-bottom: 12px;">⚠️ <span data-i18n="deleteWarning">Se borrarán tus puntos, rango, estadísticas y skins para SIEMPRE.</span></p>
+        <input type="password" id="delete-pass-input" placeholder="Contraseña" maxlength="20" autocomplete="off">
+        <div class="lobby-menu">
+            <button id="delete-confirm-btn" class="btn-main" style="background-color: #ff3333; color: #fff;" data-i18n="deleteConfirm">BORRAR DEFINITIVAMENTE</button>
+            <button id="delete-cancel-btn" class="btn-main" data-i18n="deleteCancel">CANCELAR</button>
+        </div>
+        <p id="delete-msg" style="font-size: 14px; color: #ffcc00; height: 20px; margin-top: 8px; text-align: center;"></p>
+        <button id="back-from-delete" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
     </div>
 
     <!-- CONTROLES CON BOTÓN DE ELIMINAR CASILLA -->
@@ -949,44 +1012,58 @@
     </div>
 
     <div id="skins-screen" class="screen" style="display: none;">
-        <h1 data-i18n="skinsTitleHeader">SELECCIONAR SKIN</h1>
-        <p style="font-size: 16px; margin-bottom: 5px;" data-i18n="skinsSubtitle">Elige el color para tu uniforme:</p>
-        
-        <div class="skin-grid">
-            <div class="skin-option-card" data-color="#ffffff" onclick="selectSkinColor('#ffffff', false, this)">
-                <div class="skin-preview" style="background: #ffffff;"></div>
-                <span data-i18n="skinClassic">Clásico</span>
-            </div>
-            
-            <div class="skin-option-card" data-color="multicolor" data-level="5" onclick="selectSkinColor('multicolor', true, this)">
-                <div class="lock-badge">🔒</div>
-                <div class="skin-preview" style="background: linear-gradient(135deg, #ff0000, #00ff00, #0000ff);"></div>
-                <span data-i18n="skinRainbow">Arcoíris Táctico</span>
-            </div>
-
-            <div class="skin-option-card" data-color="#00ffff" onclick="selectSkinColor('#00ffff', false, this)">
-                <div class="skin-preview" style="background: #00ffff;"></div>
-                <span data-i18n="skinCyan">Cian Neón</span>
-            </div>
-
-            <div class="skin-option-card" data-color="#ff00ff" onclick="selectSkinColor('#ff00ff', false, this)">
-                <div class="skin-preview" style="background: #ff00ff;"></div>
-                <span data-i18n="skinFuchsia">Fucsia</span>
-            </div>
-
-            <div class="skin-option-card" data-color="#00ff00" onclick="selectSkinColor('#00ff00', false, this)">
-                <div class="skin-preview" style="background: #00ff00;"></div>
-                <span data-i18n="skinGreen">Verde Neón</span>
-            </div>
-
-            <div class="skin-option-card" data-color="camo" data-level="10" onclick="selectSkinColor('camo', true, this)">
-                <div class="lock-badge">🔒</div>
-                <div class="skin-preview" id="camo-card-preview"></div>
-                <span data-i18n="skinCamo">Camu. Urbano</span>
-            </div>
+        <h1 data-i18n="skinsTitleHeader">PERSONALIZAR</h1>
+        <div class="customize-tabs">
+            <button id="tab-skin-btn" class="btn-main" style="width: auto; background-color: #ffcc00;" data-i18n="tabSkin">SKIN</button>
+            <button id="tab-avatar-btn" class="btn-main" style="width: auto; color: #000;" data-i18n="tabAvatar">AVATAR</button>
         </div>
 
-        <p id="skin-lock-msg" style="font-size: 14px; color: #ff3333; margin-top: 5px; height: 18px;"></p>
+        <div id="tab-skin-content">
+            <p style="font-size: 16px; margin-bottom: 5px;" data-i18n="skinsSubtitle">Elige el color para tu uniforme:</p>
+            
+            <div class="skin-grid">
+                <div class="skin-option-card" data-color="#ffffff" onclick="selectSkinColor('#ffffff', false, this)">
+                    <div class="skin-preview" style="background: #ffffff;"></div>
+                    <span data-i18n="skinClassic">Clásico</span>
+                </div>
+                
+                <div class="skin-option-card" data-color="multicolor" data-level="5" onclick="selectSkinColor('multicolor', true, this)">
+                    <div class="lock-badge">🔒</div>
+                    <div class="skin-preview" style="background: linear-gradient(135deg, #ff0000, #00ff00, #0000ff);"></div>
+                    <span data-i18n="skinRainbow">Arcoíris Táctico</span>
+                </div>
+
+                <div class="skin-option-card" data-color="#00ffff" onclick="selectSkinColor('#00ffff', false, this)">
+                    <div class="skin-preview" style="background: #00ffff;"></div>
+                    <span data-i18n="skinCyan">Cian Neón</span>
+                </div>
+
+                <div class="skin-option-card" data-color="#ff00ff" onclick="selectSkinColor('#ff00ff', false, this)">
+                    <div class="skin-preview" style="background: #ff00ff;"></div>
+                    <span data-i18n="skinFuchsia">Fucsia</span>
+                </div>
+
+                <div class="skin-option-card" data-color="#00ff00" onclick="selectSkinColor('#00ff00', false, this)">
+                    <div class="skin-preview" style="background: #00ff00;"></div>
+                    <span data-i18n="skinGreen">Verde Neón</span>
+                </div>
+
+                <div class="skin-option-card" data-color="camo" data-level="10" onclick="selectSkinColor('camo', true, this)">
+                    <div class="lock-badge">🔒</div>
+                    <div class="skin-preview" id="camo-card-preview"></div>
+                    <span data-i18n="skinCamo">Camu. Urbano</span>
+                </div>
+            </div>
+
+            <p id="skin-lock-msg" style="font-size: 14px; color: #ff3333; margin-top: 5px; height: 18px;"></p>
+        </div>
+
+        <div id="tab-avatar-content" style="display: none;">
+            <p style="font-size: 16px; margin-bottom: 5px;" data-i18n="avatarSubtitle">Elige tu avatar para el perfil:</p>
+            <div class="avatar-grid" id="avatar-grid"></div>
+            <p id="avatar-lock-msg" style="font-size: 14px; color: #ff3333; margin-top: 5px; height: 18px;"></p>
+        </div>
+
         <button id="back-from-skins" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
     </div>
 
@@ -1036,6 +1113,20 @@
 
         <button id="back-from-ranking" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
     </div>
+
+    <!-- VER PERFIL DE UN SOLDADO DEL TOP 100 -->
+    <div id="view-profile-screen" class="screen" style="display: none;">
+        <h1 data-i18n="viewProfileTitle">PERFIL DE SOLDADO</h1>
+        <div class="info-box" id="view-profile-card">
+            <div id="view-profile-avatar" class="profile-avatar" style="width: 44px; height: 44px; font-size: 26px; margin: 0 auto 10px;">👤</div>
+            <table class="info-table">
+                <tbody id="view-profile-table-body"></tbody>
+            </table>
+        </div>
+        <button id="back-from-view-profile" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
+    </div>
+
+    <audio id="audio-lobby" src="sounds/lobby-music.wav" loop preload="auto"></audio>
 
     <div id="ui-top-left">
         <div id="minimap-container">
@@ -1168,8 +1259,21 @@
                     if (p.name === profile.name) {
                         tr.style.backgroundColor = "rgba(255, 204, 0, 0.2)";
                     }
-                    tr.innerHTML = `<td>#${index + 1}</td><td>${p.name}</td><td>${getRankName(p.points || 0)}</td><td>${p.points || 0} PTS</td>`;
+                    let nameCell = document.createElement('td');
+                    nameCell.innerHTML = `<span class="rank-player-name" data-index="${index}">${p.name}</span>`;
+                    tr.appendChild(nameCell);
+                    tr.insertBefore(document.createElement('td'), nameCell).textContent = `#${index + 1}`;
+                    tr.appendChild(document.createElement('td')).textContent = getRankName(p.points || 0);
+                    tr.appendChild(document.createElement('td')).textContent = `${p.points || 0} PTS`;
                     rankingBody.appendChild(tr);
+                });
+                // Clic en un nombre del Top 100 → ver el perfil público de ese soldado
+                rankingBody.querySelectorAll('.rank-player-name').forEach(el => {
+                    el.addEventListener('click', () => {
+                        let player = topPlayers[parseInt(el.dataset.index)];
+                        if (!player) return;
+                        viewPlayerProfile(player);
+                    });
                 });
             }
         });
@@ -1363,18 +1467,35 @@
                 trainingBtn: "MODO ENTRENAMIENTO",
                 battlefieldBtn: "CAMPO DE BATALLA",
                 skillsBtn: "HABILIDADES",
-                skinsBtn: "PERSONALIZAR SKIN",
+                skinsBtn: "PERSONALIZAR",
                 ranksBtn: "RANGOS MILITARES",
-                rankingBtn: "RANKING GLOBAL",
+                rankingBtn: "RANGO GLOBAL",
                 configTitle: "CONFIGURACIÓN",
                 configSubtitle: "Ajustes del sistema",
                 langMenuBtn: "IDIOMA",
                 controlsMenuBtn: "CONTROLES",
                 fpsBtnText: "FPS",
+                fpsLimitText: "LÍMITE DE FPS:",
                 fpsActivated: "ACTIVADO",
                 fpsDeactivated: "DESACTIVADO",
                 logoutBtn: "CERRAR SESIÓN",
                 backBtn: "REGRESAR",
+                deleteBtn: "ELIMINAR CUENTA",
+                deleteTitle: "ELIMINAR CUENTA",
+                deleteWarning: "Se borrarán tus puntos, rango, estadísticas y skins para SIEMPRE.",
+                deleteConfirm: "BORRAR DEFINITIVAMENTE",
+                deleteCancel: "CANCELAR",
+                deleteDone: "✓ Cuenta eliminada. ¡Hasta siempre, soldado!",
+                deleteBadPass: "✗ Contraseña incorrecta.",
+                deleteInMatch: "✗ No puedes borrar la cuenta estando dentro de una partida.",
+                tabSkin: "SKIN",
+                tabAvatar: "AVATAR",
+                avatarSubtitle: "Elige tu avatar para el perfil:",
+                viewProfileTitle: "PERFIL DE SOLDADO",
+                statMatches: "PARTIDAS",
+                statWins: "VICTORIAS",
+                statDmg: "DAÑO INFLIGIDO",
+                statKD: "K/D",
                 selectLangTitle: "SELECCIONAR IDIOMA",
                 selectLangSubtitle: "Escoge tu idioma preferido:",
                 langChanged: "✓ Idioma cambiado a:",
@@ -1404,7 +1525,7 @@
                 skillRadar: "Radar",
                 skillRadarDesc: "Detecta enemigos 5s (Sí dispara)",
                 skillEquippedMsg: "✓ Habilidad equipada correctamente",
-                skinsTitleHeader: "SELECCIONAR SKIN",
+                skinsTitleHeader: "PERSONALIZAR",
                 skinsSubtitle: "Elige el color para tu uniforme:",
                 skinClassic: "Clásico",
                 skinRainbow: "Arcoíris Táctico",
@@ -1416,7 +1537,7 @@
                 ranksSubtitle: "Escala y puntos requeridos",
                 rankTableHeader: "Rango",
                 pointsTableHeader: "Puntos Req.",
-                rankingTitleHeader: "RANKING GLOBAL",
+                rankingTitleHeader: "RANGO GLOBAL",
                 rankingSubtitle: "Top 100 Mejores Soldados (Servidor LATAM)",
                 soldierTableHeader: "Soldado",
                 pointsHeader: "Puntos",
@@ -1464,7 +1585,7 @@
                 trainingBtn: "TRAINING MODE",
                 battlefieldBtn: "BATTLEFIELD",
                 skillsBtn: "SKILLS",
-                skinsBtn: "CUSTOMIZE SKIN",
+                skinsBtn: "CUSTOMIZE",
                 ranksBtn: "MILITARY RANKS",
                 rankingBtn: "GLOBAL RANKING",
                 configTitle: "SETTINGS",
@@ -1472,10 +1593,27 @@
                 langMenuBtn: "LANGUAGE",
                 controlsMenuBtn: "CONTROLS",
                 fpsBtnText: "FPS",
+                fpsLimitText: "FPS CAP:",
                 fpsActivated: "ENABLED",
                 fpsDeactivated: "DISABLED",
                 logoutBtn: "LOG OUT",
                 backBtn: "BACK",
+                deleteBtn: "DELETE ACCOUNT",
+                deleteTitle: "DELETE ACCOUNT",
+                deleteWarning: "Your points, rank, stats and skins will be erased FOREVER.",
+                deleteConfirm: "DELETE FOREVER",
+                deleteCancel: "CANCEL",
+                deleteDone: "✓ Account deleted. Farewell, soldier!",
+                deleteBadPass: "✗ Incorrect password.",
+                deleteInMatch: "✗ You cannot delete your account while inside a match.",
+                tabSkin: "SKIN",
+                tabAvatar: "AVATAR",
+                avatarSubtitle: "Choose your profile avatar:",
+                viewProfileTitle: "SOLDIER PROFILE",
+                statMatches: "MATCHES",
+                statWins: "WINS",
+                statDmg: "TOTAL DAMAGE",
+                statKD: "K/D",
                 selectLangTitle: "SELECT LANGUAGE",
                 selectLangSubtitle: "Choose your preferred language:",
                 langChanged: "✓ Language changed to:",
@@ -1505,8 +1643,8 @@
                 skillRadar: "Radar",
                 skillRadarDesc: "Detect enemies 5s (Can shoot)",
                 skillEquippedMsg: "✓ Skill equipped successfully",
-                skinsTitleHeader: "SELECT SKIN",
-                skinsSubtitle: "Choose your uniform color:",
+skinsTitleHeader: "CUSTOMIZE",
+                skinsSubtitle: "Choose the color of your uniform:",
                 skinClassic: "Classic",
                 skinRainbow: "Tactical Rainbow",
                 skinCyan: "Neon Cyan",
@@ -1565,7 +1703,7 @@
                 trainingBtn: "训练模式",
                 battlefieldBtn: "战场",
                 skillsBtn: "技能",
-                skinsBtn: "定制皮肤",
+                skinsBtn: "个性化",
                 ranksBtn: "军衔等级",
                 rankingBtn: "全球排名",
                 configTitle: "设置",
@@ -1573,10 +1711,27 @@
                 langMenuBtn: "语言",
                 controlsMenuBtn: "控制",
                 fpsBtnText: "帧率 (FPS)",
+                fpsLimitText: "帧率上限：",
                 fpsActivated: "已启用",
                 fpsDeactivated: "已禁用",
                 logoutBtn: "退出登录",
                 backBtn: "返回",
+                deleteBtn: "删除账户",
+                deleteTitle: "删除账户",
+                deleteWarning: "您的积分、段位、战绩和皮肤将被永久删除。",
+                deleteConfirm: "永久删除",
+                deleteCancel: "取消",
+                deleteDone: "✓ 账户已删除。再见，士兵！",
+                deleteBadPass: "✗ 密码错误。",
+                deleteInMatch: "✗ 匹配进行中无法删除账户。",
+                tabSkin: "SKIN",
+                tabAvatar: "AVATAR",
+                avatarSubtitle: "选择您的个人资料头像：",
+                viewProfileTitle: "士兵档案",
+                statMatches: "场次",
+                statWins: "胜利",
+                statDmg: "总伤害",
+                statKD: "K/D",
                 selectLangTitle: "选择语言",
                 selectLangSubtitle: "选择您首选的语言：",
                 langChanged: "✓ 语言已更改为：",
@@ -1606,8 +1761,8 @@
                 skillRadar: "雷达",
                 skillRadarDesc: "检测敌人5秒 (可射击)",
                 skillEquippedMsg: "✓ 技能装备成功",
-                skinsTitleHeader: "选择皮肤",
-                skinsSubtitle: "选择您的制服颜色：",
+skinsTitleHeader: "个性化",
+                skinsSubtitle: "选择您制服的配色：",
                 skinClassic: "经典",
                 skinRainbow: "战术彩虹",
                 skinCyan: "霓虹青",
@@ -1666,7 +1821,7 @@
                 trainingBtn: "MODO TREINAMENTO",
                 battlefieldBtn: "CAMPO DE BATALHA",
                 skillsBtn: "HABILIDADES",
-                skinsBtn: "PERSONALIZAR SKIN",
+                skinsBtn: "PERSONALIZAR",
                 ranksBtn: "PATENTES MILITARES",
                 rankingBtn: "RANKING GLOBAL",
                 configTitle: "CONFIGURAÇÕES",
@@ -1674,10 +1829,27 @@
                 langMenuBtn: "IDIOMA",
                 controlsMenuBtn: "CONTROLES",
                 fpsBtnText: "FPS",
+                fpsLimitText: "LIMITE DE FPS:",
                 fpsActivated: "ATIVADO",
                 fpsDeactivated: "DESATIVADO",
                 logoutBtn: "SAIR DA CONTA",
                 backBtn: "VOLTAR",
+                deleteBtn: "EXCLUIR CONTA",
+                deleteTitle: "EXCLUIR CONTA",
+                deleteWarning: "Seus pontos, patente, estatísticas e skins serão apagados PARA SEMPRE.",
+                deleteConfirm: "EXCLUIR PARA SEMPRE",
+                deleteCancel: "CANCELAR",
+                deleteDone: "✓ Conta excluída. Adeus, soldado!",
+                deleteBadPass: "✗ Senha incorreta.",
+                deleteInMatch: "✗ Não é possível excluir a conta durante uma partida.",
+                tabSkin: "SKIN",
+                tabAvatar: "AVATAR",
+                avatarSubtitle: "Escolha seu avatar de perfil:",
+                viewProfileTitle: "PERFIL DE SOLDADO",
+                statMatches: "PARTIDAS",
+                statWins: "VITÓRIAS",
+                statDmg: "DANO CAUSADO",
+                statKD: "K/D",
                 selectLangTitle: "SELECIONAR IDIOMA",
                 selectLangSubtitle: "Escolha seu idioma preferido:",
                 langChanged: "✓ Idioma alterado para:",
@@ -1707,8 +1879,8 @@
                 skillRadar: "Radar",
                 skillRadarDesc: "Detecta inimigos 5s (Dispara normalmente)",
                 skillEquippedMsg: "✓ Habilidade equipada com sucesso",
-                skinsTitleHeader: "SELECIONAR SKIN",
-                skinsSubtitle: "Escolha a cor para o seu uniforme:",
+skinsTitleHeader: "PERSONALIZAR",
+                skinsSubtitle: "Escolha a cor do seu uniforme:",
                 skinClassic: "Clássico",
                 skinRainbow: "Arco-íris Tático",
                 skinCyan: "Ciano Neon",
@@ -1802,8 +1974,10 @@
             deaths: parseInt(localStorage.getItem('ff_deaths')) || 0,
             color: localStorage.getItem('ff_color') || "#ffffff",
             selectedSkill: localStorage.getItem('ff_skill') || "shield",
+            avatar: localStorage.getItem('ff_avatar') || "👤",
             language: localStorage.getItem('ff_lang') || "ESPAÑOL",
             showFps: localStorage.getItem('ff_showfps') !== 'false',
+            fpsCap: parseInt(localStorage.getItem('ff_fpscap')) || 240,
             controls: (savedControls && savedControls.up && savedControls.left && savedControls.down && savedControls.right && savedControls.skill) ? savedControls : {
                 up: ['w', ''],
                 left: ['a', ''],
@@ -1984,6 +2158,26 @@
         const toControlsBtn = document.getElementById('to-controls-btn');
         const toggleFpsBtn = document.getElementById('toggle-fps-btn');
         const logoutBtn = document.getElementById('logout-btn');
+        const deleteScreen = document.getElementById('delete-screen');
+        const deletePassInput = document.getElementById('delete-pass-input');
+        const deleteConfirmBtn = document.getElementById('delete-confirm-btn');
+        const deleteCancelBtn = document.getElementById('delete-cancel-btn');
+        const deleteMsg = document.getElementById('delete-msg');
+        const backFromDelete = document.getElementById('back-from-delete');
+        const deleteAccountBtn = document.getElementById('delete-account-btn');
+        const tabSkinBtn = document.getElementById('tab-skin-btn');
+        const tabAvatarBtn = document.getElementById('tab-avatar-btn');
+        const tabSkinContent = document.getElementById('tab-skin-content');
+        const tabAvatarContent = document.getElementById('tab-avatar-content');
+        const avatarGrid = document.getElementById('avatar-grid');
+        const avatarLockMsg = document.getElementById('avatar-lock-msg');
+        const viewProfileScreen = document.getElementById('view-profile-screen');
+        const viewProfileAvatar = document.getElementById('view-profile-avatar');
+        const viewProfileTableBody = document.getElementById('view-profile-table-body');
+        const backFromViewProfile = document.getElementById('back-from-view-profile');
+        const audioLobby = document.getElementById('audio-lobby');
+        const profileAvatar = document.getElementById('profile-avatar');
+        const profileAvatarBig = document.getElementById('profile-avatar-big');
 
         const backFromConfig = document.getElementById('back-from-config');
         const backFromControls = document.getElementById('back-from-controls');
@@ -2030,6 +2224,7 @@
         let lastTime = performance.now();
         let frameCount = 0;
         let fpsTimer = 0;
+        let lastFrameTs = 0;
         let matchmakingInterval = null;
         let plPrevX = 0, plPrevY = 0;
 
@@ -2038,6 +2233,16 @@
             // se registra y el siguiente frame SIEMPRE se programa, así la partida
             // nunca se queda congelada en pantalla.
             try {
+                // LÍMITE DE FPS configurable (30/60/90/120/180/240): si el monitor
+                // corre más rápido que el tope elegido, este frame se salta y se
+                // espera al siguiente (el finally siempre reprograma el bucle).
+                const fpsCap = profile.fpsCap || 0;
+                if (fpsCap > 0) {
+                    const minGap = (1000 / fpsCap) * 0.98;
+                    if (lastFrameTs && (now - lastFrameTs) < minGap) return;
+                    lastFrameTs = now;
+                }
+
                 let delta = Math.min(now - lastTime, 5000);
                 lastTime = now;
                 frameCount++;
@@ -2093,8 +2298,10 @@
             localStorage.setItem('ff_deaths', profile.deaths);
             localStorage.setItem('ff_color', profile.color);
             localStorage.setItem('ff_skill', profile.selectedSkill);
+            localStorage.setItem('ff_avatar', profile.avatar);
             localStorage.setItem('ff_lang', profile.language);
             localStorage.setItem('ff_showfps', profile.showFps);
+            localStorage.setItem('ff_fpscap', profile.fpsCap);
             localStorage.setItem('ff_ctrl_up', JSON.stringify(profile.controls.up));
             localStorage.setItem('ff_ctrl_left', JSON.stringify(profile.controls.left));
             localStorage.setItem('ff_ctrl_down', JSON.stringify(profile.controls.down));
@@ -2111,6 +2318,8 @@
                 lobbyId.innerText = profile.id || '————';
                 lobbyId.style.display = profile.id ? 'inline' : 'none';
             }
+            if (profileAvatar) profileAvatar.innerText = profile.avatar || '👤';
+            if (profileAvatarBig) profileAvatarBig.innerText = profile.avatar || '👤';
 
             // Pantalla de perfil completo
             profName.innerText = profile.name;
@@ -2310,6 +2519,7 @@
             socket.emit('player-join', { name: profile.name, color: profile.color });
             loginScreen.style.display = 'none';
             lobbyScreen.style.display = 'flex';
+            startLobbyMusic();
         }
 
         // Recordar la última cuenta: usuario y contraseña quedan cargados al abrir
@@ -2528,6 +2738,40 @@
             updateLobbyUI();
         });
 
+        // ---- LÍMITE DE FPS configurable: 30 / 60 / 90 / 120 / 180 / 240 ----
+        const fpsCapRow = document.getElementById('fps-cap-row');
+        const fpsCapOptions = [30, 60, 90, 120, 180, 240];
+
+        function buildFpsCapButtons() {
+            if (!fpsCapRow) return;
+            fpsCapRow.innerHTML = '';
+            fpsCapOptions.forEach(v => {
+                const b = document.createElement('button');
+                b.className = 'btn-main fps-cap-btn';
+                b.textContent = v;
+                b.addEventListener('click', () => {
+                    profile.fpsCap = v;
+                    saveProfile();
+                    updateFpsCapUI();
+                });
+                fpsCapRow.appendChild(b);
+            });
+            updateFpsCapUI();
+        }
+
+        function updateFpsCapUI() {
+            if (!fpsCapRow) return;
+            fpsCapRow.querySelectorAll('.fps-cap-btn').forEach(b => {
+                const value = parseInt(b.textContent);
+                const active = value === (profile.fpsCap || 240);
+                b.style.backgroundColor = active ? '#ffcc00' : '#3a3f55';
+                b.style.color = active ? '#000' : '#fff';
+                b.style.width = 'auto';
+            });
+        }
+
+        buildFpsCapButtons();
+
         // Cerrar sesión: olvida la cuenta local y permite entrar con otra
         logoutBtn.addEventListener('click', () => {
             localStorage.removeItem('ff_name');
@@ -2548,6 +2792,60 @@
             usernameInput.value = "";
             passwordInput.value = "";
             showLoginMessage("");
+            stopLobbyMusic();
+        });
+
+        // ---- ELIMINAR CUENTA (definitivo) ----
+        deleteAccountBtn.addEventListener('click', () => {
+            deletePassInput.value = "";
+            deleteMsg.innerText = "";
+            configScreen.style.display = 'none';
+            deleteScreen.style.display = 'flex';
+        });
+
+        backFromDelete.addEventListener('click', () => {
+            deleteScreen.style.display = 'none';
+            configScreen.style.display = 'flex';
+        });
+
+        deleteCancelBtn.addEventListener('click', () => {
+            deleteScreen.style.display = 'none';
+            configScreen.style.display = 'flex';
+        });
+
+        deleteConfirmBtn.addEventListener('click', () => {
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            if (!socket.connected) {
+                deleteMsg.innerText = dict.errGeneric;
+                return;
+            }
+            deleteMsg.innerText = "...";
+            socket.emit('account-delete', { password: deletePassInput.value });
+        });
+
+        socket.on('account-deleted', (res) => {
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            if (!res || !res.ok) {
+                if (res && res.error === 'in-match') deleteMsg.innerText = dict.deleteInMatch;
+                else if (res && res.error === 'bad-pass') deleteMsg.innerText = dict.deleteBadPass;
+                else deleteMsg.innerText = dict.errGeneric;
+                return;
+            }
+            // Cuenta borrada: salir al login con todos los datos locales limpios
+            ['ff_name','ff_level','ff_exp','ff_points','ff_deaths','ff_username','ff_userpass','ff_matches','ff_wins','ff_kills','ff_dmg','ff_color','ff_skill','ff_avatar','ff_id'].forEach(k => localStorage.removeItem(k));
+            profile.name = "";
+            profile.level = 1;
+            profile.exp = 0;
+            profile.points = 0;
+            profile.deaths = 0;
+            saveProfile();
+            deleteScreen.style.display = 'none';
+            configScreen.style.display = 'none';
+            loginScreen.style.display = 'flex';
+            usernameInput.value = "";
+            passwordInput.value = "";
+            showLoginMessage(dict.deleteDone);
+            stopLobbyMusic();
         });
 
         // Botones del PERFIL COMPLETO
@@ -2564,13 +2862,22 @@
             player.hp = 100;
             player.shootCooldown = 0;
 
+            // Reseteo TOTAL del estado: evita que restos de la partida anterior
+            // (jugadores remotos, balas, cámara de espectador) se cuelen al modo
+            // entrenamiento y lo hagan parecer "otra parte del Campo de Batalla".
             gameOver = false;
             gameStarted = true;
             spectateMode = false;
             spectateId = null;
             spectateTargetType = 'none';
             spectateBotName = null;
+            spectateNameStr = null;
             pendingMatchOver = null;
+            lastKillerName = null;
+            currentMatchId = null;
+            remotePlayers = {};
+            bullets.length = 0;
+            matchStats.finalPlacement = 1;
             spectatorScreen.style.display = 'none';
 
             generateObstacles();
@@ -2585,6 +2892,7 @@
             spawnEnemies();
             updateHUDCounters();
             hpBar.style.width = '100%';
+            stopLobbyMusic();
         }
 
         toTrainingBtn.addEventListener('click', () => {
@@ -2683,6 +2991,7 @@
             }
             safeZone.radius = safeZone.maxRadius;
             safeZone.timer = 0;
+            stopLobbyMusic();
 
             skillState.active = false;
             skillState.activeTimer = 0;
@@ -2719,6 +3028,9 @@
 
         toSkinsBtn.addEventListener('click', () => {
             updateSkinSelectionUI();
+            buildAvatarGrid();
+            updateAvatarSelectionUI();
+            showCustomizeTab('skin');
             lobbyScreen.style.display = 'none';
             skinsScreen.style.display = 'flex';
         });
@@ -2763,10 +3075,81 @@
             updateSkinSelectionUI();
         }
 
+        // ---- PESTAÑAS DE PERSONALIZAR: SKIN / AVATAR ----
+        function showCustomizeTab(tab) {
+            const isSkin = tab === 'skin';
+            tabSkinContent.style.display = isSkin ? 'block' : 'none';
+            tabAvatarContent.style.display = isSkin ? 'none' : 'block';
+            tabSkinBtn.style.backgroundColor = isSkin ? '#ffcc00' : '#3a3f55';
+            tabSkinBtn.style.color = isSkin ? '#000' : '#fff';
+            tabAvatarBtn.style.backgroundColor = isSkin ? '#3a3f55' : '#ffcc00';
+            tabAvatarBtn.style.color = isSkin ? '#fff' : '#000';
+        }
+
+        tabSkinBtn.addEventListener('click', () => showCustomizeTab('skin'));
+        tabAvatarBtn.addEventListener('click', () => {
+            updateAvatarSelectionUI();
+            showCustomizeTab('avatar');
+        });
+
+        // ---- AVATARES DE PERFIL (solo visual, sin efectos en partida) ----
+        const avatarOptions = ['👤','🦸','🥷','🧙','👮','🧑‍🚒','🐲','🦅','🐺','🦖','🦁','🐯','🤖','👽','💀','🎃'];
+        function buildAvatarGrid() {
+            avatarGrid.innerHTML = '';
+            avatarOptions.forEach(emoji => {
+                let div = document.createElement('div');
+                div.className = 'avatar-option';
+                div.dataset.emoji = emoji;
+                div.textContent = emoji;
+                div.addEventListener('click', () => selectAvatar(emoji, div));
+                avatarGrid.appendChild(div);
+            });
+        }
+
+        function updateAvatarSelectionUI() {
+            if (!profile.avatar) profile.avatar = '👤';
+            avatarGrid.querySelectorAll('.avatar-option').forEach(el => {
+                el.classList.toggle('selected', el.dataset.emoji === profile.avatar);
+            });
+        }
+
+        function selectAvatar(emoji, cardElement) {
+            cardElement.classList.add('selected');
+            profile.avatar = emoji;
+            saveProfile();
+            updateAvatarSelectionUI();
+        }
+
+        // ---- VER PERFIL PÚBLICO DE UN SOLDADO DEL TOP 100 ----
+        function viewPlayerProfile(p) {
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            const kd = (p.deaths || 0) > 0 ? (p.kills || 0) / p.deaths : ((p.kills || 0) > 0 ? '∞' : '0.00');
+            viewProfileAvatar.innerText = '👤';
+            let rows = [
+                [dict.soldierTableHeader, p.name],
+                [dict.rankLabel + " (" + dict.pointsHeader + ")", getRankName(p.points || 0) + " — " + (p.points || 0)],
+                [dict.levelLabel, p.level || 1],
+                [dict.statMatches, p.matches || 0],
+                [dict.statWins, p.wins || 0],
+                [dict.hudKills, p.kills || 0],
+                [dict.statDmg, p.dmg || 0],
+                [dict.statKD, kd]
+            ];
+            viewProfileTableBody.innerHTML = rows.map(r => `<tr><th style="text-align:left;">${r[0]}</th><td>${r[1]}</td></tr>`).join('');
+            rankingScreen.style.display = 'none';
+            viewProfileScreen.style.display = 'flex';
+        }
+
+        backFromViewProfile.addEventListener('click', () => {
+            viewProfileScreen.style.display = 'none';
+            rankingScreen.style.display = 'flex';
+        });
+
         backToLobbyBtn.addEventListener('click', () => {
             statsScreen.style.display = 'none';
             updateLobbyUI();
             lobbyScreen.style.display = 'flex';
+            startLobbyMusic();
         });
 
         retryTrainingBtn.addEventListener('click', () => {
@@ -3045,8 +3428,33 @@
                 if (p && p.catch) p.catch(() => {});
                 sfxShot.pause();
                 sfxShot.volume = 0.35;
+                // Si la música de la Sala de Comando debería estar sonando pero el
+                // navegador la bloqueó por autoplay, este primer toque la libera.
+                if (lobbyMusicShouldPlay && audioLobby && audioLobby.paused) {
+                    audioLobby.volume = 0.22;
+                    const m = audioLobby.play();
+                    if (m && m.catch) m.catch(() => {});
+                }
             } catch (e) {}
         }, { once: true, capture: true });
+
+        // ---- Música de la Sala de Comando (suena solo en los menús; se detiene
+        // al iniciar CAMPO DE BATALLA o ENTRENAMIENTO) ----
+        let lobbyMusicShouldPlay = false;
+        function startLobbyMusic() {
+            lobbyMusicShouldPlay = true;
+            if (!audioLobby) return;
+            try {
+                audioLobby.volume = 0.22;
+                const p = audioLobby.play();
+                if (p && p.catch) p.catch(() => {});
+            } catch (e) {}
+        }
+        function stopLobbyMusic() {
+            lobbyMusicShouldPlay = false;
+            if (!audioLobby) return;
+            try { audioLobby.pause(); audioLobby.currentTime = 0; } catch (e) {}
+        }
 
         function isActionPressed(actionName) {
             let keysArr = profile.controls[actionName];

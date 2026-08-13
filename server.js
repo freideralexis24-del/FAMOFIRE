@@ -156,7 +156,11 @@ const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 function getTop100() {
   return Object.entries(accounts)
     .filter(([, a]) => a && (Number(a.points) || 0) > 0)
-    .map(([name, a]) => ({ name, points: a.points || 0 }))
+    .map(([name, a]) => ({
+      name, points: a.points || 0, level: a.level || 1,
+      matches: a.matches || 0, wins: a.wins || 0, kills: a.kills || 0,
+      dmg: a.dmg || 0, deaths: a.deaths || 0
+    }))
     .sort((x, y) => y.points - x.points)
     .slice(0, 100);
 }
@@ -562,6 +566,38 @@ io.on('connection', (socket) => {
 
   socket.on('get-top100', () => {
     socket.emit('update-top100', getTop100());
+  });
+
+  // Eliminar cuenta definitivamente: pide la contraseña (menos las cuentas de
+  // Google, que no tienen contraseña y se borran desde el dispositivo con la
+  // sesión iniciada). La cuenta se quita de la cola si está esperando partida
+  // y se borra también de PostgreSQL (no solo del mapa en memoria).
+  socket.on('account-delete', async (data = {}) => {
+    if (!socket.data.account) return socket.emit('account-deleted', { ok: false, error: 'not-found' });
+    if (socket.data.room) return socket.emit('account-deleted', { ok: false, error: 'in-match' });
+    await ensureAccounts();
+    const name = socket.data.account;
+    const acc = accounts[name];
+    if (!acc) return socket.emit('account-deleted', { ok: false, error: 'not-found' });
+    let ok = true;
+    if (!acc.googleId) {
+      const stored = String(acc.password || '');
+      if (stored.startsWith('$2')) {
+        try { ok = await bcrypt.compare(String(data.password || ''), stored); } catch (e) { ok = false; }
+      } else {
+        ok = stored === sha(data.password);
+      }
+    }
+    if (!ok) return socket.emit('account-deleted', { ok: false, error: 'bad-pass' });
+    const qi = queue.findIndex(q => q.socket.id === socket.id);
+    if (qi >= 0) { queue.splice(qi, 1); socket.data.inQueue = false; }
+    if (queue.length === 0 && queueTimer) { clearTimeout(queueTimer); queueTimer = null; queueDeadline = 0; queueStartAt = 0; }
+    delete accounts[name];
+    socket.data.account = null;
+    if (db) { try { await db.query('DELETE FROM accounts WHERE name = $1', [name]); } catch (e) { console.error('[DB] error borrando cuenta:', e.message); } }
+    saveAccounts();
+    socket.emit('account-deleted', { ok: true });
+    broadcastQueueStatus();
   });
 
   socket.on('join-matchmaking', (data = {}) => {
