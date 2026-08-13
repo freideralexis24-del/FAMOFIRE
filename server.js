@@ -217,6 +217,9 @@ function broadcastOnline() {
 const queue = [];
 let queueTimer = null;
 let queueDeadline = 0; // ms (Date.now()) en que arranca la partida: COMPARTIDA para toda la cola
+let queueStartAt = 0;  // momento en que entró el primer jugador de la cola (espera solitaria)
+const MIN_QUEUE_START = 2;   // no se arranca con 1 solo jugador: se espera a un compañero online
+const SOLO_MAX_WAIT = 45000; // tope de espera solitaria antes de jugar contra bots (45 s)
 
 // Difunde a TODOS los de la cola el mismo tiempo restante y el contador:
 // así un jugador que se une a mitad de espera ve la misma cuenta atrás que
@@ -230,6 +233,21 @@ function broadcastQueueStatus() {
   }
 }
 setInterval(broadcastQueueStatus, 500);
+
+// Arranca la partida solo cuando hay al menos MIN_QUEUE_START jugadores reales.
+// Con un único jugador esperando, se re-programa la salida hasta SOLO_MAX_WAIT
+// para darle tiempo a que entre el/los demás jugadores online a esta misma cola.
+function maybeStartMatch() {
+  queueTimer = null;
+  if (queue.length === 0) { queueDeadline = 0; queueStartAt = 0; return; }
+  if (queue.length >= MIN_QUEUE_START || (queueStartAt && Date.now() - queueStartAt >= SOLO_MAX_WAIT)) {
+    startMatch();
+  } else {
+    queueDeadline = Date.now() + QUEUE_TIMEOUT;
+    queueTimer = setTimeout(maybeStartMatch, QUEUE_TIMEOUT);
+    broadcastQueueStatus();
+  }
+}
 
 function assignSpawns(players) {
   const spawns = [];
@@ -555,10 +573,18 @@ io.on('connection', (socket) => {
     if (queue.length >= MATCH_SIZE) {
       startMatch();
     } else if (!queueTimer) {
+      queueStartAt = Date.now();
       queueDeadline = Date.now() + QUEUE_TIMEOUT;
-      queueTimer = setTimeout(() => {
-        if (queue.length > 0) startMatch();
-      }, QUEUE_TIMEOUT);
+      queueTimer = setTimeout(maybeStartMatch, QUEUE_TIMEOUT);
+      broadcastQueueStatus();
+    } else {
+      // Un segundo jugador llega con el conteo a punto de acabar: se estira el
+      // tiempo para que ambos entren a la misma partida con tiempo completo.
+      if (queue.length === 2 && queueDeadline - Date.now() < 6000) {
+        clearTimeout(queueTimer);
+        queueDeadline = Date.now() + QUEUE_TIMEOUT;
+        queueTimer = setTimeout(maybeStartMatch, QUEUE_TIMEOUT);
+      }
       broadcastQueueStatus();
     }
   });
@@ -567,7 +593,7 @@ io.on('connection', (socket) => {
     const i = queue.findIndex(q => q.socket.id === socket.id);
     if (i >= 0) queue.splice(i, 1);
     socket.data.inQueue = false;
-    if (queue.length === 0 && queueTimer) { clearTimeout(queueTimer); queueTimer = null; queueDeadline = 0; }
+    if (queue.length === 0 && queueTimer) { clearTimeout(queueTimer); queueTimer = null; queueDeadline = 0; queueStartAt = 0; }
     broadcastQueueStatus();
   });
 
@@ -706,7 +732,7 @@ io.on('connection', (socket) => {
     if (i >= 0) {
       queue.splice(i, 1);
       socket.data.inQueue = false;
-      if (queue.length === 0 && queueTimer) { clearTimeout(queueTimer); queueTimer = null; queueDeadline = 0; }
+      if (queue.length === 0 && queueTimer) { clearTimeout(queueTimer); queueTimer = null; queueDeadline = 0; queueStartAt = 0; }
       broadcastQueueStatus();
     }
     const code = socket.data.room;

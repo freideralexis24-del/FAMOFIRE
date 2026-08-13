@@ -277,14 +277,13 @@
             margin-top: 2px;
         }
 
-        /* MODO ESPECTADOR */
+        /* MODO ESPECTADOR: panel pequeño en la esquina inferior izquierda,
+           sin tapar el juego: solo nombre del observado + botón de salir */
         #spectator-screen {
             position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.55);
+            bottom: 20px;
+            left: 20px;
             display: flex;
-            justify-content: center;
-            align-items: center;
             z-index: 50;
             pointer-events: none;
         }
@@ -295,13 +294,18 @@
             text-align: center;
             background: rgba(10, 15, 20, 0.92);
             border: 3px solid #ffcc00;
-            border-radius: 16px;
-            padding: 24px 34px;
-            box-shadow: 6px 6px 0px #000;
+            border-radius: 12px;
+            padding: 8px 16px;
+            box-shadow: 4px 4px 0px #000;
+            font-size: 12px;
         }
         #spectator-box h1 {
             color: #ffcc00;
-            margin: 0 0 8px 0;
+            margin: 0 0 2px 0;
+            font-size: 14px;
+        }
+        #spectator-box p {
+            margin: 2px 0;
         }
 
         .lobby-menu {
@@ -3118,9 +3122,6 @@
                         spectateTargetType = 'none';
                     }
                 }
-                if (Object.keys(remotePlayers).length === 0 && enemies.length <= 1) {
-                    finishSpectator();
-                }
             }
 
             let nextX = player.x;
@@ -3268,6 +3269,13 @@
                 const enemy = enemies[i];
                 if (!enemy || gameOver) break;
 
+                // El ÚLTIMO bot de una partida sin jugadores reales termina
+                // sucumbiendo al veneno (baja de vida lenta): la partida se cierra
+                // con todos muertos, en vez de quedar un bot "ganador" eterno.
+                if (spectateMode && currentMode === 'battlefield' && Object.keys(remotePlayers).length === 0 && enemies.length === 1) {
+                    enemy.hp -= 0.5;
+                }
+
                 if (currentMode === 'battlefield') {
                     if (Math.hypot(enemy.x - safeZone.x, enemy.y - safeZone.y) > safeZone.radius) {
                         enemy.hp -= 0.2;
@@ -3279,7 +3287,11 @@
                                 if (currentMode === 'battlefield' || currentMode === 'training') {
                                     if (currentMode === 'training' || Object.keys(remotePlayers).length === 0) {
                                         draw();
-                                        endGame(true);
+                                        if (spectateMode) {
+                                            finishSpectator();
+                                        } else {
+                                            endGame(true);
+                                        }
                                         return;
                                     }
                                 }
@@ -3290,11 +3302,22 @@
                 }
 
                 // ----- IA de los bots (novato/medio/veterano) -----
-                let targetX = player.x;
-                let targetY = player.y;
-                let distToPlayer = Math.hypot(player.x - enemy.x, player.y - enemy.y);
-                let closestDist = distToPlayer;
-                let targetEntity = 'player';
+                // Jugador muerto (modo espectador): los bots IGNORAN el cuerpo sin
+                // vida y solo se enfrentan entre ellos, para que la partida siga viva.
+                let targetX, targetY, distToPlayer, closestDist, targetEntity;
+                if (spectateMode) {
+                    targetX = enemy.x;
+                    targetY = enemy.y;
+                    distToPlayer = Infinity;
+                    closestDist = Infinity;
+                    targetEntity = null;
+                } else {
+                    targetX = player.x;
+                    targetY = player.y;
+                    distToPlayer = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+                    closestDist = distToPlayer;
+                    targetEntity = 'player';
+                }
 
                 if (currentMode === 'battlefield') {
                     // Los veteranos cazan al jugador; los novatos pelean con lo que tengan cerca
