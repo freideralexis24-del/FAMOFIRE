@@ -201,14 +201,59 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            margin: 0 auto;
             border: 3px solid #000;
+            flex-shrink: 0;
+        }
+        #profile-card-top {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+        #profile-head {
+            text-align: left;
+        }
+        #prof-name {
+            color: #ffcc00;
+            margin: 0;
+            font-size: 26px;
+        }
+        #prof-rank {
+            color: #00ffff;
+            margin: 2px 0;
+            font-size: 14px;
+        }
+        #prof-id-line {
+            color: #aaa;
+            font-size: 13px;
+            margin: 2px 0 0 0;
+        }
+        #profile-badges {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .p-badge {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 5px 14px;
+            font-size: 13px;
+            color: #999;
+        }
+        .p-badge b {
+            color: #00ff00;
+            margin-left: 4px;
         }
         #profile-stats {
             display: flex;
             justify-content: center;
-            gap: 16px;
+            gap: 12px;
             margin-top: 14px;
+            flex-wrap: wrap;
         }
         .pstat {
             display: flex;
@@ -230,6 +275,33 @@
             color: #999;
             letter-spacing: 1px;
             margin-top: 2px;
+        }
+
+        /* MODO ESPECTADOR */
+        #spectator-screen {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+            pointer-events: none;
+        }
+        #spectator-screen .btn-main {
+            pointer-events: auto;
+        }
+        #spectator-box {
+            text-align: center;
+            background: rgba(10, 15, 20, 0.92);
+            border: 3px solid #ffcc00;
+            border-radius: 16px;
+            padding: 24px 34px;
+            box-shadow: 6px 6px 0px #000;
+        }
+        #spectator-box h1 {
+            color: #ffcc00;
+            margin: 0 0 8px 0;
         }
 
         .lobby-menu {
@@ -518,10 +590,10 @@
             box-shadow: 0 2px 6px rgba(0,0,0,0.5);
         }
 
-        /* CONTADOR GLOBAL ONLINE ABAJO A LA DERECHA */
+        /* CONTADOR GLOBAL ONLINE (solo en la sala de comando, arriba a la derecha) */
         #global-online-box {
             position: absolute;
-            bottom: 20px;
+            top: 20px;
             right: 20px;
             background: rgba(0, 0, 0, 0.75);
             border: 2px solid #ffcc00;
@@ -674,6 +746,9 @@
 
         <h1 data-i18n="lobbyTitle">SALA DE COMANDO</h1>
 
+        <!-- INDICADOR DE JUGADORES ONLINE (solo visible en la sala de comando) -->
+        <div id="global-online-box">Online: <span id="global-online-val">1</span></div>
+
         <div class="lobby-menu">
             <button id="to-training-btn" class="btn-main" data-i18n="trainingBtn">MODO ENTRENAMIENTO</button>
             <button id="to-battlefield-btn" class="btn-main" data-i18n="battlefieldBtn">CAMPO DE BATALLA</button>
@@ -688,13 +763,21 @@
     <div id="profile-screen" class="screen" style="display: none;">
         <h1 data-i18n="profileTitle">PERFIL DE SOLDADO</h1>
         <div id="profile-card">
-            <div id="profile-avatar-big" class="profile-avatar-big">👤</div>
-            <h2 id="prof-name" style="color: #ffcc00; margin: 4px 0 2px 0; font-size: 28px;">Jugador</h2>
-            <p style="margin: 2px 0 8px 0; color: #00ffff;" id="prof-rank">RECLUTA</p>
-            <p style="margin: 2px 0 4px 0; font-size: 14px; color: #aaa;">ID: <span id="prof-id">————</span></p>
-            <p style="margin: 2px 0 8px 0; font-size: 15px; color: #00ff00;"><span data-i18n="levelLabel">NIVEL</span> <span id="prof-level">1</span> &bull; <span id="prof-points">0</span> PTS</p>
+            <div id="profile-card-top">
+                <div id="profile-avatar-big" class="profile-avatar-big">👤</div>
+                <div id="profile-head">
+                    <h2 id="prof-name">Jugador</h2>
+                    <p id="prof-rank">RECLUTA</p>
+                    <p id="prof-id-line">ID: <span id="prof-id">————</span></p>
+                </div>
+            </div>
 
-            <div class="exp-container" style="width: 320px; height: 26px; margin: 0 auto 6px auto;">
+            <div id="profile-badges">
+                <span class="p-badge"><span data-i18n="levelLabel">NIVEL</span> <b id="prof-level">1</b></span>
+                <span class="p-badge">PUNTOS <b id="prof-points">0</b></span>
+            </div>
+
+            <div class="exp-container" style="width: 100%; height: 26px; margin: 0 auto 6px auto; max-width: 360px;">
                 <div id="profile-exp-fill" style="height: 100%; width: 0%; background: linear-gradient(90deg, #00cc00, #00ff00); transition: width 0.4s ease;"></div>
                 <div class="exp-text" id="prof-exp-text">0 / 100 EXP</div>
             </div>
@@ -953,9 +1036,6 @@
 
     <div id="fps-counter-box">FPS: <span id="fps-val">60</span></div>
     
-    <!-- INDICADOR DE JUGADORES ONLINE GLOBALMENTE -->
-    <div id="global-online-box">Online: <span id="global-online-val">1</span></div>
-
     <div id="hud-top-right">
         <div id="pro-stats-panel">
             <div class="stat-box-item">
@@ -1004,6 +1084,17 @@
             </tr>
         </table>
         <button id="back-to-lobby-btn" class="btn-main" style="width: 100%; margin-top: 5px;" data-i18n="returnToLobbyBtn">REGRESAR A SALA DE COMANDO</button>
+        <button id="retry-training-btn" class="btn-main" style="width: 100%; margin-top: 8px; background-color: #00ff00; display: none;" data-i18n="retryTrainingBtn">REINICIAR ENTRENAMIENTO</button>
+    </div>
+
+    <!-- MODO ESPECTADOR: al morir en Campo de Batalla observas en vivo a quien te eliminó -->
+    <div id="spectator-screen" style="display: none;">
+        <div id="spectator-box">
+            <h1 data-i18n="spectatorTitle">ESPECTADOR</h1>
+            <p id="spectate-name" style="color: #ffcc00; font-size: 20px; font-weight: bold; margin: 6px 0;">—</p>
+            <p data-i18n="spectatorWatching" style="color: #aaa; font-size: 14px;">Observando en vivo al jugador que te eliminó</p>
+            <button id="leave-spectator-btn" class="btn-main" style="background-color: #ff3333; color: #fff; margin-top: 14px;" data-i18n="spectatorExit">SALIR DE LA PARTIDA</button>
+        </div>
     </div>
 
     <canvas id="gameCanvas"></canvas>
@@ -1014,8 +1105,26 @@
         const socket = io();
         let remotePlayers = {}; 
 
+        // --- MODO ESPECTADOR (Campo de Batalla) ---
+        // Al morir por un jugador REAL pasas a observar en vivo a quien te eliminó.
+        // state
+        let spectateMode = false;
+        let spectateId = null;
+        let spectateNameStr = null;
+        let spectateSeenTarget = false;
+        let pendingMatchOver = null;
+
         socket.on('connect', () => {
             console.log("Conectado al servidor central de FAMOFIRE (LATAM) con ID:", socket.id);
+            // Inicio de sesión automático: si este navegador ya tiene una cuenta
+            // guardada, entra solo (y si el servidor la perdió en una actualización,
+            // la recrea automáticamente con el mismo usuario y contraseña).
+            if (localStorage.getItem('ff_username') && localStorage.getItem('ff_userpass')) {
+                socket.emit('account-login', {
+                    name: localStorage.getItem('ff_username'),
+                    password: atob(localStorage.getItem('ff_userpass'))
+                });
+            }
         });
 
         // Recibir contador global de jugadores conectados en todo el servidor
@@ -1105,7 +1214,11 @@
             if (player.hp <= 0) {
                 lastKillerName = data.killerName || 'Enemigo';
                 addKillFeedMessage(lastKillerName, profile.name, true);
-                endGame(false);
+                // MODO ESPECTADOR: si te mató un jugador REAL, lo observas en vivo;
+                // si no hay killer real (zona/bots), vas directo a los resultados.
+                if (!enterSpectator(data.killerId, data.killerName)) {
+                    endGame(false);
+                }
                 // Confirma la muerte al servidor con la posición exacta (cuenta los bots)
                 // y las bajas de la partida: el servidor calcula las recompensas oficiales.
                 socket.emit('player-died', { killerId: data.killerId, placement: getCurrentPlacement(), kills: matchStats.kills });
@@ -1119,7 +1232,10 @@
             if (gameOver) return;
             lastKillerName = data.killerName || 'Enemigo';
             addKillFeedMessage(lastKillerName, profile.name, true);
-            endGame(false);
+            // Espectador en vivo del jugador que te eliminó (si es un jugador real).
+            if (!enterSpectator(data.killerId, data.killerName)) {
+                endGame(false);
+            }
             socket.emit('player-died', { killerId: data.killerId, placement: getCurrentPlacement(), kills: matchStats.kills });
         });
 
@@ -1156,6 +1272,9 @@
             // Los puntos/exp/estadísticas los calculó el SERVIDOR (anti-trampa):
             // aplicar los totales oficiales a tu perfil local.
             if (data.pointsEarned !== undefined && data.points !== undefined) {
+                // En modo espectador guardamos los resultados oficiales y los mostramos
+                // cuando el espectador salga o su objetivo muera (sin doble conteo).
+                if (spectateMode) pendingMatchOver = data;
                 profile.points = data.points;
                 profile.level = data.level;
                 profile.exp = data.exp;
@@ -1175,6 +1294,11 @@
 
         // Eres el último jugador real vivo: VICTORIA
         socket.on('match-end', () => {
+            // Si estás espectando, tu objetivo ganó la partida: mostrar tus resultados.
+            if (spectateMode) {
+                finishSpectator();
+                return;
+            }
             if (gameStarted && currentMode === 'battlefield' && !gameOver) {
                 endGame(true);
             }
@@ -1285,6 +1409,10 @@
                 statExp: "EXP Cuenta:",
                 statLevel: "Nivel Actual:",
                 returnToLobbyBtn: "REGRESAR A SALA DE COMANDO",
+                retryTrainingBtn: "REINICIAR ENTRENAMIENTO",
+                spectatorTitle: "ESPECTADOR",
+                spectatorWatching: "Observando en vivo al jugador que te eliminó",
+                spectatorExit: "SALIR DE LA PARTIDA",
                 trainingModeText: "0 PTS (Entrenamiento)",
                 rankNames: [
                     "Recluta", "Regular", "Profesional", 
@@ -1382,6 +1510,10 @@
                 statExp: "Account EXP:",
                 statLevel: "Current Level:",
                 returnToLobbyBtn: "RETURN TO COMMAND ROOM",
+                retryTrainingBtn: "RESTART TRAINING",
+                spectatorTitle: "SPECTATOR",
+                spectatorWatching: "Watching the player who eliminated you live",
+                spectatorExit: "LEAVE THE MATCH",
                 trainingModeText: "0 PTS (Training)",
                 rankNames: [
                     "Recruit", "Regular", "Professional", 
@@ -1479,6 +1611,10 @@
                 statExp: "账号经验：",
                 statLevel: "当前等级：",
                 returnToLobbyBtn: "返回指挥室",
+                retryTrainingBtn: "重新开始训练",
+                spectatorTitle: "旁观模式",
+                spectatorWatching: "实时观看淘汰你的玩家",
+                spectatorExit: "退出对局",
                 trainingModeText: "0 积分 (训练)",
                 rankNames: [
                     "新兵", "正规兵", "专业兵", 
@@ -1576,6 +1712,10 @@
                 statExp: "EXP da Conta:",
                 statLevel: "Nível Atual:",
                 returnToLobbyBtn: "RETORNAR À SALA DE COMANDO",
+                retryTrainingBtn: "REINICIAR TREINAMENTO",
+                spectatorTitle: "ESPECTADOR",
+                spectatorWatching: "Assistindo ao vivo ao jogador que te eliminou",
+                spectatorExit: "SAIR DA PARTIDA",
                 trainingModeText: "0 PTS (Treinamento)",
                 rankNames: [
                     "Recruta", "Regular", "Profissional", 
@@ -1839,6 +1979,10 @@
         const statExp = document.getElementById('stat-exp');
         const statLevel = document.getElementById('stat-level');
         const backToLobbyBtn = document.getElementById('back-to-lobby-btn');
+        const retryTrainingBtn = document.getElementById('retry-training-btn');
+        const spectatorScreen = document.getElementById('spectator-screen');
+        const spectateNameEl = document.getElementById('spectate-name');
+        const leaveSpectatorBtn = document.getElementById('leave-spectator-btn');
 
         const botNames = ["Alpha", "Viper", "Shadow", "Ghost", "SniperX", "Crusher", "Killer99", "Storm", "Zero", "Phoenix", "Blaze", "Titan", "Rogue", "Hunter", "Apex", "Falcon", "Wolf", "Cobra", "Titanium", "Spectre", "Venom", "Reaper", "Matrix", "Blade", "Cyclone", "Striker", "Demon", "Slayer", "Havoc", "Omega", "Ragnarok", "Chaos", "Titanium", "Frost"];
 
@@ -1966,6 +2110,73 @@
             lobbyScreen.style.display = 'flex';
         }
 
+        // --- MODO ESPECTADOR: observas en vivo al jugador real que te eliminó ---
+        function enterSpectator(killerId, killerName) {
+            if (!killerId || currentMode !== 'battlefield' || gameOver || spectateMode) return false;
+            spectateMode = true;
+            spectateId = killerId;
+            spectateNameStr = killerName || '—';
+            spectateSeenTarget = false;
+            pendingMatchOver = null;
+            spectateNameEl.innerText = spectateNameStr;
+            spectatorScreen.style.display = 'flex';
+            uiTopLeft.style.display = 'none';
+            hudTopRight.style.display = 'none';
+            skillHud.style.display = 'none';
+            player.hp = 0;
+            hpBar.style.width = '0%';
+            bullets.length = 0;
+            return true;
+        }
+
+        function finishSpectator() {
+            if (!spectateMode) return;
+            spectateMode = false;
+            spectatorScreen.style.display = 'none';
+            if (socket && socket.connected) socket.emit('leave-match');
+            if (pendingMatchOver) {
+                showResultsFromOfficial(pendingMatchOver);
+            } else {
+                lastKillerName = spectateNameStr;
+                endGame(false);
+            }
+        }
+
+        // Pantalla de resultados con los valores OFICIALES que ya llegaron por 'match-over'
+        function showResultsFromOfficial(data) {
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            gameOver = false;
+            gameStarted = false;
+            player.x = canvas.width / 2;
+            player.y = canvas.height / 2;
+            player.hp = 100;
+            hpBar.style.width = '100%';
+            bullets.length = 0;
+
+            statsTitle.innerText = "PARTIDA FINALIZADA";
+            statsTitle.style.color = "#ff3333";
+            statPos.innerText = "#" + data.placement;
+            statPos.style.color = data.placement <= 10 ? "#00ffff" : "#ff3333";
+            if (spectateNameStr) {
+                statKiller.innerText = "Eliminado por " + spectateNameStr;
+                statKiller.style.display = '';
+            } else {
+                statKiller.style.display = 'none';
+            }
+
+            statName.innerText = profile.name;
+            statKills.innerText = matchStats.kills;
+            statDamage.innerText = matchStats.damage;
+            statPoints.innerText = (data.pointsEarned >= 0 ? "+" : "") + data.pointsEarned + " PTS";
+            statPoints.style.color = data.pointsEarned >= 0 ? "#00ff00" : "#ff3333";
+            statExp.innerText = "+" + data.expEarned + " EXP";
+            statLevel.innerText = `${dict.levelLabel} ${profile.level}`;
+            retryTrainingBtn.style.display = 'none';
+            statsScreen.style.display = 'flex';
+        }
+
+        leaveSpectatorBtn.addEventListener('click', () => finishSpectator());
+
         function updateSkillSelectionUI() {
             const cards = document.querySelectorAll('.skill-card');
             cards.forEach(card => {
@@ -2055,6 +2266,11 @@
             lobbyScreen.style.display = 'flex';
         }
 
+        // Recordar la última cuenta: usuario y contraseña quedan cargados al abrir
+        // el juego y, si el servidor los perdió en una actualización, se restauran solos.
+        if (localStorage.getItem('ff_username')) usernameInput.value = localStorage.getItem('ff_username');
+        if (localStorage.getItem('ff_userpass')) passwordInput.value = atob(localStorage.getItem('ff_userpass'));
+
         loginBtn.addEventListener('click', () => {
             const dict = i18n[profile.language] || i18n["ESPAÑOL"];
             let typedName = usernameInput.value.trim();
@@ -2068,6 +2284,8 @@
                 return;
             }
             showLoginMessage("...");
+            localStorage.setItem('ff_username', typedName);
+            localStorage.setItem('ff_userpass', btoa(typedPass));
             socket.emit('account-login', { name: typedName, password: typedPass });
         });
 
@@ -2088,12 +2306,33 @@
                 return;
             }
             showLoginMessage("...");
+            localStorage.setItem('ff_username', typedName);
+            localStorage.setItem('ff_userpass', btoa(typedPass));
             socket.emit('account-register', { name: typedName, password: typedPass });
         });
 
         socket.on('account-result', (res) => {
             const dict = i18n[profile.language] || i18n["ESPAÑOL"];
             if (!res || !res.ok) {
+                // AUTO-RESTAURACIÓN: si el servidor perdió las cuentas (actualización
+                // sin base de datos persistente), el juego la recrea SOLO con el mismo
+                // usuario y contraseña guardados, sin pedirte crear nada.
+                const savedName = localStorage.getItem('ff_username');
+                const savedPassRaw = localStorage.getItem('ff_userpass');
+                const typedName = usernameInput.value.trim() || savedName || '';
+                if (savedName && savedPassRaw && savedName.toUpperCase() === typedName.toUpperCase()) {
+                    const savedPass = atob(savedPassRaw);
+                    if (res && res.error === 'not-found') {
+                        showLoginMessage("🔄 Restaurando tu cuenta...");
+                        socket.emit('account-register', { name: typedName, password: savedPass });
+                        return;
+                    }
+                    if (res && res.error === 'name-taken') {
+                        showLoginMessage("🔄 Recuperando tu cuenta...");
+                        socket.emit('account-login', { name: typedName, password: savedPass });
+                        return;
+                    }
+                }
                 let msg = dict.errGeneric;
                 if (res && res.error === 'not-found') msg = dict.errNoAccount;
                 else if (res && res.error === 'bad-pass') msg = dict.errBadPass;
@@ -2184,6 +2423,8 @@
             localStorage.removeItem('ff_exp');
             localStorage.removeItem('ff_points');
             localStorage.removeItem('ff_deaths');
+            localStorage.removeItem('ff_username');
+            localStorage.removeItem('ff_userpass');
             profile.name = "";
             profile.level = 1;
             profile.exp = 0;
@@ -2200,7 +2441,8 @@
         // Botones del PERFIL COMPLETO
         backFromProfile.addEventListener('click', () => closeProfile());
 
-        toTrainingBtn.addEventListener('click', () => {
+        // Iniciar (o reiniciar) el modo entrenamiento: 9 bots en el mapa de la sala
+        function startTrainingMatch() {
             currentMode = 'training';
             mapWidth = window.innerWidth;
             mapHeight = window.innerHeight;
@@ -2210,17 +2452,29 @@
             player.hp = 100;
             player.shootCooldown = 0;
 
+            gameOver = false;
+            gameStarted = true;
+            spectateMode = false;
+            spectateId = null;
+            pendingMatchOver = null;
+            spectatorScreen.style.display = 'none';
+
             generateObstacles();
             lobbyScreen.style.display = 'none';
+            statsScreen.style.display = 'none';
             uiTopLeft.style.display = 'flex';
             hudTopRight.style.display = 'flex';
             skillHud.style.display = 'none';
             killFeedContainer.innerHTML = '';
-            gameStarted = true;
             matchStats.kills = 0;
             matchStats.damage = 0;
             spawnEnemies();
             updateHUDCounters();
+            hpBar.style.width = '100%';
+        }
+
+        toTrainingBtn.addEventListener('click', () => {
+            startTrainingMatch();
         });
 
         toBattlefieldBtn.addEventListener('click', () => {
@@ -2395,6 +2649,10 @@
             statsScreen.style.display = 'none';
             updateLobbyUI();
             lobbyScreen.style.display = 'flex';
+        });
+
+        retryTrainingBtn.addEventListener('click', () => {
+            startTrainingMatch();
         });
 
         function generateObstacles() {
@@ -2578,7 +2836,7 @@
             keys[pressedKey] = true;
 
             if (profile.controls.skill.includes(pressedKey)) {
-                triggerSkillAction();
+                if (!spectateMode) triggerSkillAction();
             }
         });
 
@@ -2625,7 +2883,7 @@
             if(!gameStarted || gameOver) return;
 
             if (e.button === 2 && profile.controls.skill.includes('mouse2')) {
-                triggerSkillAction();
+                if (!spectateMode) triggerSkillAction();
                 return;
             }
 
@@ -2633,7 +2891,7 @@
             let isGhostActive = (profile.selectedSkill === 'ghost' && skillState.active);
             if (isShieldActive || isGhostActive) return;
 
-            if (e.button === 0 && player.shootCooldown <= 0) {
+            if (e.button === 0 && player.shootCooldown <= 0 && !spectateMode) {
                 bullets.push({
                     x: player.x, y: player.y, startX: player.x, startY: player.y,
                     dx: Math.cos(player.angle) * 12, dy: Math.sin(player.angle) * 12,
@@ -2733,7 +2991,7 @@
                     safeZone.radius = safeZone.maxRadius;
                 }
 
-                if (Math.hypot(player.x - safeZone.x, player.y - safeZone.y) > safeZone.radius) {
+                if (!spectateMode && Math.hypot(player.x - safeZone.x, player.y - safeZone.y) > safeZone.radius) {
                     player.hp -= 0.15;
                     hpBar.style.width = Math.max(player.hp, 0) + '%';
                     if (player.hp <= 0) {
@@ -2746,18 +3004,33 @@
 
             plPrevX = player.x;
             plPrevY = player.y;
+
+            // MODO ESPECTADOR: el jugador muerto no se mueve, no dispara y no usa la
+            // habilidad; si el objetivo se veía en pantalla y DESAPARECE (murió por zona,
+            // ganó o salió), se cierran los resultados. Se ignora el primer parpadeo
+            // (el killer aún no ha llegado en el broadcast de 1 s).
+            if (spectateMode) {
+                if (remotePlayers[spectateId]) {
+                    spectateSeenTarget = true;
+                } else if (spectateSeenTarget) {
+                    finishSpectator();
+                }
+            }
+
             let nextX = player.x;
             let nextY = player.y;
-            if (isActionPressed('up')) nextY -= player.speed;
-            if (isActionPressed('down')) nextY += player.speed;
-            if (isActionPressed('left')) nextX -= player.speed;
-            if (isActionPressed('right')) nextX += player.speed;
+            if (!spectateMode) {
+                if (isActionPressed('up')) nextY -= player.speed;
+                if (isActionPressed('down')) nextY += player.speed;
+                if (isActionPressed('left')) nextX -= player.speed;
+                if (isActionPressed('right')) nextX += player.speed;
+            }
 
             let canMoveX = true;
             let canMoveY = true;
             let isGhostActive = (profile.selectedSkill === 'ghost' && skillState.active);
 
-            if (!isGhostActive) {
+            if (!isGhostActive && !spectateMode) {
                 for (let obs of obstacles) {
                     if (checkRectCollision(nextX, player.y, player.radius, obs)) canMoveX = false;
                     if (checkRectCollision(player.x, nextY, player.radius, obs)) canMoveY = false;
@@ -2768,7 +3041,7 @@
             if (canMoveY && nextY - player.radius > 0 && nextY + player.radius < mapHeight) player.y = nextY;
 
             const nowMs = Date.now();
-            if (currentMode === 'battlefield' && nowMs - lastMoveEmit > 100) {
+            if (currentMode === 'battlefield' && nowMs - lastMoveEmit > 100 && !spectateMode) {
                 lastMoveEmit = nowMs;
                 socket.emit('player-move', { x: player.x, y: player.y, angle: player.angle });
             }
@@ -2803,7 +3076,7 @@
                     const distToPlayer = Math.hypot(player.x - b.x, player.y - b.y);
                     if (distToPlayer - player.radius - b.radius < 1) {
                         let shieldActive = (profile.selectedSkill === 'shield' && skillState.active);
-                        if (!shieldActive) {
+                        if (!shieldActive && !spectateMode) {
                             player.hp -= 10;
                             hpBar.style.width = Math.max(player.hp, 0) + '%';
                             if (player.hp <= 0) {
@@ -2848,10 +3121,17 @@
                             enemies.splice(k, 1);
                             updateHUDCounters();
 
-                            if (enemies.length === 0 && currentMode === 'battlefield' && Object.keys(remotePlayers).length === 0) {
-                                draw();
-                                endGame(true);
-                                return;
+                            if (enemies.length === 0) {
+                                if (currentMode === 'battlefield' && Object.keys(remotePlayers).length === 0) {
+                                    draw();
+                                    endGame(true);
+                                    return;
+                                }
+                                if (currentMode === 'training') {
+                                    draw();
+                                    endGame(true);
+                                    return;
+                                }
                             }
                         }
                         break;
@@ -2889,10 +3169,14 @@
                             addKillFeedMessage("Zona de Veneno", enemy.name, false);
                             enemies.splice(i, 1);
                             updateHUDCounters();
-                            if (enemies.length === 0 && Object.keys(remotePlayers).length === 0) {
-                                draw();
-                                endGame(true);
-                                return;
+                            if (enemies.length === 0) {
+                                if (currentMode === 'battlefield' || currentMode === 'training') {
+                                    if (currentMode === 'training' || Object.keys(remotePlayers).length === 0) {
+                                        draw();
+                                        endGame(true);
+                                        return;
+                                    }
+                                }
                             }
                             continue;
                         }
@@ -3029,7 +3313,7 @@
 
                 if (targetEntity === 'player' && distToPlayer - player.radius - enemy.radius < 1 && !playerInvisible) {
                     let shieldActive = (profile.selectedSkill === 'shield' && skillState.active);
-                    if (!shieldActive) {
+                    if (!shieldActive && !spectateMode) {
                         player.hp -= 0.4;
                         hpBar.style.width = Math.max(player.hp, 0) + '%';
                         if (player.hp <= 0) {
@@ -3096,8 +3380,14 @@
 
             ctx.save();
             if (currentMode === 'battlefield') {
-                let camX = canvas.width / 2 - player.x;
-                let camY = canvas.height / 2 - player.y;
+                // La cámara sigue al jugador espectado en lugar del cuerpo muerto
+                let followX = player.x, followY = player.y;
+                if (spectateMode && remotePlayers[spectateId]) {
+                    followX = remotePlayers[spectateId].x;
+                    followY = remotePlayers[spectateId].y;
+                }
+                let camX = canvas.width / 2 - followX;
+                let camY = canvas.height / 2 - followY;
                 ctx.translate(camX, camY);
 
                 ctx.fillStyle = 'rgba(128, 0, 128, 0.45)';
@@ -3197,95 +3487,97 @@
                 ctx.fillText(rp.name || "Soldado", rp.x, rp.y - 23);
             }
 
-            ctx.save();
-            ctx.translate(player.x, player.y);
-            
-            if (skillState.active) {
-                ctx.beginPath();
-                if (profile.selectedSkill === 'shield') {
-                    ctx.arc(0, 0, player.radius + 8, 0, Math.PI * 2);
-                    ctx.strokeStyle = '#00ffff';
-                    ctx.lineWidth = 4;
-                    ctx.shadowBlur = 15;
-                    ctx.shadowColor = '#00ffff';
-                    ctx.stroke();
-                } else if (profile.selectedSkill === 'heal') {
-                    ctx.arc(0, 0, player.radius + 6, 0, Math.PI * 2);
-                    ctx.strokeStyle = '#00ff00';
-                    ctx.lineWidth = 3;
-                    ctx.shadowBlur = 12;
-                    ctx.shadowColor = '#00ff00';
-                    ctx.stroke();
-                } else if (profile.selectedSkill === 'ghost') {
-                    ctx.arc(0, 0, player.radius + 6, 0, Math.PI * 2);
-                    ctx.strokeStyle = '#ff00ff';
-                    ctx.lineWidth = 3;
-                    ctx.setLineDash([4, 4]);
-                    ctx.shadowBlur = 12;
-                    ctx.shadowColor = '#ff00ff';
-                    ctx.stroke();
-                } else if (profile.selectedSkill === 'radar') {
-                    ctx.arc(0, 0, player.radius + 10, 0, Math.PI * 2);
-                    ctx.strokeStyle = '#ff3333';
-                    ctx.lineWidth = 3;
-                    ctx.shadowBlur = 15;
-                    ctx.shadowColor = '#ff3333';
-                    ctx.stroke();
-                }
-                ctx.closePath();
-                ctx.shadowBlur = 0;
-                ctx.setLineDash([]);
-            }
-
-            ctx.beginPath();
-            ctx.arc(0, 0, player.radius, 0, Math.PI * 2);
-            
-            let isGhostActive = (profile.selectedSkill === 'ghost' && skillState.active);
-            ctx.globalAlpha = isGhostActive ? 0.2 : 1.0;
-
-            if (player.color === 'camo' && camoPatternLoaded && camoPatternObj) {
+            if (!spectateMode) {
                 ctx.save();
-                ctx.scale(0.35, 0.35);
-                ctx.fillStyle = camoPatternObj;
-                ctx.fill();
+                ctx.translate(player.x, player.y);
+                
+                if (skillState.active) {
+                    ctx.beginPath();
+                    if (profile.selectedSkill === 'shield') {
+                        ctx.arc(0, 0, player.radius + 8, 0, Math.PI * 2);
+                        ctx.strokeStyle = '#00ffff';
+                        ctx.lineWidth = 4;
+                        ctx.shadowBlur = 15;
+                        ctx.shadowColor = '#00ffff';
+                        ctx.stroke();
+                    } else if (profile.selectedSkill === 'heal') {
+                        ctx.arc(0, 0, player.radius + 6, 0, Math.PI * 2);
+                        ctx.strokeStyle = '#00ff00';
+                        ctx.lineWidth = 3;
+                        ctx.shadowBlur = 12;
+                        ctx.shadowColor = '#00ff00';
+                        ctx.stroke();
+                    } else if (profile.selectedSkill === 'ghost') {
+                        ctx.arc(0, 0, player.radius + 6, 0, Math.PI * 2);
+                        ctx.strokeStyle = '#ff00ff';
+                        ctx.lineWidth = 3;
+                        ctx.setLineDash([4, 4]);
+                        ctx.shadowBlur = 12;
+                        ctx.shadowColor = '#ff00ff';
+                        ctx.stroke();
+                    } else if (profile.selectedSkill === 'radar') {
+                        ctx.arc(0, 0, player.radius + 10, 0, Math.PI * 2);
+                        ctx.strokeStyle = '#ff3333';
+                        ctx.lineWidth = 3;
+                        ctx.shadowBlur = 15;
+                        ctx.shadowColor = '#ff3333';
+                        ctx.stroke();
+                    }
+                    ctx.closePath();
+                    ctx.shadowBlur = 0;
+                    ctx.setLineDash([]);
+                }
+
+                ctx.beginPath();
+                ctx.arc(0, 0, player.radius, 0, Math.PI * 2);
+                
+                let isGhostActive = (profile.selectedSkill === 'ghost' && skillState.active);
+                ctx.globalAlpha = isGhostActive ? 0.2 : 1.0;
+
+                if (player.color === 'camo' && camoPatternLoaded && camoPatternObj) {
+                    ctx.save();
+                    ctx.scale(0.35, 0.35);
+                    ctx.fillStyle = camoPatternObj;
+                    ctx.fill();
+                    ctx.restore();
+                } else if (player.color === 'multicolor') {
+                    let grad = ctx.createLinearGradient(-player.radius, -player.radius, player.radius, player.radius);
+                    grad.addColorStop(0, '#ff0000');
+                    grad.addColorStop(0.5, '#00ff00');
+                    grad.addColorStop(1, '#0000ff');
+                    ctx.fillStyle = grad;
+                    ctx.fill();
+                } else if (player.color === 'camo') {
+                    ctx.fillStyle = '#888888';
+                    ctx.fill();
+                } else {
+                    ctx.fillStyle = player.color;
+                    ctx.fill();
+                }
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                ctx.closePath();
+
+                ctx.rotate(player.angle);
+                ctx.fillStyle = '#333';
+                ctx.fillRect(10, -3, 15, 6);
                 ctx.restore();
-            } else if (player.color === 'multicolor') {
-                let grad = ctx.createLinearGradient(-player.radius, -player.radius, player.radius, player.radius);
-                grad.addColorStop(0, '#ff0000');
-                grad.addColorStop(0.5, '#00ff00');
-                grad.addColorStop(1, '#0000ff');
-                ctx.fillStyle = grad;
-                ctx.fill();
-            } else if (player.color === 'camo') {
-                ctx.fillStyle = '#888888';
-                ctx.fill();
-            } else {
-                ctx.fillStyle = player.color;
-                ctx.fill();
-            }
-            ctx.strokeStyle = '#000';
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
-            ctx.closePath();
 
-            ctx.rotate(player.angle);
-            ctx.fillStyle = '#333';
-            ctx.fillRect(10, -3, 15, 6);
-            ctx.restore();
+                if (!isGhostActive) {
+                    ctx.fillStyle = '#ffcc00';
+                    ctx.font = '13px Impact';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(profile.name, player.x, player.y - 23);
+                }
 
-            if (!isGhostActive) {
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.fillRect(player.x - 15, player.y - 19, 30, 4);
                 ctx.fillStyle = '#ffcc00';
-                ctx.font = '13px Impact';
-                ctx.textAlign = 'center';
-                ctx.fillText(profile.name, player.x, player.y - 23);
+                ctx.fillRect(player.x - 15, player.y - 19, 30 * (player.hp / 100), 4);
+
+                ctx.restore();
             }
-
-            ctx.fillStyle = 'rgba(0,0,0,0.5)';
-            ctx.fillRect(player.x - 15, player.y - 19, 30, 4);
-            ctx.fillStyle = '#ffcc00';
-            ctx.fillRect(player.x - 15, player.y - 19, 30 * (player.hp / 100), 4);
-
-            ctx.restore();
             drawMinimap();
         }
 
@@ -3300,6 +3592,8 @@
             if (!gameStarted && statsScreen.style.display === 'flex') return;
 
             gameOver = true;
+            spectateMode = false;
+            spectatorScreen.style.display = 'none';
 
             // Liberar la partida en el servidor SIEMPRE (ganes, pierdas o salgas):
             // sin esto el socket queda "dentro" de la sala y no puede volver a buscar
@@ -3413,6 +3707,9 @@
             }
             
             statLevel.innerText = `${dict.levelLabel} ${profile.level}`;
+
+            // En entrenamiento se puede reiniciar la partida o volver a la sala
+            retryTrainingBtn.style.display = (currentMode === 'training') ? 'block' : 'none';
 
             statsScreen.style.display = 'flex';
 
