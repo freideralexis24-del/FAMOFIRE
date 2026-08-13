@@ -1,0 +1,21 @@
+# Pinger externo: mantiene despierto el servidor gratuito de Render.
+# Render duerme la instancia tras ~15 min sin tráfico; este job le pega a
+# /health cada 10 minutos (debajo del límite), así el juego nunca se apaga.
+# Al actualizar el juego en Render el servicio se reinicia igual (normal).
+
+name: keep-alive
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping a famofire.onrender.com/health
+        run: |
+          curl -fsS -m 90 --retry 3 --retry-delay 10 --retry-all-errors \
+            https://famofire.onrender.com/health || true

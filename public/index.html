@@ -703,11 +703,11 @@
                 <div class="pstat"><span class="pstat-num" id="prof-matches">0</span><span class="pstat-label">PARTIDAS</span></div>
                 <div class="pstat"><span class="pstat-num" id="prof-wins">0</span><span class="pstat-label">VICTORIAS</span></div>
                 <div class="pstat"><span class="pstat-num" id="prof-kills">0</span><span class="pstat-label">BAJAS</span></div>
+                <div class="pstat"><span class="pstat-num" id="prof-kd">0.00</span><span class="pstat-label">KD</span></div>
                 <div class="pstat"><span class="pstat-num" id="prof-dmg">0</span><span class="pstat-label">DAÑO</span></div>
             </div>
 
             <div class="lobby-menu" style="margin-top: 16px;">
-                <button id="logout-from-profile" class="btn-main" style="background-color: #ff3333; color: #fff;" data-i18n="logoutBtn">CERRAR SESIÓN</button>
                 <button id="back-from-profile" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
             </div>
         </div>
@@ -877,7 +877,7 @@
                 <span data-i18n="skinGreen">Verde Neón</span>
             </div>
 
-            <div class="skin-option-card" data-color="camo" data-level="5" onclick="selectSkinColor('camo', true, this)">
+            <div class="skin-option-card" data-color="camo" data-level="10" onclick="selectSkinColor('camo', true, this)">
                 <div class="lock-badge">🔒</div>
                 <div class="skin-preview" id="camo-card-preview"></div>
                 <span data-i18n="skinCamo">Camu. Urbano</span>
@@ -918,12 +918,13 @@
                     <tr>
                         <th>#</th>
                         <th data-i18n="soldierTableHeader">Soldado</th>
+                        <th data-i18n="rankHeader">Rango</th>
                         <th data-i18n="pointsHeader">Puntos</th>
                     </tr>
                 </thead>
                 <tbody id="ranking-table-body">
                     <tr>
-                        <td colspan="3" style="text-align: center; color: #aaa; padding: 20px;" data-i18n="serverConnecting">
+                        <td colspan="4" style="text-align: center; color: #aaa; padding: 20px;" data-i18n="serverConnecting">
                             Cargando Salón de la Fama LATAM...
                         </td>
                     </tr>
@@ -1029,7 +1030,7 @@
             if (rankingBody) {
                 rankingBody.innerHTML = '';
                 if (!topPlayers || topPlayers.length === 0) {
-                    rankingBody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #aaa; padding: 20px;">Sin registros en el Salón de la Fama</td></tr>`;
+                    rankingBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #aaa; padding: 20px;">Sin registros en el Salón de la Fama</td></tr>`;
                     return;
                 }
                 topPlayers.forEach((p, index) => {
@@ -1038,7 +1039,7 @@
                     if (p.name === profile.name) {
                         tr.style.backgroundColor = "rgba(255, 204, 0, 0.2)";
                     }
-                    tr.innerHTML = `<td>#${index + 1}</td><td>${p.name}</td><td>${p.points || 0} PTS</td>`;
+                    tr.innerHTML = `<td>#${index + 1}</td><td>${p.name}</td><td>${getRankName(p.points || 0)}</td><td>${p.points || 0} PTS</td>`;
                     rankingBody.appendChild(tr);
                 });
             }
@@ -1161,6 +1162,7 @@
                 profile.matches = data.matches;
                 profile.wins = data.wins;
                 profile.kills = data.kills;
+                profile.deaths = data.deaths || profile.deaths;
                 saveProfile();
                 updateLobbyUI();
                 // Refrescar la pantalla de resultados con los valores reales
@@ -1271,6 +1273,7 @@
                 rankingSubtitle: "Top 100 Mejores Soldados (Servidor LATAM)",
                 soldierTableHeader: "Soldado",
                 pointsHeader: "Puntos",
+                rankHeader: "Rango",
                 serverConnecting: "Cargando Salón de la Fama LATAM...",
                 hudAlive: "VIVOS",
                 hudKills: "BAJAS (KILLS)",
@@ -1284,10 +1287,10 @@
                 returnToLobbyBtn: "REGRESAR A SALA DE COMANDO",
                 trainingModeText: "0 PTS (Entrenamiento)",
                 rankNames: [
-                    "1. Recluta", "2. Regular", "3. Profesional", 
-                    "4. Dragoneante Profesional", "5. Cabo Tercero", "6. Cabo Segundo", 
-                    "7. Cabo Primero", "8. Sargento Segundo", "9. Sargento Viceprimero", 
-                    "10. Sargento Primero", "11. Sargento Mayor"
+                    "Recluta", "Regular", "Profesional", 
+                    "Dragoneante Profesional", "Cabo Tercero", "Cabo Segundo", 
+                    "Cabo Primero", "Sargento Segundo", "Sargento Viceprimero", 
+                    "Sargento Primero", "Sargento Mayor"
                 ]
             },
             "ENGLISH": {
@@ -1367,6 +1370,7 @@
                 rankingSubtitle: "Top 100 Best Soldiers (LATAM Server)",
                 soldierTableHeader: "Soldier",
                 pointsHeader: "Points",
+                rankHeader: "Rank",
                 serverConnecting: "Loading LATAM Hall of Fame...",
                 hudAlive: "ALIVE",
                 hudKills: "KILLS",
@@ -1380,10 +1384,10 @@
                 returnToLobbyBtn: "RETURN TO COMMAND ROOM",
                 trainingModeText: "0 PTS (Training)",
                 rankNames: [
-                    "1. Recruit", "2. Regular", "3. Professional", 
-                    "4. Professional Lance Corporal", "5. Corporal Third Class", "6. Corporal Second Class", 
-                    "7. Corporal First Class", "8. Sergeant Second Class", "9. Staff Sergeant", 
-                    "10. First Sergeant", "11. Sergeant Major"
+                    "Recruit", "Regular", "Professional", 
+                    "Professional Lance Corporal", "Corporal Third Class", "Corporal Second Class", 
+                    "Corporal First Class", "Sergeant Second Class", "Staff Sergeant", 
+                    "First Sergeant", "Sergeant Major"
                 ]
             },
             "中国人": {
@@ -1463,6 +1467,7 @@
                 rankingSubtitle: "拉美服务器前100名最佳士兵",
                 soldierTableHeader: "士兵",
                 pointsHeader: "积分",
+                rankHeader: "军衔",
                 serverConnecting: "正在加载拉美名人堂...",
                 hudAlive: "存活",
                 hudKills: "击杀",
@@ -1476,10 +1481,10 @@
                 returnToLobbyBtn: "返回指挥室",
                 trainingModeText: "0 积分 (训练)",
                 rankNames: [
-                    "1. 新兵", "2. 正规兵", "3. 专业兵", 
-                    "4. 专业下士", "5. 三等下士", "6. 二等下士", 
-                    "7. 一等下士", "8. 二等中士", "9. 副排长", 
-                    "10. 一等中士", "11. 军士长"
+                    "新兵", "正规兵", "专业兵", 
+                    "专业下士", "三等下士", "二等下士", 
+                    "一等下士", "二等中士", "副排长", 
+                    "一等中士", "军士长"
                 ]
             },
             "BRASIL": {
@@ -1559,6 +1564,7 @@
                 rankingSubtitle: "Top 100 Melhores Soldados (Servidor LATAM)",
                 soldierTableHeader: "Soldado",
                 pointsHeader: "Pontos",
+                rankHeader: "Patente",
                 serverConnecting: "Carregando Hall da Fama LATAM...",
                 hudAlive: "VIVOS",
                 hudKills: "ABATES (KILLS)",
@@ -1572,10 +1578,10 @@
                 returnToLobbyBtn: "RETORNAR À SALA DE COMANDO",
                 trainingModeText: "0 PTS (Treinamento)",
                 rankNames: [
-                    "1. Recruta", "2. Regular", "3. Profissional", 
-                    "4. Taifeiro / Dragoneante", "5. Cabo Terceiro", "6. Cabo Segundo", 
-                    "7. Cabo Primeiro", "8. Sargento Segundo", "9. Primeiro-Sargento", 
-                    "10. Subtenente", "11. Sargento Maior"
+                    "Recruta", "Regular", "Profissional", 
+                    "Taifeiro / Dragoneante", "Cabo Terceiro", "Cabo Segundo", 
+                    "Cabo Primeiro", "Sargento Segundo", "Primeiro-Sargento", 
+                    "Subtenente", "Sargento Maior"
                 ]
             }
         };
@@ -1630,6 +1636,7 @@
             wins: parseInt(localStorage.getItem('ff_wins')) || 0,
             kills: parseInt(localStorage.getItem('ff_kills')) || 0,
             dmg: parseInt(localStorage.getItem('ff_dmg')) || 0,
+            deaths: parseInt(localStorage.getItem('ff_deaths')) || 0,
             color: localStorage.getItem('ff_color') || "#ffffff",
             selectedSkill: localStorage.getItem('ff_skill') || "shield",
             language: localStorage.getItem('ff_lang') || "ESPAÑOL",
@@ -1794,9 +1801,9 @@
         const profMatches = document.getElementById('prof-matches');
         const profWins = document.getElementById('prof-wins');
         const profKills = document.getElementById('prof-kills');
+        const profKd = document.getElementById('prof-kd');
         const profDmg = document.getElementById('prof-dmg');
         const backFromProfile = document.getElementById('back-from-profile');
-        const logoutFromProfile = document.getElementById('logout-from-profile');
         const skinLockMsg = document.getElementById('skin-lock-msg');
         
         const toTrainingBtn = document.getElementById('to-training-btn');
@@ -1904,6 +1911,7 @@
             localStorage.setItem('ff_wins', profile.wins);
             localStorage.setItem('ff_kills', profile.kills);
             localStorage.setItem('ff_dmg', profile.dmg);
+            localStorage.setItem('ff_deaths', profile.deaths);
             localStorage.setItem('ff_color', profile.color);
             localStorage.setItem('ff_skill', profile.selectedSkill);
             localStorage.setItem('ff_lang', profile.language);
@@ -1935,6 +1943,7 @@
             profWins.innerText = profile.wins;
             profKills.innerText = profile.kills;
             profDmg.innerText = profile.dmg || 0;
+            profKd.innerText = profile.deaths > 0 ? (profile.kills / profile.deaths).toFixed(2) : (profile.kills > 0 ? '∞' : '0.00');
 
             let maxExp = getRequiredExp(profile.level);
             let percentage = Math.min(100, (profile.exp / maxExp) * 100);
@@ -2036,6 +2045,7 @@
                 profile.matches = account.matches;
                 profile.wins = account.wins;
                 profile.kills = account.kills;
+                profile.deaths = account.deaths || 0;
                 profile.dmg = account.dmg || 0;
             }
             saveProfile();
@@ -2173,10 +2183,12 @@
             localStorage.removeItem('ff_level');
             localStorage.removeItem('ff_exp');
             localStorage.removeItem('ff_points');
+            localStorage.removeItem('ff_deaths');
             profile.name = "";
             profile.level = 1;
             profile.exp = 0;
             profile.points = 0;
+            profile.deaths = 0;
             saveProfile();
             configScreen.style.display = 'none';
             loginScreen.style.display = 'flex';
@@ -2187,32 +2199,6 @@
 
         // Botones del PERFIL COMPLETO
         backFromProfile.addEventListener('click', () => closeProfile());
-        logoutFromProfile.addEventListener('click', () => {
-            localStorage.removeItem('ff_name');
-            localStorage.removeItem('ff_id');
-            localStorage.removeItem('ff_level');
-            localStorage.removeItem('ff_exp');
-            localStorage.removeItem('ff_points');
-            localStorage.removeItem('ff_matches');
-            localStorage.removeItem('ff_wins');
-            localStorage.removeItem('ff_kills');
-            localStorage.removeItem('ff_dmg');
-            profile.name = "";
-            profile.id = "";
-            profile.level = 1;
-            profile.exp = 0;
-            profile.points = 0;
-            profile.matches = 0;
-            profile.wins = 0;
-            profile.kills = 0;
-            profile.dmg = 0;
-            saveProfile();
-            profileScreen.style.display = 'none';
-            loginScreen.style.display = 'flex';
-            usernameInput.value = "";
-            passwordInput.value = "";
-            showLoginMessage("");
-        });
 
         toTrainingBtn.addEventListener('click', () => {
             currentMode = 'training';
@@ -2252,7 +2238,7 @@
             battlefieldScreen.style.display = 'none';
             matchmakingScreen.style.display = 'flex';
             
-            let timeLeft = 30; // 30 segundos de tiempo de espera máximo
+            let timeLeft = 15; // 15 segundos de tiempo de espera máximo
             mmTimer.innerText = timeLeft + "s";
             
             socket.emit('join-matchmaking', { name: profile.name, points: profile.points, color: profile.color });
@@ -2393,7 +2379,7 @@
         });
 
         function selectSkinColor(colorHex, isLocked, cardElement) {
-            let requiredLevel = isLocked ? 5 : 1;
+            let requiredLevel = isLocked ? (parseInt(cardElement.dataset.level) || 5) : 1;
             if (profile.level < requiredLevel) {
                 skinLockMsg.innerText = `⚠️ Requiere Nivel ${requiredLevel} para desbloquear esta skin.`;
                 return;

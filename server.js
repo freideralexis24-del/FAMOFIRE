@@ -12,7 +12,7 @@ const { Server } = require('socket.io');
 
 const PORT = process.env.PORT || 3000;
 const MATCH_SIZE = 35;                              // cupos por partida (jugadores reales + bots)
-const QUEUE_TIMEOUT = parseInt(process.env.MM_TIMEOUT_MS || '30000', 10); // espera máxima en cola
+const QUEUE_TIMEOUT = parseInt(process.env.MM_TIMEOUT_MS || '15000', 10); // espera máxima en cola (15 s)
 const MAP = { w: 3600, h: 2000 };                   // mapa fijo del Campo de Batalla (sincronizado)
 const SPAWN_MIN_DIST = 400;                         // distancia mínima entre apariciones
 const ACCOUNTS_FILE = path.join(__dirname, 'accounts.json');
@@ -68,11 +68,12 @@ async function initAccounts() {
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS wins INT NOT NULL DEFAULT 0');
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS kills INT NOT NULL DEFAULT 0');
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS dmg INT NOT NULL DEFAULT 0');
+        await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS deaths INT NOT NULL DEFAULT 0');
       } catch (e) { /* versión vieja de Postgres u otro problema menor: se ignora */ }
-      const { rows } = await db.query('SELECT name, password, points, level, exp, lastseen, id, matches, wins, kills, dmg FROM accounts');
+      const { rows } = await db.query('SELECT name, password, points, level, exp, lastseen, id, matches, wins, kills, dmg, deaths FROM accounts');
       accounts = {};
       for (const r of rows) {
-        accounts[r.name] = { id: r.id || genId(), password: r.password, points: Number(r.points), level: Number(r.level), exp: Number(r.exp), lastSeen: Number(r.lastseen) || 0, matches: Number(r.matches) || 0, wins: Number(r.wins) || 0, kills: Number(r.kills) || 0, dmg: Number(r.dmg) || 0 };
+        accounts[r.name] = { id: r.id || genId(), password: r.password, points: Number(r.points), level: Number(r.level), exp: Number(r.exp), lastSeen: Number(r.lastseen) || 0, matches: Number(r.matches) || 0, wins: Number(r.wins) || 0, kills: Number(r.kills) || 0, dmg: Number(r.dmg) || 0, deaths: Number(r.deaths) || 0 };
       }
       console.log(`[DB] ${rows.length} cuentas cargadas desde PostgreSQL`);
     } catch (e) {
@@ -83,6 +84,8 @@ async function initAccounts() {
   }
   if (!db) {
     try { accounts = JSON.parse(fs.readFileSync(ACCOUNTS_FILE, 'utf8')); } catch (e) { accounts = {}; }
+    console.warn('[DB] ⚠️ SIN PostgreSQL: las cuentas se guardan en disco EFÍMERO y se BORRAN en cada actualización.');
+    console.warn('[DB] 👉 En Render: crea New > PostgreSQL (plan Free) y pega su Internal Database URL en Environment > DATABASE_URL. Luego actualiza el servicio una vez.');
   }
   // ID único por cuenta (para control de jugadores). Si una cuenta antigua no lo
   // tiene (de la era pre-ID), se le genera uno ahora. NO se borra ninguna cuenta
@@ -113,8 +116,8 @@ async function dbSaveAll() {
   const client = await db.connect();
   try {
     await client.query('BEGIN');
-    const q = `INSERT INTO accounts (name, id, password, points, level, exp, lastseen, matches, wins, kills, dmg)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    const q = `INSERT INTO accounts (name, id, password, points, level, exp, lastseen, matches, wins, kills, dmg, deaths)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
                ON CONFLICT (name) DO UPDATE SET
                  password = EXCLUDED.password,
                  points = EXCLUDED.points,
@@ -124,9 +127,10 @@ async function dbSaveAll() {
                  matches = EXCLUDED.matches,
                  wins = EXCLUDED.wins,
                  kills = EXCLUDED.kills,
-                 dmg = EXCLUDED.dmg`;
+                 dmg = EXCLUDED.dmg,
+                 deaths = EXCLUDED.deaths`;
     for (const [name, a] of Object.entries(accounts)) {
-      await client.query(q, [name, a.id || genId(), a.password, Number(a.points) || 0, Number(a.level) || 1, Number(a.exp) || 0, Number(a.lastSeen) || 0, Number(a.matches) || 0, Number(a.wins) || 0, Number(a.kills) || 0, Number(a.dmg) || 0]);
+      await client.query(q, [name, a.id || genId(), a.password, Number(a.points) || 0, Number(a.level) || 1, Number(a.exp) || 0, Number(a.lastSeen) || 0, Number(a.matches) || 0, Number(a.wins) || 0, Number(a.kills) || 0, Number(a.dmg) || 0, Number(a.deaths) || 0]);
     }
     await client.query('COMMIT');
   } catch (e) {
@@ -189,7 +193,7 @@ function applyRewards(acc, placement, kills, damageDealt) {
   acc.level = level;
   acc.exp = level >= 100 ? 0 : exp;
   acc.lastSeen = Date.now();
-  return { pointsEarned: rankPointsChange, expEarned, points: acc.points, level: acc.level, exp: acc.exp, matches: acc.matches, wins: acc.wins, kills: acc.kills, dmg: acc.dmg };
+  return { pointsEarned: rankPointsChange, expEarned, points: acc.points, level: acc.level, exp: acc.exp, matches: acc.matches || 0, wins: acc.wins || 0, kills: acc.kills || 0, dmg: acc.dmg || 0, deaths: acc.deaths || 0 };
 }
 
 // ---------- Utilidades ----------
@@ -387,7 +391,7 @@ io.on('connection', (socket) => {
     socket.data.account = name;
     socket.data.name = name;
     socket.data.points = acc.points;
-    socket.emit('account-result', { ok: true, account: { id: acc.id, name, points: acc.points, level: acc.level, exp: acc.exp, matches: acc.matches || 0, wins: acc.wins || 0, kills: acc.kills || 0, dmg: acc.dmg || 0 } });
+    socket.emit('account-result', { ok: true, account: { id: acc.id, name, points: acc.points, level: acc.level, exp: acc.exp, matches: acc.matches || 0, wins: acc.wins || 0, kills: acc.kills || 0, dmg: acc.dmg || 0, deaths: acc.deaths || 0 } });
   });
 
   socket.on('account-register', async (data = {}) => {
@@ -398,12 +402,12 @@ io.on('connection', (socket) => {
     if (String(data.password || '').length < 4) return socket.emit('account-result', { ok: false, error: 'short-pass' });
     let passHash;
     try { passHash = await bcrypt.hash(String(data.password || ''), 10); } catch (e) { passHash = sha(data.password); }
-    accounts[name] = { id: genId(), password: passHash, points: 0, level: 1, exp: 0, lastSeen: Date.now(), matches: 0, wins: 0, kills: 0, dmg: 0 };
+    accounts[name] = { id: genId(), password: passHash, points: 0, level: 1, exp: 0, lastSeen: Date.now(), matches: 0, wins: 0, kills: 0, dmg: 0, deaths: 0 };
     saveAccounts();
     socket.data.account = name;
     socket.data.name = name;
     socket.data.points = 0;
-    socket.emit('account-result', { ok: true, account: { id: accounts[name].id, name, points: 0, level: 1, exp: 0, matches: 0, wins: 0, kills: 0, dmg: 0 } });
+    socket.emit('account-result', { ok: true, account: { id: accounts[name].id, name, points: 0, level: 1, exp: 0, matches: 0, wins: 0, kills: 0, dmg: 0, deaths: 0 } });
   });
 
   socket.on('account-update', (data = {}) => {
@@ -430,6 +434,7 @@ io.on('connection', (socket) => {
     if (data.win) acc.wins = (Number(acc.wins) || 0) + 1;
     acc.kills = (Number(acc.kills) || 0) + Math.max(0, Math.floor(num(data.kills, 0)));
     acc.dmg = (Number(acc.dmg) || 0) + Math.max(0, Math.floor(num(data.dmg, 0)));
+    acc.deaths = (Number(acc.deaths) || 0) + Math.max(0, Math.floor(num(data.deaths, 0)));
     acc.lastSeen = Date.now();
     saveAccounts();
   });
@@ -571,6 +576,9 @@ io.on('connection', (socket) => {
     const p = match && match.players.get(socket.id);
     if (!match || !p || !p.alive) return;
     p.deadAck = true;
+    // Cada baja = una muerte para la cuenta del derrotado (para el KD del perfil).
+    const loserAcc = accounts[socket.data.account];
+    if (loserAcc) { loserAcc.deaths = (Number(loserAcc.deaths) || 0) + 1; loserAcc.lastSeen = Date.now(); saveAccounts(); }
     const killer = match.players.get(data.killerId);
     p.killedBy = killer ? killer.name : null;
     if (killer && killer.alive) {

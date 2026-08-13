@@ -21,7 +21,7 @@ const done = () => {
     check('Cuenta recibe un ID único al registrarse', got.idOk);
     check('El ID se conserva al volver a entrar (login)', got.idPersists);
     check('El SERVIDOR calcula las recompensas oficiales (49 pts por top-9)', got.rewardsOk, JSON.stringify(got.relogin));
-    check('Estadisticas oficiales del servidor (1 partida, 0 bajas, 0 victorias)', got.statsOk);
+    check('Estadisticas oficiales del servidor (1 partida, 0 bajas, 0 victorias, 1 muerte)', got.statsOk);
     check('Nombres únicos sin importar mayúsculas (testa rechazado)', got.duplicateName);
     check('Login con contraseña incorrecta falla', got.badpassProbe);
     check('A recibe match-start (33 bots, mapa 3600x2000, zona incluida)', got.matchStart.length >= 1 &&
@@ -106,7 +106,7 @@ A.on('kill-confirm', () => {
         got.idPersists = r.account.id === got.testBId;
         // top-9: 120 - (8x115/13) = +49 puntos; 1 partida, 0 bajas, 0 victorias
         got.rewardsOk = r.account.points === 49;
-        got.statsOk = r.account.matches === 1 && r.account.kills === 0 && r.account.wins === 0;
+        got.statsOk = r.account.matches === 1 && r.account.kills === 0 && r.account.wins === 0 && r.account.deaths === 1;
         // Crear una cuenta nueva con 0 puntos y pedir el Top: no debe aparecer
         const E = io(URL, { reconnection: false });
         E.on('connect', () => E.emit('account-register', { name: 'CERO' + Math.floor(Math.random() * 9999), password: 'clave123' }));
