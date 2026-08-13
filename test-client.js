@@ -124,8 +124,8 @@ A.on('kill-confirm', () => {
 });
 A.on('kill-feed', () => got.feed++);
 A.on('match-end', () => { got.matchEnd = true; });
-A.on('remove-player', (id) => {
-  if (id === B_id) got.removed = true;
+A.on('remove-player', (d) => {
+  if (d && d.id === B_id) got.removed = true;
 });
 
 B.on('match-start', () => {});

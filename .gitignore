@@ -5,3 +5,4 @@ server_err.txt
 test_server_out.txt
 test_server_err.txt
 .env
+accounts.json

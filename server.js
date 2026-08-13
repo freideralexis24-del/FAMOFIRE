@@ -191,6 +191,7 @@ function startMatch() {
     mapW: MAP.w,
     mapH: MAP.h,
     assignedBotsCount,
+    matchId: roomCode,
     zone,
     you: null,
     players: [...players.values()].map(p => ({ id: p.id, name: p.name, color: p.color, x: p.x, y: p.y })),
@@ -214,15 +215,20 @@ function endMatchFor(match, loserId, clientPlacement) {
   if (!p || !p.alive) return;
   p.alive = false;
   match.aliveCount = [...match.players.values()].filter(q => q.alive).length;
-  io.to(match.code).emit('remove-player', loserId);
+  io.to(match.code).emit('remove-player', { matchId: match.code, id: loserId });
   io.to(match.code).emit('update-room-alive', match.aliveCount);
 
   const order = [...match.players.values()].filter(q => !q.alive).length;
   const fallback = Math.max(1, match.players.size - order + 1);
   const placement = Math.max(1, Math.floor(num(clientPlacement, fallback)));
-  io.to(match.code).emit('kill-feed', { killer: p.killedBy || 'Zona', victim: p.name });
+  io.to(match.code).emit('kill-feed', { matchId: match.code, killer: p.killedBy || 'Zona', victim: p.name });
   const loserSocket = io.sockets.sockets.get(loserId);
-  if (loserSocket) loserSocket.emit('match-over', { placement });
+  if (loserSocket) {
+    loserSocket.emit('match-over', { matchId: match.code, placement });
+    // IMPORTANTE: liberar al socket para que pueda volver a buscar partida
+    loserSocket.data.room = null;
+    loserSocket.data.inQueue = false;
+  }
 
   // IMPORTANTE: el servidor NO declara ganador. Los bots viven en el cliente, así que
   // la victoria real la decide cada cliente (último vivo entre bots + jugadores reales).
@@ -247,7 +253,14 @@ setInterval(() => {
     }
     for (const p of aliveList) {
       const s = io.sockets.sockets.get(p.id);
-      if (s) s.emit('update-room-players', obj);
+      if (!s) continue;
+      // Enviar la lista SIN el propio socket: si el cliente se incluye a sí mismo,
+      // la victoria (último vivo) jamás se dispara y el placement sale inflado (+1).
+      const others = {};
+      for (const o of aliveList) {
+        if (o.id !== p.id) others[o.id] = obj[o.id];
+      }
+      s.emit('update-room-players', { matchId: code, players: others });
     }
   }
 }, 1000);
@@ -353,7 +366,7 @@ io.on('connection', (socket) => {
     const now = Date.now();
     if (!p.lastRelay || now - p.lastRelay > 40) {
       p.lastRelay = now;
-      socket.to(socket.data.room).emit('update-player-position', { id: socket.id, x: p.x, y: p.y, angle: p.angle });
+      socket.to(socket.data.room).emit('update-player-position', { matchId: match.code, id: socket.id, x: p.x, y: p.y, angle: p.angle });
     }
   });
 
@@ -362,7 +375,7 @@ io.on('connection', (socket) => {
     const match = matches.get(socket.data.room);
     const p = match && match.players.get(socket.id);
     if (!p || !p.alive) return;
-    socket.to(socket.data.room).emit('remote-shot', { id: socket.id, x: p.x, y: p.y, angle: num(data.angle, p.angle) });
+    socket.to(socket.data.room).emit('remote-shot', { matchId: match.code, id: socket.id, x: p.x, y: p.y, angle: num(data.angle, p.angle) });
   });
 
   socket.on('damage', (data = {}) => {
@@ -373,7 +386,7 @@ io.on('connection', (socket) => {
     if (!match || !shooter || !shooter.alive || !victim || !victim.alive) return;
     const vSocket = io.sockets.sockets.get(victim.id);
     if (vSocket) {
-      vSocket.emit('receive-damage', { dmg: num(data.dmg, 25), killerId: socket.id, killerName: shooter.name });
+      vSocket.emit('receive-damage', { matchId: match.code, dmg: num(data.dmg, 25), killerId: socket.id, killerName: shooter.name });
     }
   });
 
@@ -386,9 +399,27 @@ io.on('connection', (socket) => {
     p.killedBy = killer ? killer.name : null;
     if (killer && killer.alive) {
       const kSocket = io.sockets.sockets.get(killer.id);
-      if (kSocket) kSocket.emit('kill-confirm', { victim: p.name });
+      if (kSocket) kSocket.emit('kill-confirm', { matchId: match.code, victim: p.name });
     }
     endMatchFor(match, socket.id, data.placement);
+  });
+
+  // Salida voluntaria de la partida (ganaste, la cerraste, etc.): libera el socket
+  // para que pueda volver a buscar partida sin recargar la página.
+  socket.on('leave-match', () => {
+    const code = socket.data.room;
+    if (code && matches.has(code)) {
+      const match = matches.get(code);
+      if (match.players.has(socket.id)) {
+        match.players.delete(socket.id);
+        io.to(code).emit('remove-player', { matchId: code, id: socket.id });
+        match.aliveCount = [...match.players.values()].filter(q => q.alive).length;
+        io.to(code).emit('update-room-alive', match.aliveCount);
+        if (match.players.size === 0) match.endedAt = Date.now();
+      }
+    }
+    socket.data.room = null;
+    socket.data.inQueue = false;
   });
 
   socket.on('disconnect', () => {
@@ -402,7 +433,7 @@ io.on('connection', (socket) => {
     if (code && matches.has(code)) {
       const match = matches.get(code);
       match.players.delete(socket.id);
-      io.to(code).emit('remove-player', socket.id);
+      io.to(code).emit('remove-player', { matchId: code, id: socket.id });
       match.aliveCount = [...match.players.values()].filter(q => q.alive).length;
       io.to(code).emit('update-room-alive', match.aliveCount);
       // Sin victoria automática: la decide cada cliente (los bots son locales)

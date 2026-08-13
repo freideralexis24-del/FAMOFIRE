@@ -465,6 +465,15 @@
             max-width: 320px;
         }
 
+        /* Aviso visual de que CAÍSTE (destello rojo en el borde de la pantalla) */
+        body.death-flash {
+            animation: deathFlash 0.9s ease-out;
+        }
+        @keyframes deathFlash {
+            0% { box-shadow: inset 0 0 220px rgba(255, 0, 0, 0.75); }
+            100% { box-shadow: inset 0 0 0 rgba(255, 0, 0, 0); }
+        }
+
         .kill-msg {
             background: rgba(20, 20, 20, 0.85);
             border-left: 4px solid #ff3333;
@@ -820,6 +829,7 @@
             <tr>
                 <td data-i18n="statPlacement">Posición:</td>
                 <td id="stat-pos" style="color: #ffcc00;">#1</td>
+                <td id="stat-killer" style="color: #cc5555; font-size: 12px; display: none;">&nbsp;</td>
             </tr>
             <tr>
                 <td data-i18n="statSoldier">Soldado:</td>
@@ -888,23 +898,35 @@
             }
         });
 
-        socket.on('update-room-players', (roomPlayers) => {
+        // Identificador de la partida actual: todos los eventos de la sala lo llevan,
+        // así eventos viejos de partidas anteriores jamás pueden colarse a la actual.
+        let currentMatchId = null;
+
+        socket.on('update-room-players', (data) => {
+            if (!data || data.matchId !== currentMatchId) return;
+            const roomPlayers = data.players || {};
+            // Defensa: jamás incluir el propio socket como "enemigo remoto"
+            // (rompe la victoria y infla el placement).
+            if (socket.id) delete roomPlayers[socket.id];
             for (let id in roomPlayers) {
                 roomPlayers[id].hp = (remotePlayers[id] && remotePlayers[id].hp) || 100;
             }
             remotePlayers = roomPlayers;
         });
 
-        socket.on('update-player-position', (playerData) => {
-            if (remotePlayers[playerData.id]) {
-                remotePlayers[playerData.id].x = playerData.x;
-                remotePlayers[playerData.id].y = playerData.y;
-                remotePlayers[playerData.id].angle = playerData.angle;
+        socket.on('update-player-position', (data) => {
+            if (!data || data.matchId !== currentMatchId) return;
+            if (remotePlayers[data.id]) {
+                remotePlayers[data.id].x = data.x;
+                remotePlayers[data.id].y = data.y;
+                remotePlayers[data.id].angle = data.angle;
             }
         });
 
-        socket.on('remove-player', (id) => {
-            delete remotePlayers[id];
+        socket.on('remove-player', (data) => {
+            const removedId = (data && typeof data === 'object') ? data.id : data;
+            if (data && typeof data === 'object' && data.matchId !== undefined && data.matchId !== currentMatchId) return;
+            delete remotePlayers[removedId];
             updateHUDCounters();
         });
 
@@ -915,7 +937,7 @@
 
         // Bala disparada por otro jugador real (solo visual; el daño llega por 'receive-damage')
         socket.on('remote-shot', (data) => {
-            if (!gameStarted || currentMode !== 'battlefield') return;
+            if (!gameStarted || currentMode !== 'battlefield' || data.matchId !== currentMatchId) return;
             bullets.push({
                 x: data.x, y: data.y, startX: data.x, startY: data.y,
                 dx: Math.cos(data.angle) * 12, dy: Math.sin(data.angle) * 12,
@@ -925,32 +947,45 @@
 
         // Recibir daño de un jugador real (el disparador confirma el impacto en su cliente)
         socket.on('receive-damage', (data) => {
-            if (!gameStarted || currentMode !== 'battlefield' || gameOver) return;
+            if (!gameStarted || currentMode !== 'battlefield' || gameOver || data.matchId !== currentMatchId) return;
             let shieldActive = (profile.selectedSkill === 'shield' && skillState.active);
             if (shieldActive) return;
             player.hp -= data.dmg || 25;
             hpBar.style.width = Math.max(player.hp, 0) + '%';
             if (player.hp <= 0) {
-                addKillFeedMessage(data.killerName || 'Enemigo', profile.name, true);
+                lastKillerName = data.killerName || 'Enemigo';
+                addKillFeedMessage(lastKillerName, profile.name, true);
                 endGame(false);
                 socket.emit('player-died', { killerId: data.killerId, placement: getCurrentPlacement() });
             }
         });
 
         // El servidor confirma la baja de un jugador real
-        socket.on('kill-confirm', () => {
-            if (!gameStarted || currentMode !== 'battlefield') return;
+        socket.on('kill-confirm', (data) => {
+            if (!gameStarted || currentMode !== 'battlefield' || (data && data.matchId !== currentMatchId)) return;
             matchStats.kills += 1;
             hudKills.innerText = matchStats.kills;
         });
 
         // Feed de bajas entre jugadores reales
+        let lastKillerName = null;
         socket.on('kill-feed', (data) => {
+            if (!data || data.matchId !== currentMatchId) return;
             addKillFeedMessage(data.killer, data.victim, false);
+            // Si la baja eres TÚ, recuerda quién te eliminó para mostrarlo al final
+            if (profile && data.victim === profile.name) {
+                lastKillerName = data.killer;
+                // Aviso inmediato para que no pase desapercibido: tu feed ya lo muestra,
+                // pero además se señaliza en el borde de la pantalla.
+                document.body.classList.remove('death-flash');
+                void document.body.offsetWidth;
+                document.body.classList.add('death-flash');
+            }
         });
 
         // Posición final exacta cuando el servidor cierra tu partida
         socket.on('match-over', (data) => {
+            if (!data || data.matchId !== currentMatchId) return;
             if (data.placement) {
                 statPos.innerText = '#' + data.placement;
                 statPos.style.color = data.placement <= 10 ? '#00ffff' : '#ff3333';
@@ -1589,6 +1624,7 @@
         
         const statsTitle = document.getElementById('stats-title');
         const statPos = document.getElementById('stat-pos');
+        const statKiller = document.getElementById('stat-killer');
         const statName = document.getElementById('stat-name');
         const statKills = document.getElementById('stat-kills');
         const statDamage = document.getElementById('stat-damage');
@@ -1974,6 +2010,7 @@
             if (matchmakingInterval) clearInterval(matchmakingInterval);
             matchmakingScreen.style.display = 'none';
 
+            currentMatchId = matchData.matchId || null;
             currentMode = 'battlefield';
             mapWidth = matchData.mapW || window.innerWidth * 4;
             mapHeight = matchData.mapH || window.innerHeight * 4;
@@ -2441,6 +2478,7 @@
                     player.hp -= 0.15;
                     hpBar.style.width = Math.max(player.hp, 0) + '%';
                     if (player.hp <= 0) {
+                        lastKillerName = 'Zona de Veneno';
                         endGame(false);
                         if (currentMode === 'battlefield') socket.emit('player-died', { killerId: null, placement: getCurrentPlacement() });
                     }
@@ -2506,8 +2544,8 @@
                             player.hp -= 10;
                             hpBar.style.width = Math.max(player.hp, 0) + '%';
                             if (player.hp <= 0) {
-                                let killerName = (b.owner && b.owner.name) ? b.owner.name : "Zona/Bot";
-                                addKillFeedMessage(killerName, profile.name, true);
+                                lastKillerName = (b.owner && b.owner.name) ? b.owner.name : "Zona/Bot";
+                                addKillFeedMessage(lastKillerName, profile.name, true);
                                 endGame(false);
                                 if (currentMode === 'battlefield') socket.emit('player-died', { killerId: null, placement: getCurrentPlacement() });
                             }
@@ -2732,7 +2770,8 @@
                         player.hp -= 0.4;
                         hpBar.style.width = Math.max(player.hp, 0) + '%';
                         if (player.hp <= 0) {
-                            addKillFeedMessage("Cuerpo a cuerpo", profile.name, true);
+                            lastKillerName = enemy.name || "Cuerpo a cuerpo";
+                            addKillFeedMessage(lastKillerName, profile.name, true);
                             endGame(false);
                             if (currentMode === 'battlefield') socket.emit('player-died', { killerId: null, placement: getCurrentPlacement() });
                         }
@@ -2998,6 +3037,17 @@
             if (!gameStarted && statsScreen.style.display === 'flex') return;
 
             gameOver = true;
+
+            // Liberar la partida en el servidor SIEMPRE (ganes, pierdas o salgas):
+            // sin esto el socket queda "dentro" de la sala y no puede volver a buscar
+            // partida (el contador llegaba a 0 y nunca entraba a otra). El pequeño
+            // retraso garantiza que 'player-died' (si lo hay) llegue antes.
+            if (currentMode === 'battlefield' && socket && socket.connected) {
+                setTimeout(() => {
+                    if (socket && socket.connected) socket.emit('leave-match');
+                }, 400);
+            }
+
             uiTopLeft.style.display = 'none';
             hudTopRight.style.display = 'none';
             skillHud.style.display = 'none';
@@ -3009,6 +3059,15 @@
             let placement = getCurrentPlacement();
             matchStats.finalPlacement = placement;
 
+            // Traza de diagnóstico (solo para depurar): quién llamó a endGame y con qué vida
+            window.__famoDebug = window.__famoDebug || [];
+            window.__famoDebug.push({
+                win: isWin, placement: placement, hp: Math.round(player.hp),
+                zoneR: Math.round(safeZone.radius), zoneX: Math.round(safeZone.x), zoneY: Math.round(safeZone.y),
+                enemies: enemies.length, time: Date.now(),
+                stack: (new Error('endGame-call')).stack.split('\n').slice(2, 5).join(' | ')
+            });
+
             const dict = i18n[profile.language] || i18n["ESPAÑOL"];
 
             if(isWin || placement === 1) {
@@ -3016,11 +3075,20 @@
                 statsTitle.style.color = "#ffcc00";
                 statPos.innerText = "#1";
                 statPos.style.color = "#ffcc00";
+                statKiller.style.display = 'none';
             } else {
                 statsTitle.innerText = "PARTIDA FINALIZADA";
                 statsTitle.style.color = "#ff3333";
                 statPos.innerText = "#" + placement;
                 statPos.style.color = placement <= 10 ? "#00ffff" : "#ff3333";
+                // Dejar claro que CAÍSTE y quién te eliminó (endGame resetea la vida a 100
+                // y mucha gente cree que "terminó sin morir").
+                if (lastKillerName) {
+                    statKiller.innerText = "Eliminado por " + lastKillerName;
+                    statKiller.style.display = '';
+                } else {
+                    statKiller.style.display = 'none';
+                }
             }
 
             let expEarned = 0;
