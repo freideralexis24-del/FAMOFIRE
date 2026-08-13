@@ -53,10 +53,13 @@ async function initAccounts() {
            level INT NOT NULL DEFAULT 1,
            exp INT NOT NULL DEFAULT 0
          )`);
-      const { rows } = await db.query('SELECT name, password, points, level, exp FROM accounts');
+      try {
+        await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS lastseen BIGINT NOT NULL DEFAULT 0');
+      } catch (e) { /* versión vieja de Postgres u otro problema menor: se ignora */ }
+      const { rows } = await db.query('SELECT name, password, points, level, exp, lastseen FROM accounts');
       accounts = {};
       for (const r of rows) {
-        accounts[r.name] = { password: r.password, points: Number(r.points), level: Number(r.level), exp: Number(r.exp) };
+        accounts[r.name] = { password: r.password, points: Number(r.points), level: Number(r.level), exp: Number(r.exp), lastSeen: Number(r.lastseen) || 0 };
       }
       console.log(`[DB] ${rows.length} cuentas cargadas desde PostgreSQL`);
     } catch (e) {
@@ -68,13 +71,18 @@ async function initAccounts() {
   if (!db) {
     try { accounts = JSON.parse(fs.readFileSync(ACCOUNTS_FILE, 'utf8')); } catch (e) { accounts = {}; }
   }
-  // Limpieza de arranque: se descartan cuentas sin ningún progreso (0 puntos, nivel 1,
-  // sin experiencia). Son cuentas de prueba o abandonadas al instante: no aparecen en
-  // el Top y no ocupan espacio. Las cuentas reales (con al menos 1 punto) se conservan.
+  // Limpieza de arranque: SOLO se descartan cuentas sin ningún progreso (0 puntos,
+  // nivel 1, sin experiencia) que además llevan MÁS DE 7 DÍAS sin entrar. Así las
+  // cuentas de prueba abandonadas no ocupan espacio, pero ninguna cuenta real se
+  // borra: una cuenta nueva con 0 puntos (o alguien que solo juega entrenamiento)
+  // queda protegida mientras se use.
+  const INACTIVE_MS = 7 * 24 * 60 * 60 * 1000;
+  const now = Date.now();
   let purged = false;
   for (const name of Object.keys(accounts)) {
     const a = accounts[name];
-    if (a && (Number(a.points) || 0) === 0 && (a.level || 1) === 1 && (a.exp || 0) === 0) {
+    if (a && (Number(a.points) || 0) === 0 && (a.level || 1) === 1 && (a.exp || 0) === 0 &&
+        (!a.lastSeen || now - a.lastSeen > INACTIVE_MS)) {
       delete accounts[name];
       purged = true;
     }
@@ -93,15 +101,16 @@ async function dbSaveAll() {
   const client = await db.connect();
   try {
     await client.query('BEGIN');
-    const q = `INSERT INTO accounts (name, password, points, level, exp)
-               VALUES ($1, $2, $3, $4, $5)
+    const q = `INSERT INTO accounts (name, password, points, level, exp, lastseen)
+               VALUES ($1, $2, $3, $4, $5, $6)
                ON CONFLICT (name) DO UPDATE SET
                  password = EXCLUDED.password,
                  points = EXCLUDED.points,
                  level = EXCLUDED.level,
-                 exp = EXCLUDED.exp`;
+                 exp = EXCLUDED.exp,
+                 lastseen = EXCLUDED.lastseen`;
     for (const [name, a] of Object.entries(accounts)) {
-      await client.query(q, [name, a.password, Number(a.points) || 0, Number(a.level) || 1, Number(a.exp) || 0]);
+      await client.query(q, [name, a.password, Number(a.points) || 0, Number(a.level) || 1, Number(a.exp) || 0, Number(a.lastSeen) || 0]);
     }
     await client.query('COMMIT');
   } catch (e) {
@@ -286,6 +295,8 @@ io.on('connection', (socket) => {
     const acc = accounts[name];
     if (!acc) return socket.emit('account-result', { ok: false, error: 'not-found' });
     if (acc.password !== sha(data.password)) return socket.emit('account-result', { ok: false, error: 'bad-pass' });
+    acc.lastSeen = Date.now();
+    saveAccounts();
     socket.data.account = name;
     socket.data.name = name;
     socket.data.points = acc.points;
@@ -298,7 +309,7 @@ io.on('connection', (socket) => {
     if (name.length < 2) return socket.emit('account-result', { ok: false, error: 'short-name' });
     if (accounts[name]) return socket.emit('account-result', { ok: false, error: 'name-taken' });
     if (String(data.password || '').length < 4) return socket.emit('account-result', { ok: false, error: 'short-pass' });
-    accounts[name] = { password: sha(data.password), points: 0, level: 1, exp: 0 };
+    accounts[name] = { password: sha(data.password), points: 0, level: 1, exp: 0, lastSeen: Date.now() };
     saveAccounts();
     socket.data.account = name;
     socket.data.name = name;
@@ -313,6 +324,7 @@ io.on('connection', (socket) => {
     acc.points = clamp(Math.floor(num(data.points, acc.points)), 0, 999999);
     acc.level = clamp(Math.floor(num(data.level, acc.level)), 1, 100);
     acc.exp = clamp(Math.floor(num(data.exp, acc.exp)), 0, 999999);
+    acc.lastSeen = Date.now();
     socket.data.points = acc.points;
     saveAccounts();
   });
