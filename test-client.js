@@ -10,7 +10,7 @@ function check(name, ok, extra) {
 
 const A = io(URL, { reconnection: false });
 const B = io(URL, { reconnection: false });
-const got = { matchStart: [], moves: 0, damage: null, killConfirm: false, feed: 0, matchOver: null, matchEnd: false, removed: false, relogin: null, top100: false, zeroNotInTop: false, badpassProbe: false, duplicateName: false, zoneOk: false };
+const got = { matchStart: [], moves: 0, damage: null, killConfirm: false, feed: 0, matchOver: null, matchEnd: false, removed: false, relogin: null, top100: false, zeroNotInTop: false, badpassProbe: false, duplicateName: false, zoneOk: false, idOk: false, idPersists: false };
 
 let A_id = null, B_id = null;
 let registered = false;
@@ -18,6 +18,8 @@ let registered = false;
 const done = () => {
   setTimeout(() => {
     check('Registro de cuenta funciona (TESTA)', registered);
+    check('Cuenta recibe un ID único al registrarse', got.idOk);
+    check('El ID se conserva al volver a entrar (login)', got.idPersists);
     check('Nombres únicos sin importar mayúsculas (testa rechazado)', got.duplicateName);
     check('Login con contraseña incorrecta falla', got.badpassProbe);
     check('A recibe match-start (33 bots, mapa 3600x2000, zona incluida)', got.matchStart.length >= 1 &&
@@ -48,6 +50,8 @@ A.on('connect', () => {
 A.on('account-result', (res) => {
   if (res.ok && res.account.name === 'TESTA' && res.account.points === 0) {
     registered = true;
+    got.idOk = !!(res.account.id && res.account.id.length >= 6);
+    got.testAId = res.account.id;
     // Intento de duplicar el nombre con distintas mayúsculas (debe fallar)
     const D = io(URL, { reconnection: false });
     D.on('connect', () => D.emit('account-register', { name: 'testa', password: 'otra123' }));
@@ -98,6 +102,7 @@ A.on('kill-confirm', () => {
     C.on('account-result', (r) => {
       if (r.ok) {
         got.relogin = r.account;
+        got.idPersists = r.account.id === got.testAId;
         // Crear una cuenta nueva con 0 puntos y pedir el Top: no debe aparecer
         const E = io(URL, { reconnection: false });
         E.on('connect', () => E.emit('account-register', { name: 'CERO' + Math.floor(Math.random() * 9999), password: 'clave123' }));

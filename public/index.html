@@ -551,6 +551,10 @@
         <div style="font-size: 15px; color: #00ff00; margin-bottom: 2px;">
             <span data-i18n="levelLabel">NIVEL</span> <span id="lobby-level">1</span>
         </div>
+
+        <div style="font-size: 13px; color: #888888; margin-bottom: 6px;">
+            ID: <span id="lobby-id"></span>
+        </div>
         
         <div class="exp-container">
             <div id="exp-bar-fill"></div>
@@ -901,6 +905,9 @@
         // Identificador de la partida actual: todos los eventos de la sala lo llevan,
         // así eventos viejos de partidas anteriores jamás pueden colarse a la actual.
         let currentMatchId = null;
+        // Fase 1 de escala: enviar posición como máximo cada 100 ms (10/s)
+        // en vez de en cada frame (60/s): se ahorra ~85% del tráfico de subida.
+        let lastMoveEmit = 0;
 
         socket.on('update-room-players', (data) => {
             if (!data || data.matchId !== currentMatchId) return;
@@ -1443,6 +1450,7 @@
 
         let profile = {
             name: localStorage.getItem('ff_name') || "",
+            id: localStorage.getItem('ff_id') || "",
             level: parseInt(localStorage.getItem('ff_level')) || 1,
             exp: parseInt(localStorage.getItem('ff_exp')) || 0,
             points: parseInt(localStorage.getItem('ff_points')) || 0,
@@ -1593,6 +1601,7 @@
         const registerBtn = document.getElementById('register-btn');
         const loginMsg = document.getElementById('login-msg');
         const lobbyName = document.getElementById('lobby-name');
+        const lobbyId = document.getElementById('lobby-id');
         const lobbyLevel = document.getElementById('lobby-level');
         const expBarFill = document.getElementById('exp-bar-fill');
         const lobbyRank = document.getElementById('lobby-rank');
@@ -1696,6 +1705,7 @@
 
         function saveProfile() {
             localStorage.setItem('ff_name', profile.name);
+            if (profile.id) localStorage.setItem('ff_id', profile.id);
             localStorage.setItem('ff_level', profile.level);
             localStorage.setItem('ff_exp', profile.exp);
             localStorage.setItem('ff_points', profile.points);
@@ -1715,6 +1725,10 @@
             lobbyLevel.innerText = profile.level;
             lobbyPoints.innerText = profile.points;
             lobbyRank.innerText = getRankName(profile.points);
+            if (lobbyId) {
+                lobbyId.innerText = profile.id || '————';
+                lobbyId.style.display = profile.id ? 'inline' : 'none';
+            }
 
             let maxExp = getRequiredExp(profile.level);
             let percentage = Math.min(100, (profile.exp / maxExp) * 100);
@@ -1796,6 +1810,7 @@
 
         function enterLobbyWithAccount(account) {
             profile.name = account.name;
+            profile.id = account.id || profile.id;
             profile.points = account.points;
             profile.level = account.level;
             profile.exp = account.exp;
@@ -2508,7 +2523,11 @@
             if (canMoveX && nextX - player.radius > 0 && nextX + player.radius < mapWidth) player.x = nextX;
             if (canMoveY && nextY - player.radius > 0 && nextY + player.radius < mapHeight) player.y = nextY;
 
-            if (currentMode === 'battlefield') socket.emit('player-move', { x: player.x, y: player.y, angle: player.angle });
+            const nowMs = Date.now();
+            if (currentMode === 'battlefield' && nowMs - lastMoveEmit > 100) {
+                lastMoveEmit = nowMs;
+                socket.emit('player-move', { x: player.x, y: player.y, angle: player.angle });
+            }
 
             for (let i = bullets.length - 1; i >= 0; i--) {
                 const b = bullets[i];

@@ -18,7 +18,14 @@ const ACCOUNTS_FILE = path.join(__dirname, 'accounts.json');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { maxHttpBufferSize: 1e6 });
+const io = new Server(server, {
+  // Fase 1 de escala: config liviana para soportar miles de conexiones.
+  maxHttpBufferSize: 1e5,     // mensajes pequeños: nada de payloads gigantes
+  perMessageDeflate: false,   // sin compresión por mensaje: menos CPU
+  pingInterval: 25000,        // keep-alive relajado
+  pingTimeout: 20000,
+  connectTimeout: 20000,
+});
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/health', (req, res) => res.send('ok'));
@@ -55,11 +62,12 @@ async function initAccounts() {
          )`);
       try {
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS lastseen BIGINT NOT NULL DEFAULT 0');
+        await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS id TEXT');
       } catch (e) { /* versión vieja de Postgres u otro problema menor: se ignora */ }
-      const { rows } = await db.query('SELECT name, password, points, level, exp, lastseen FROM accounts');
+      const { rows } = await db.query('SELECT name, password, points, level, exp, lastseen, id FROM accounts');
       accounts = {};
       for (const r of rows) {
-        accounts[r.name] = { password: r.password, points: Number(r.points), level: Number(r.level), exp: Number(r.exp), lastSeen: Number(r.lastseen) || 0 };
+        accounts[r.name] = { id: r.id || genId(), password: r.password, points: Number(r.points), level: Number(r.level), exp: Number(r.exp), lastSeen: Number(r.lastseen) || 0 };
       }
       console.log(`[DB] ${rows.length} cuentas cargadas desde PostgreSQL`);
     } catch (e) {
@@ -71,24 +79,23 @@ async function initAccounts() {
   if (!db) {
     try { accounts = JSON.parse(fs.readFileSync(ACCOUNTS_FILE, 'utf8')); } catch (e) { accounts = {}; }
   }
-  // Limpieza de arranque: SOLO se descartan cuentas sin ningún progreso (0 puntos,
-  // nivel 1, sin experiencia) que además llevan MÁS DE 7 DÍAS sin entrar. Así las
-  // cuentas de prueba abandonadas no ocupan espacio, pero ninguna cuenta real se
-  // borra: una cuenta nueva con 0 puntos (o alguien que solo juega entrenamiento)
-  // queda protegida mientras se use.
-  const INACTIVE_MS = 7 * 24 * 60 * 60 * 1000;
-  const now = Date.now();
-  let purged = false;
+  // ID único por cuenta (para control de jugadores). Si una cuenta antigua no lo
+  // tiene (de la era pre-ID), se le genera uno ahora. NO se borra ninguna cuenta
+  // jamás: el espacio ocupado es mínimo y evita pérdidas de cuentas reales.
+  let backfilled = false;
   for (const name of Object.keys(accounts)) {
     const a = accounts[name];
-    if (a && (Number(a.points) || 0) === 0 && (a.level || 1) === 1 && (a.exp || 0) === 0 &&
-        (!a.lastSeen || now - a.lastSeen > INACTIVE_MS)) {
-      delete accounts[name];
-      purged = true;
+    if (a && !a.id) {
+      a.id = genId();
+      backfilled = true;
     }
   }
-  if (purged) saveAccounts();
+  if (backfilled) saveAccounts();
   accountsReady = true;
+}
+function genId() {
+  // ID corto y legible (8 caracteres hex) para controlar cada cuenta
+  return crypto.randomBytes(4).toString('hex').toUpperCase();
 }
 function saveAccounts() {
   if (db) {
@@ -101,8 +108,8 @@ async function dbSaveAll() {
   const client = await db.connect();
   try {
     await client.query('BEGIN');
-    const q = `INSERT INTO accounts (name, password, points, level, exp, lastseen)
-               VALUES ($1, $2, $3, $4, $5, $6)
+    const q = `INSERT INTO accounts (name, id, password, points, level, exp, lastseen)
+               VALUES ($1, $2, $3, $4, $5, $6, $7)
                ON CONFLICT (name) DO UPDATE SET
                  password = EXCLUDED.password,
                  points = EXCLUDED.points,
@@ -110,7 +117,7 @@ async function dbSaveAll() {
                  exp = EXCLUDED.exp,
                  lastseen = EXCLUDED.lastseen`;
     for (const [name, a] of Object.entries(accounts)) {
-      await client.query(q, [name, a.password, Number(a.points) || 0, Number(a.level) || 1, Number(a.exp) || 0, Number(a.lastSeen) || 0]);
+      await client.query(q, [name, a.id || genId(), a.password, Number(a.points) || 0, Number(a.level) || 1, Number(a.exp) || 0, Number(a.lastSeen) || 0]);
     }
     await client.query('COMMIT');
   } catch (e) {
@@ -300,7 +307,7 @@ io.on('connection', (socket) => {
     socket.data.account = name;
     socket.data.name = name;
     socket.data.points = acc.points;
-    socket.emit('account-result', { ok: true, account: { name, points: acc.points, level: acc.level, exp: acc.exp } });
+    socket.emit('account-result', { ok: true, account: { id: acc.id, name, points: acc.points, level: acc.level, exp: acc.exp } });
   });
 
   socket.on('account-register', async (data = {}) => {
@@ -309,12 +316,12 @@ io.on('connection', (socket) => {
     if (name.length < 2) return socket.emit('account-result', { ok: false, error: 'short-name' });
     if (accounts[name]) return socket.emit('account-result', { ok: false, error: 'name-taken' });
     if (String(data.password || '').length < 4) return socket.emit('account-result', { ok: false, error: 'short-pass' });
-    accounts[name] = { password: sha(data.password), points: 0, level: 1, exp: 0, lastSeen: Date.now() };
+    accounts[name] = { id: genId(), password: sha(data.password), points: 0, level: 1, exp: 0, lastSeen: Date.now() };
     saveAccounts();
     socket.data.account = name;
     socket.data.name = name;
     socket.data.points = 0;
-    socket.emit('account-result', { ok: true, account: { name, points: 0, level: 1, exp: 0 } });
+    socket.emit('account-result', { ok: true, account: { id: accounts[name].id, name, points: 0, level: 1, exp: 0 } });
   });
 
   socket.on('account-update', (data = {}) => {
@@ -376,7 +383,9 @@ io.on('connection', (socket) => {
     if (x < -1000 || x > MAP.w + 1000 || y < -1000 || y > MAP.h + 1000) return;
     p.x = x; p.y = y; p.angle = angle;
     const now = Date.now();
-    if (!p.lastRelay || now - p.lastRelay > 40) {
+    // Fase 1: relé a 100 ms (10 posiciones/s por jugador) en vez de 40 ms:
+    // corta ~60% del tráfico de posiciones sin que se note en el juego.
+    if (!p.lastRelay || now - p.lastRelay > 100) {
       p.lastRelay = now;
       socket.to(socket.data.room).emit('update-player-position', { matchId: match.code, id: socket.id, x: p.x, y: p.y, angle: p.angle });
     }
