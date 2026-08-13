@@ -24,18 +24,102 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.get('/health', (req, res) => res.send('ok'));
 
 // ---------- Cuentas de jugador (cada persona tiene la suya) ----------
+// En la web (Render) las cuentas se guardan en PostgreSQL gratuito (variable
+// DATABASE_URL) para que NUNCA se borren con las actualizaciones. En local
+// (sin DATABASE_URL) se sigue usando accounts.json.
+const DATABASE_URL = process.env.DATABASE_URL || '';
+let db = null;
+if (DATABASE_URL) {
+  const { Pool } = require('pg');
+  db = new Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 3 });
+}
+
 let accounts = {};
-try { accounts = JSON.parse(fs.readFileSync(ACCOUNTS_FILE, 'utf8')); } catch (e) { accounts = {}; }
+let accountsReady = false;
+let accountsPromise = null;
+function ensureAccounts() {
+  if (accountsReady) return Promise.resolve();
+  if (!accountsPromise) accountsPromise = initAccounts();
+  return accountsPromise;
+}
+async function initAccounts() {
+  if (db) {
+    try {
+      await db.query(
+        `CREATE TABLE IF NOT EXISTS accounts (
+           name TEXT PRIMARY KEY,
+           password TEXT NOT NULL,
+           points INT NOT NULL DEFAULT 0,
+           level INT NOT NULL DEFAULT 1,
+           exp INT NOT NULL DEFAULT 0
+         )`);
+      const { rows } = await db.query('SELECT name, password, points, level, exp FROM accounts');
+      accounts = {};
+      for (const r of rows) {
+        accounts[r.name] = { password: r.password, points: Number(r.points), level: Number(r.level), exp: Number(r.exp) };
+      }
+      console.log(`[DB] ${rows.length} cuentas cargadas desde PostgreSQL`);
+    } catch (e) {
+      console.error('[DB] no se pudo conectar a PostgreSQL:', e.message);
+      console.error('[DB] usando accounts.json como respaldo');
+      db = null;
+    }
+  }
+  if (!db) {
+    try { accounts = JSON.parse(fs.readFileSync(ACCOUNTS_FILE, 'utf8')); } catch (e) { accounts = {}; }
+  }
+  // Limpieza de arranque: se descartan cuentas sin ningún progreso (0 puntos, nivel 1,
+  // sin experiencia). Son cuentas de prueba o abandonadas al instante: no aparecen en
+  // el Top y no ocupan espacio. Las cuentas reales (con al menos 1 punto) se conservan.
+  let purged = false;
+  for (const name of Object.keys(accounts)) {
+    const a = accounts[name];
+    if (a && (Number(a.points) || 0) === 0 && (a.level || 1) === 1 && (a.exp || 0) === 0) {
+      delete accounts[name];
+      purged = true;
+    }
+  }
+  if (purged) saveAccounts();
+  accountsReady = true;
+}
 function saveAccounts() {
+  if (db) {
+    dbSaveAll().catch(e => console.error('[DB] error guardando cuentas:', e.message));
+    return;
+  }
   try { fs.writeFileSync(ACCOUNTS_FILE, JSON.stringify(accounts)); } catch (e) { /* sin permiso de escritura en algunos hosts */ }
+}
+async function dbSaveAll() {
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+    const q = `INSERT INTO accounts (name, password, points, level, exp)
+               VALUES ($1, $2, $3, $4, $5)
+               ON CONFLICT (name) DO UPDATE SET
+                 password = EXCLUDED.password,
+                 points = EXCLUDED.points,
+                 level = EXCLUDED.level,
+                 exp = EXCLUDED.exp`;
+    for (const [name, a] of Object.entries(accounts)) {
+      await client.query(q, [name, a.password, Number(a.points) || 0, Number(a.level) || 1, Number(a.exp) || 0]);
+    }
+    await client.query('COMMIT');
+  } catch (e) {
+    try { await client.query('ROLLBACK'); } catch (_) { /* ignorar */ }
+    throw e;
+  } finally {
+    client.release();
+  }
 }
 function sha(text) {
   return crypto.createHash('sha256').update(String(text || '')).digest('hex');
 }
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+// El Top es SOLO para jugadores con puntos reales ganados en partidas (0 puntos = no aparece)
 function getTop100() {
   return Object.entries(accounts)
-    .map(([name, a]) => ({ name, points: a.points }))
+    .filter(([, a]) => a && (Number(a.points) || 0) > 0)
+    .map(([name, a]) => ({ name, points: a.points || 0 }))
     .sort((x, y) => y.points - x.points)
     .slice(0, 100);
 }
@@ -183,7 +267,8 @@ io.on('connection', (socket) => {
   // así ningún nombre se puede repetir aunque cambien mayúsculas o espacios.
   const normName = (n) => String(n || '').trim().toUpperCase().slice(0, 12);
 
-  socket.on('account-login', (data = {}) => {
+  socket.on('account-login', async (data = {}) => {
+    await ensureAccounts();
     const name = normName(data.name);
     const acc = accounts[name];
     if (!acc) return socket.emit('account-result', { ok: false, error: 'not-found' });
@@ -194,7 +279,8 @@ io.on('connection', (socket) => {
     socket.emit('account-result', { ok: true, account: { name, points: acc.points, level: acc.level, exp: acc.exp } });
   });
 
-  socket.on('account-register', (data = {}) => {
+  socket.on('account-register', async (data = {}) => {
+    await ensureAccounts();
     const name = normName(data.name);
     if (name.length < 2) return socket.emit('account-result', { ok: false, error: 'short-name' });
     if (accounts[name]) return socket.emit('account-result', { ok: false, error: 'name-taken' });
@@ -329,4 +415,5 @@ io.on('connection', (socket) => {
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`FAMOFIRE corriendo en http://localhost:${PORT}`);
   console.log('Juega online: usa esta misma IP/puerto desde otros dispositivos o despliega el proyecto en la web.');
+  ensureAccounts();
 });

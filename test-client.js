@@ -10,7 +10,7 @@ function check(name, ok, extra) {
 
 const A = io(URL, { reconnection: false });
 const B = io(URL, { reconnection: false });
-const got = { matchStart: [], moves: 0, damage: null, killConfirm: false, feed: 0, matchOver: null, matchEnd: false, removed: false, relogin: null, top100: false, badpassProbe: false, duplicateName: false, zoneOk: false };
+const got = { matchStart: [], moves: 0, damage: null, killConfirm: false, feed: 0, matchOver: null, matchEnd: false, removed: false, relogin: null, top100: false, zeroNotInTop: false, badpassProbe: false, duplicateName: false, zoneOk: false };
 
 let A_id = null, B_id = null;
 let registered = false;
@@ -33,6 +33,7 @@ const done = () => {
     check('A recibe remove-player (B murió)', got.removed);
     check('Cuenta guarda progreso (relogin con puntos)', got.relogin && got.relogin.points === 1650, JSON.stringify(got.relogin));
     check('Top100 incluye a TESTA con 1650', got.top100);
+    check('Cuenta con 0 puntos NO aparece en el Top', got.zeroNotInTop);
     const failed = results.filter(r => !r.ok).length;
     A.close(); B.close();
     console.log(failed === 0 ? 'TODO OK' : `${failed} PRUEBA(S) FALLARON`);
@@ -97,11 +98,24 @@ A.on('kill-confirm', () => {
     C.on('account-result', (r) => {
       if (r.ok) {
         got.relogin = r.account;
-        C.emit('get-top100');
+        // Crear una cuenta nueva con 0 puntos y pedir el Top: no debe aparecer
+        const E = io(URL, { reconnection: false });
+        E.on('connect', () => E.emit('account-register', { name: 'CERO' + Math.floor(Math.random() * 9999), password: 'clave123' }));
+        E.on('account-result', (r2) => {
+          if (r2.ok) {
+            got.zeroName = r2.account.name;
+            C.emit('get-top100');
+            E.close();
+          } else {
+            C.emit('get-top100');
+            E.close();
+          }
+        });
       }
     });
     C.on('update-top100', (top) => {
       got.top100 = top.some(p => p.name === 'TESTA' && p.points === 1650);
+      got.zeroNotInTop = !top.some(p => p.name === got.zeroName);
       C.close();
       done();
     });

@@ -1617,26 +1617,39 @@
         let frameCount = 0;
         let fpsTimer = 0;
         let matchmakingInterval = null;
+        let plPrevX = 0, plPrevY = 0;
 
         function masterGameLoop(now) {
-            let delta = now - lastTime;
-            lastTime = now;
-            frameCount++;
-            fpsTimer += delta;
+            // Blindaje anticongelamiento: si update() o draw() lanzan una excepción,
+            // se registra y el siguiente frame SIEMPRE se programa, así la partida
+            // nunca se queda congelada en pantalla.
+            try {
+                let delta = now - lastTime;
+                lastTime = now;
+                frameCount++;
+                fpsTimer += delta;
 
-            if (fpsTimer >= 400) {
-                let currentFps = Math.round((frameCount * 1000) / fpsTimer);
-                fpsVal.innerText = currentFps;
-                frameCount = 0;
-                fpsTimer = 0;
+                if (fpsTimer >= 400) {
+                    let currentFps = Math.round((frameCount * 1000) / fpsTimer);
+                    fpsVal.innerText = currentFps;
+                    frameCount = 0;
+                    fpsTimer = 0;
+                }
+
+                if (gameStarted && !gameOver) {
+                    update(delta);
+                }
+                draw();
+            } catch (err) {
+                if (!window.__famoErrors) window.__famoErrors = [];
+                if (window.__famoErrors.length < 5) {
+                    window.__famoErrors.push(String(err && err.stack || err));
+                    console.error('[FAMOFIRE] error de frame:', err);
+                    addKillFeedMessage("⚠️ Error interno", String(err && err.message || err).slice(0, 40), true);
+                }
+            } finally {
+                requestAnimationFrame(masterGameLoop);
             }
-
-            if (gameStarted && !gameOver) {
-                update(delta);
-            }
-            draw();
-
-            requestAnimationFrame(masterGameLoop);
         }
 
         if (localStorage.getItem('ff_name')) {
@@ -2195,11 +2208,27 @@
 
                 let botHp = (currentMode === 'battlefield') ? 100 : 200;
 
+                // Nivel de dificultad del bot (1/3 veteranos, 1/3 intermedios, 1/3 novatos).
+                // Los veteranos disparan más rápido y con más precisión, y cazan al jugador.
+                let tier = 0;
+                if (currentMode === 'battlefield') {
+                    if (i < totalEnemies / 3) tier = 2;
+                    else if (i < (totalEnemies / 3) * 2) tier = 1;
+                }
+                const tierStats = [
+                    { speed: 1.2 + Math.random() * 0.3, interval: 52 + Math.floor(Math.random() * 12), accuracy: 0.60 },
+                    { speed: 1.5 + Math.random() * 0.3, interval: 40 + Math.floor(Math.random() * 8), accuracy: 0.75 },
+                    { speed: 1.8 + Math.random() * 0.3, interval: 32 + Math.floor(Math.random() * 8), accuracy: 0.84 }
+                ];
+                const ts = tierStats[tier];
+
                 enemies.push({
-                    x: ex, y: ey, radius: 15, color: '#ff3333',
-                    speed: 1.4 + Math.random() * 0.6, hp: botHp, maxHp: botHp,
-                    name: shuffledNames[i] || `Bot_${i}`, shootTimer: Math.random() * 40,
-                    flankSide: i % 2 === 0 ? 1 : -1, tacticalTimer: Math.random() * 100, unstickTimer: 0
+                    x: ex, y: ey, px: ex, py: ey, radius: 15, color: '#ff3333',
+                    speed: ts.speed, hp: botHp, maxHp: botHp,
+                    name: shuffledNames[i] || `Bot_${i}`, shootTimer: Math.random() * 30,
+                    shootInterval: ts.interval, accuracy: ts.accuracy, tier: tier,
+                    burst: 0, flankSide: i % 2 === 0 ? 1 : -1,
+                    tacticalTimer: Math.random() * 100, unstickTimer: 0
                 });
             }
             updateHUDCounters();
@@ -2418,6 +2447,8 @@
                 }
             }
 
+            plPrevX = player.x;
+            plPrevY = player.y;
             let nextX = player.x;
             let nextY = player.y;
             if (isActionPressed('up')) nextY -= player.speed;
@@ -2443,6 +2474,10 @@
 
             for (let i = bullets.length - 1; i >= 0; i--) {
                 const b = bullets[i];
+                // Si la partida terminó (el jugador murió dentro del bucle, lo cual
+                // vació el arreglo), se sale de inmediato: evita leer undefined y
+                // congelar la pantalla.
+                if (!b || gameOver) break;
                 b.x += b.dx;
                 b.y += b.dy;
                 
@@ -2544,6 +2579,7 @@
 
             for (let i = enemies.length - 1; i >= 0; i--) {
                 const enemy = enemies[i];
+                if (!enemy || gameOver) break;
 
                 if (currentMode === 'battlefield') {
                     if (Math.hypot(enemy.x - safeZone.x, enemy.y - safeZone.y) > safeZone.radius) {
@@ -2562,6 +2598,7 @@
                     }
                 }
 
+                // ----- IA de los bots (novato/medio/veterano) -----
                 let targetX = player.x;
                 let targetY = player.y;
                 let distToPlayer = Math.hypot(player.x - enemy.x, player.y - enemy.y);
@@ -2569,10 +2606,12 @@
                 let targetEntity = 'player';
 
                 if (currentMode === 'battlefield') {
+                    // Los veteranos cazan al jugador; los novatos pelean con lo que tengan cerca
+                    const playerBias = enemy.tier === 2 ? 900 : (enemy.tier === 1 ? 550 : 350);
                     for (let otherBot of enemies) {
                         if (otherBot === enemy) continue;
                         let d = Math.hypot(otherBot.x - enemy.x, otherBot.y - enemy.y);
-                        if (d < closestDist) {
+                        if (d < closestDist && !(targetEntity === 'player' && distToPlayer < playerBias)) {
                             closestDist = d;
                             targetX = otherBot.x;
                             targetY = otherBot.y;
@@ -2584,15 +2623,26 @@
                 const directAngle = Math.atan2(targetY - enemy.y, targetX - enemy.x);
                 let moveAngle = directAngle;
                 let isLowHealth = enemy.hp < (enemy.maxHp * 0.35);
+                const zoneActive = currentMode === 'battlefield' && safeZone.timer > safeZone.startDelay;
 
-                if (isLowHealth && currentMode === 'battlefield' && targetEntity === 'player') {
+                if (zoneActive && Math.hypot(enemy.x - safeZone.x, enemy.y - safeZone.y) > safeZone.radius) {
+                    // Instinto de supervivencia: huir del veneno hacia la zona segura
+                    moveAngle = Math.atan2(safeZone.y - enemy.y, safeZone.x - enemy.x);
+                    enemy.unstickTimer = 0;
+                } else if (isLowHealth && targetEntity === 'player') {
+                    // Vida baja contra el jugador: los veteranos se repliegan disparando (kite),
+                    // los novatos se meten en cobertura
                     enemy.unstickTimer++;
-                    let cover = findNearestCover(enemy);
-                    if (cover && enemy.unstickTimer < 60) {
-                        moveAngle = Math.atan2(cover.y - enemy.y, cover.x - enemy.x);
+                    if (enemy.tier === 2) {
+                        moveAngle = directAngle + Math.PI * 0.7 + Math.sin(enemy.unstickTimer * 0.05) * 0.5;
                     } else {
-                        if (enemy.unstickTimer > 100) enemy.unstickTimer = 0;
-                        moveAngle = directAngle;
+                        let cover = findNearestCover(enemy);
+                        if (cover && enemy.unstickTimer < 60) {
+                            moveAngle = Math.atan2(cover.y - enemy.y, cover.x - enemy.x);
+                        } else {
+                            if (enemy.unstickTimer > 100) enemy.unstickTimer = 0;
+                            moveAngle = directAngle;
+                        }
                     }
                 } else {
                     enemy.unstickTimer = 0;
@@ -2635,22 +2685,46 @@
                 }
 
                 enemy.shootTimer++;
-                let hasLOS = hasLineOfSight(enemy.x, enemy.y, targetX, targetY);
                 let playerInvisible = (profile.selectedSkill === 'ghost' && skillState.active);
                 let canShootPlayer = targetEntity !== 'player' || !playerInvisible;
 
-                if (enemy.shootTimer > 40 && closestDist < 450 && hasLOS && canShootPlayer) {
+                // Disparo con "ventaja": apuntan donde irá el objetivo (predicción de movimiento)
+                let lead = (targetEntity === 'player') ? 1.0 : 0.8;
+                const prevTX = (targetEntity === 'player') ? plPrevX : (targetEntity ? targetEntity.px : targetX);
+                const prevTY = (targetEntity === 'player') ? plPrevY : (targetEntity ? targetEntity.py : targetY);
+                const aimAngle = Math.atan2(targetY + (targetY - prevTY) * lead - enemy.y,
+                                            targetX + (targetX - prevTX) * lead - enemy.x);
+
+                // Solo se comprueba línea de visión cuando el objetivo está en rango de
+                // disparo (ahorra muchísimo cálculo y evita caídas de FPS con 34 bots).
+                let hasLOS = false;
+                if (closestDist < 480 && canShootPlayer) {
+                    hasLOS = hasLineOfSight(enemy.x, enemy.y, targetX, targetY);
+                }
+
+                // Fuego rápido de pánico cuando el jugador está muy cerca
+                let fireInterval = enemy.shootInterval;
+                if (targetEntity === 'player' && distToPlayer < 140) fireInterval = Math.floor(fireInterval * 0.65);
+
+                if (enemy.shootTimer > fireInterval && closestDist < 480 && hasLOS && canShootPlayer) {
                     enemy.shootTimer = 0;
-                    let accuracy = (currentMode === 'battlefield') ? 0.70 : 0.80;
-                    let finalAngle = directAngle + (Math.random() - 0.5) * ((1 - accuracy) * 0.8);
+                    // Los veteranos disparan ráfagas de 2 balas
+                    enemy.burst = (enemy.tier === 2 && Math.random() < 0.45) ? 2 : 1;
+                }
+                if (enemy.burst > 0 && closestDist < 480 && hasLOS && canShootPlayer) {
+                    enemy.burst--;
+                    let finalAngle = aimAngle + (Math.random() - 0.5) * ((1 - enemy.accuracy) * 0.8);
 
                     bullets.push({
                         x: enemy.x, y: enemy.y, startX: enemy.x, startY: enemy.y,
                         dx: Math.cos(finalAngle) * 9, dy: Math.sin(finalAngle) * 9,
                         radius: 4, color: targetEntity === 'player' ? '#ff9999' : '#ff6666',
-                        maxRange: 450, isPlayer: false, owner: enemy
+                        maxRange: 480, isPlayer: false, owner: enemy
                     });
                 }
+
+                enemy.px = enemy.x;
+                enemy.py = enemy.y;
 
                 if (targetEntity === 'player' && distToPlayer - player.radius - enemy.radius < 1 && !playerInvisible) {
                     let shieldActive = (profile.selectedSkill === 'shield' && skillState.active);
