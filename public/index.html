@@ -1777,11 +1777,7 @@
         const loginMsg = document.getElementById('login-msg');
         const lobbyName = document.getElementById('lobby-name');
         const lobbyId = document.getElementById('lobby-id');
-        const lobbyMatches = document.getElementById('lobby-matches');
-        const lobbyWins = document.getElementById('lobby-wins');
-        const lobbyKills = document.getElementById('lobby-kills');
         const lobbyLevel = document.getElementById('lobby-level');
-        const expBarFill = document.getElementById('exp-bar-fill');
         const lobbyRank = document.getElementById('lobby-rank');
         const lobbyPoints = document.getElementById('lobby-points');
 
@@ -1927,9 +1923,6 @@
                 lobbyId.innerText = profile.id || '————';
                 lobbyId.style.display = profile.id ? 'inline' : 'none';
             }
-            lobbyMatches.innerText = profile.matches;
-            lobbyWins.innerText = profile.wins;
-            lobbyKills.innerText = profile.kills;
 
             // Pantalla de perfil completo
             profName.innerText = profile.name;
@@ -1944,7 +1937,6 @@
 
             let maxExp = getRequiredExp(profile.level);
             let percentage = Math.min(100, (profile.exp / maxExp) * 100);
-            expBarFill.style.width = percentage + '%';
             profileExpFill.style.width = percentage + '%';
             profExpText.innerText = profile.exp + " / " + maxExp + " EXP";
 
