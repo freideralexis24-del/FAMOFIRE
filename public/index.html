@@ -1217,13 +1217,6 @@
                         </div>
                         <button id="set-pass-btn" class="cfg-action-btn" data-i18n="changeBtn">CAMBIAR</button>
                     </div>
-                    <div class="cfg-row">
-                        <div class="cfg-row-label">
-                            <div data-i18n="forgotPassBtn">¿Olvidaste tu contraseña?</div>
-                            <div class="cfg-row-hint" data-i18n="recoverHint">Enlace de recuperación a tu correo</div>
-                        </div>
-                        <button id="forgot-pass-btn" class="cfg-action-btn" data-i18n="recoverBtn">RECUPERAR</button>
-                    </div>
                 </div>
                 <div class="cfg-section">
                     <div class="cfg-section-title cfg-title-danger" data-i18n="configSecDanger">ZONA DE RIESGO</div>
@@ -1920,9 +1913,7 @@
                 controlsHint: "Movimiento, disparo y habilidades",
                 passBtnText: "Contraseña del juego",
                 passHint: "Protege tu cuenta en cualquier dispositivo",
-                recoverHint: "Enlace de recuperación a tu correo",
-                recoverBtn: "RECUPERAR",
-                logoutHint: "Salir de esta cuenta en este dispositivo",
+                recoverHint: "Enlace de recuperación a tu correo",                logoutHint: "Salir de esta cuenta en este dispositivo",
                 logoutShort: "SALIR",
                 deleteHint: "Borra todo y no se puede deshacer",
                 deleteShort: "BORRAR",
@@ -2111,9 +2102,7 @@
                 controlsHint: "Movement, shooting and skills",
                 passBtnText: "Game password",
                 passHint: "Protects your account on any device",
-                recoverHint: "Recovery link to your email",
-                recoverBtn: "RECOVER",
-                logoutHint: "Sign out of this account on this device",
+                recoverHint: "Recovery link to your email",                logoutHint: "Sign out of this account on this device",
                 logoutShort: "SIGN OUT",
                 deleteHint: "Deletes everything and cannot be undone",
                 deleteShort: "DELETE",
@@ -2302,9 +2291,7 @@ skinsTitleHeader: "CUSTOMIZE",
                 controlsHint: "移动、射击和技能",
                 passBtnText: "游戏密码",
                 passHint: "在任何设备上保护您的账户",
-                recoverHint: "恢复链接发送到您的邮箱",
-                recoverBtn: "恢复",
-                logoutHint: "在此设备上退出此账户",
+                recoverHint: "恢复链接发送到您的邮箱",                logoutHint: "在此设备上退出此账户",
                 logoutShort: "退出",
                 deleteHint: "删除所有内容且无法撤销",
                 deleteShort: "删除",
@@ -2493,9 +2480,7 @@ skinsTitleHeader: "个性化",
                 controlsHint: "Movimento, tiro e habilidades",
                 passBtnText: "Senha do jogo",
                 passHint: "Protege sua conta em qualquer dispositivo",
-                recoverHint: "Link de recuperação para seu e-mail",
-                recoverBtn: "RECUPERAR",
-                logoutHint: "Sair desta conta neste dispositivo",
+                recoverHint: "Link de recuperação para seu e-mail",                logoutHint: "Sair desta conta neste dispositivo",
                 logoutShort: "SAIR",
                 deleteHint: "Apaga tudo e não tem como desfazer",
                 deleteShort: "EXCLUIR",
@@ -3749,7 +3734,6 @@ skinsTitleHeader: "PERSONALIZAR",
         const forgotSendBtn = document.getElementById('forgot-send-btn');
         const forgotBackBtn = document.getElementById('forgot-back-btn');
         const forgotMsg = document.getElementById('forgot-msg');
-        const forgotPassBtn = document.getElementById('forgot-pass-btn');
         const resetScreen = document.getElementById('reset-screen');
         const resetAccountName = document.getElementById('reset-account-name');
         const resetPassInput = document.getElementById('reset-pass-input');
@@ -3759,7 +3743,6 @@ skinsTitleHeader: "PERSONALIZAR",
         const resetMsg = document.getElementById('reset-msg');
         let pendingResetToken = '';
 
-        forgotPassBtn.addEventListener('click', () => openForgotScreen('config'));
         forgotBackBtn.addEventListener('click', () => {
             forgotScreen.style.display = 'none';
             if (forgotReturnTo === 'login') loginScreen.style.display = 'flex';
