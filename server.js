@@ -74,7 +74,7 @@ try {
 } catch (e) { transporter = null; }
 const RESET_SECRET = process.env.RESET_SECRET || 'famofire-local-reset-secret';
 const RESET_TTL_MIN = Math.max(1, parseInt(process.env.RESET_TTL_MINUTES || '30', 10) || 30); // minutos de validez del enlace
-const APP_BASE_URL = process.env.APP_URL || (process.env.RENDER_EXTERNAL_URL ? 'https://' + process.env.RENDER_EXTERNAL_URL : 'http://localhost:3000');
+const APP_BASE_URL = (process.env.APP_URL || (process.env.RENDER_EXTERNAL_URL ? 'https://' + process.env.RENDER_EXTERNAL_URL : 'http://localhost:3000')).replace(/\/+$/, '');
 function resetToken(googleId, purpose) {
   return sha(googleId + '|' + purpose + '|' + RESET_SECRET) + '.' + googleId + '.' + purpose + '.' + (Date.now() + RESET_TTL_MIN * 60000);
 }
