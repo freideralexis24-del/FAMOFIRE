@@ -73,15 +73,23 @@ try {
   }
 } catch (e) { transporter = null; }
 const RESET_SECRET = process.env.RESET_SECRET || 'famofire-local-reset-secret';
+const RESET_TTL_MIN = Math.max(1, parseInt(process.env.RESET_TTL_MINUTES || '30', 10) || 30); // minutos de validez del enlace
 const APP_BASE_URL = process.env.APP_URL || (process.env.RENDER_EXTERNAL_URL ? 'https://' + process.env.RENDER_EXTERNAL_URL : 'http://localhost:3000');
 function resetToken(googleId, purpose) {
-  return sha(googleId + '|' + purpose + '|' + RESET_SECRET) + '.' + googleId + '.' + purpose;
+  return sha(googleId + '|' + purpose + '|' + RESET_SECRET) + '.' + googleId + '.' + purpose + '.' + (Date.now() + RESET_TTL_MIN * 60000);
 }
 function parseResetToken(token) {
   const parts = String(token || '').split('.');
-  if (parts.length !== 3) return null;
-  const sig = parts[0], googleId = parts[1], purpose = parts[2];
+  if (parts.length === 3) { // enlaces viejos (antes de la expiración): siguen valiendo sin límite
+    const sig = parts[0], googleId = parts[1], purpose = parts[2];
+    if (sig !== sha(googleId + '|' + purpose + '|' + RESET_SECRET)) return null;
+    return { googleId, purpose };
+  }
+  if (parts.length !== 4) return null;
+  const sig = parts[0], googleId = parts[1], purpose = parts[2], expiresAt = Number(parts[3]);
+  if (!Number.isFinite(expiresAt)) return null;
   if (sig !== sha(googleId + '|' + purpose + '|' + RESET_SECRET)) return null;
+  if (expiresAt < Date.now()) return { googleId, purpose, expired: true };
   return { googleId, purpose };
 }
 function findAccountByGoogle(sub) {
@@ -729,7 +737,7 @@ io.on('connection', (socket) => {
           from: process.env.SMTP_FROM || process.env.SMTP_USER,
           to: acc.googleEmail,
           subject: 'FAMOFIRE - Restablecer contraseña',
-          html: `<h2>Restablecer contraseña</h2><p>Soldado <b>${accountKey}</b>: abre este enlace para elegir una contraseña nueva:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>Si no lo pediste, ignora este correo.</p>`
+          html: `<h2>Restablecer contraseña</h2><p>Soldado <b>${accountKey}</b>: abre este enlace para elegir una contraseña nueva:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>El enlace expira en <b>${RESET_TTL_MIN} minutos</b>. Si no lo pediste, ignora este correo.</p>`
         });
         emailed = true;
       } catch (e) { console.error('[EMAIL] no se pudo enviar:', e.message); }
@@ -741,6 +749,7 @@ io.on('connection', (socket) => {
   socket.on('password-reset', async (data = {}) => {
     const parsed = parseResetToken(data.token);
     if (!parsed || parsed.purpose !== 'pwreset') return socket.emit('password-reset-result', { ok: false, error: 'invalid-token' });
+    if (parsed.expired) return socket.emit('password-reset-result', { ok: false, error: 'expired' });
     await ensureAccounts();
     let name = findAccountByGoogle(parsed.googleId);
     if (!name) return socket.emit('password-reset-result', { ok: false, error: 'invalid-token' });

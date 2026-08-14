@@ -3797,7 +3797,7 @@ skinsTitleHeader: "PERSONALIZAR",
         socket.on('password-reset-result', (res) => {
             const dict = i18n[profile.language] || i18n["ESPAÑOL"];
             if (!res || !res.ok) {
-                resetMsg.innerText = (res && res.error === 'invalid-token') ? dict.resetInvalid : dict.errGeneric;
+                resetMsg.innerText = (res && (res.error === 'invalid-token' || res.error === 'expired')) ? dict.resetInvalid : dict.errGeneric;
                 return;
             }
             resetMsg.innerText = dict.resetDone;
