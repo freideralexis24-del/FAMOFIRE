@@ -1,4 +1,4 @@
-// Test e2e de las nuevas funciones: espectador, cuenta recordada y reinicio de entrenamiento
+﻿// Test e2e de las nuevas funciones: espectador, cuenta recordada y reinicio de entrenamiento
 import puppeteer from 'puppeteer-core';
 import fs from 'fs';
 
@@ -25,7 +25,7 @@ const register = async (page, name) => {
   await page.waitForSelector('#username-input', { timeout: 20000 });
   await page.type('#username-input', name);
   await page.type('#password-input', 'clave123');
-  await page.click('#register-btn');
+  await page.click('#login-btn');
   await page.waitForSelector('#lobby-screen', { visible: true, timeout: 15000 });
 };
 
@@ -46,14 +46,14 @@ await Promise.all([
   pageB.waitForFunction(() => gameStarted && currentMode === 'battlefield', { timeout: 30000 })
 ]);
 // Invulnerables: en headless los bots alcanzan al jugador quieto en ~2s y lo
-// matan antes de que B pueda disparar; así solo la muerte por B decide la prueba.
+// matan antes de que B pueda disparar; asÃ­ solo la muerte por B decide la prueba.
 await pageA.evaluate(() => { player.hp = 100000; });
 await pageB.evaluate(() => { player.hp = 100000; });
 
 const idA = await pageA.evaluate(() => socket.id);
 
-// B "camina" hasta la posición de A (el spawn es aleatorio y puede quedar a
-// >560px, el alcance máximo del daño entre jugadores)
+// B "camina" hasta la posiciÃ³n de A (el spawn es aleatorio y puede quedar a
+// >560px, el alcance mÃ¡ximo del daÃ±o entre jugadores)
 const bTarget = await pageB.evaluate((idA) => {
   const rp = remotePlayers[idA];
   if (!rp) return null;
@@ -64,7 +64,7 @@ const bTarget = await pageB.evaluate((idA) => {
 }, idA);
 await new Promise(r => setTimeout(r, 300));
 
-// B dispara 5 veces a A (25 de daño cada una, 90ms de separación -> muere)
+// B dispara 5 veces a A (25 de daÃ±o cada una, 90ms de separaciÃ³n -> muere)
 await pageB.evaluate((idA) => {
   return new Promise(r => {
     let n = 0;
@@ -83,9 +83,9 @@ try {
   const name = await pageA.evaluate(() => document.querySelector('#spectate-name').textContent);
   spectate = name.trim() === 'SPECB';
   check('A entra a espectador de B tras morir', spectate, 'observando a: ' + name.trim());
-} catch { check('A entra a espectador de B tras morir', false, 'no apareció #spectator-screen'); }
+} catch { check('A entra a espectador de B tras morir', false, 'no apareciÃ³ #spectator-screen'); }
 
-// B gana y sale: A debe SEGUIR espectando (el espectáculo dura hasta que la partida termina)
+// B gana y sale: A debe SEGUIR espectando (el espectÃ¡culo dura hasta que la partida termina)
 await pageB.evaluate(() => socket.emit('match-won', { kills: 0 }));
 await new Promise(r => setTimeout(r, 700));
 await pageB.evaluate(() => endGame(true));
@@ -100,18 +100,18 @@ try {
 } catch { stillSpec = false; }
 check('Sigue espectando aunque su objetivo gane y salga de la partida', stillSpec);
 
-// Fin de partida (sin bots ni rivales): el espectador ve sus resultados oficiales
-await pageA.evaluate(() => { enemies.length = 0; remotePlayers = {}; updateHUDCounters(); });
+// Fin natural de la partida: queda UN bot y el veneno de la zona lo condena.
+await pageA.evaluate(() => { remotePlayers = {}; while (enemies.length > 1) enemies.pop(); if (enemies[0]) enemies[0].hp = 15; updateHUDCounters(); });
 let resultsShown = false;
 try {
-  await pageA.waitForSelector('#stats-screen', { visible: true, timeout: 8000 });
+  await pageA.waitForSelector('#stats-screen', { visible: true, timeout: 15000 });
   resultsShown = true;
   const pos = await pageA.evaluate(() => document.querySelector('#stat-pos').textContent);
   const pts = await pageA.evaluate(() => document.querySelector('#stat-points').textContent);
   check('El espectador ve sus resultados al terminar la partida', resultsShown, pos + ' | ' + pts);
-} catch { check('El espectador ve sus resultados al terminar la partida', false, 'no apareció #stats-screen'); }
+} catch { check('El espectador ve sus resultados al terminar la partida', false, 'no apareciÃ³ #stats-screen'); }
 
-// --- Espectador al morir por un BOT: te manda a ver al bot que te mató ---
+// --- Espectador al morir por un BOT: te manda a ver al bot que te matÃ³ ---
 const ctxC = await browser.createBrowserContext();
 const pageC = await ctxC.newPage();
 await register(pageC, 'SPEBT');
@@ -130,9 +130,9 @@ try {
   botNameSeen = await pageC.evaluate(() => document.querySelector('#spectate-name').textContent);
   botSpectate = await pageC.evaluate(() => spectateMode && spectateTargetType === 'bot');
   check('Al morir por un BOT te manda a espectar al bot asesino', botSpectate, 'observando a: ' + botNameSeen);
-} catch { check('Al morir por un BOT te manda a espectar al bot asesino', false, 'no apareció #spectator-screen'); }
-await pageC.evaluate(() => { enemies.length = 0; remotePlayers = {}; updateHUDCounters(); });
-await pageC.waitForSelector('#stats-screen', { visible: true, timeout: 8000 });
+} catch { check('Al morir por un BOT te manda a espectar al bot asesino', false, 'no apareciÃ³ #spectator-screen'); }
+await pageC.evaluate(() => { remotePlayers = {}; while (enemies.length > 1) enemies.pop(); if (enemies[0]) enemies[0].hp = 15; updateHUDCounters(); });
+await pageC.waitForSelector('#stats-screen', { visible: true, timeout: 15000 });
 check('El espectador de bot ve resultados al terminar la partida', true);
 
 // Reload: el juego debe recordar la cuenta y entrar solo
@@ -142,8 +142,8 @@ try {
   await pageA.waitForSelector('#lobby-screen', { visible: true, timeout: 20000 });
   const nm = await pageA.evaluate(() => document.querySelector('#lobby-name').textContent);
   autoLogin = nm.trim() === 'SPECA';
-  check('Recuerda usuario/contraseña y entra solo al recargar', autoLogin, 'entró como: ' + nm.trim());
-} catch { check('Recuerda usuario/contraseña y entra solo al recargar', false, 'no entró solo'); }
+  check('Recuerda usuario/contraseÃ±a y entra solo al recargar', autoLogin, 'entrÃ³ como: ' + nm.trim());
+} catch { check('Recuerda usuario/contraseÃ±a y entra solo al recargar', false, 'no entrÃ³ solo'); }
 
 // Entrenamiento: matar todos los bots muestra resultados y permite reiniciar
 const ctxT = await browser.createBrowserContext();
@@ -151,14 +151,14 @@ const pageT = await ctxT.newPage();
 await register(pageT, 'SPECT');
 await pageT.click('#to-training-btn');
 await pageT.waitForFunction(() => gameStarted && currentMode === 'training', { timeout: 15000 });
-// Los 9 bots caen (se vacía el arreglo igual que al morir el último)
+// Los 9 bots caen (se vacÃ­a el arreglo igual que al morir el Ãºltimo)
 await pageT.evaluate(() => { enemies.length = 0; updateHUDCounters(); });
 await new Promise(r => setTimeout(r, 200));
-// El gancho de victoria se prueba disparando el flujo completo de endGame(true) + botón
+// El gancho de victoria se prueba disparando el flujo completo de endGame(true) + botÃ³n
 await pageT.evaluate(() => endGame(true));
 await pageT.waitForSelector('#stats-screen', { visible: true, timeout: 8000 });
 const retryVisible = await pageT.evaluate(() => document.getElementById('retry-training-btn').style.display === 'block');
-check('Victoria en entrenamiento: aparece opción de reiniciar', retryVisible);
+check('Victoria en entrenamiento: aparece opciÃ³n de reiniciar', retryVisible);
 await pageT.click('#retry-training-btn');
 await pageT.waitForFunction(() => gameStarted && currentMode === 'training', { timeout: 8000 });
 const botCount = await pageT.evaluate(() => enemies.length);
@@ -167,8 +167,8 @@ check('Reiniciar entrenamiento vuelve a meter los 9 bots', botCount === 9, botCo
 const statsHiddenAfterRetry = await pageT.evaluate(() => document.getElementById('stats-screen').style.display === 'none');
 check('Al reiniciar se cierra la pantalla de resultados', statsHiddenAfterRetry);
 
-// Consola limpia en la página del espectador
-check('Sin errores de consola en la página espectadora', errA.length === 0, errA.join(' | ') || 'limpio');
+// Consola limpia en la pÃ¡gina del espectador
+check('Sin errores de consola en la pÃ¡gina espectadora', errA.length === 0, errA.join(' | ') || 'limpio');
 
 console.log(results.every(Boolean) ? 'TODO OK' : 'HUBO FALLOS');
 await browser.close();

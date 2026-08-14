@@ -22,7 +22,7 @@ const register = async (page, name) => {
   await page.waitForSelector('#username-input', { timeout: 20000 });
   await page.type('#username-input', name);
   await page.type('#password-input', 'clave123');
-  await page.click('#register-btn');
+  await page.click('#login-btn');
   await page.waitForSelector('#lobby-screen', { visible: true, timeout: 15000 });
 };
 await register(p1, 'MMUNO');

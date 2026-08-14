@@ -4390,6 +4390,16 @@ skinsTitleHeader: "PERSONALIZAR",
                 // con todos muertos, en vez de quedar un bot "ganador" eterno.
                 if (spectateMode && currentMode === 'battlefield' && Object.keys(remotePlayers).length === 0 && enemies.length === 1) {
                     enemy.hp -= 0.5;
+                    // El veneno también mata DENTRO de la zona segura: sin esto, si
+                    // el último bot queda dentro, la partida nunca termina.
+                    if (enemy.hp <= 0) {
+                        addKillFeedMessage("Zona de Veneno", enemy.name, false);
+                        enemies.splice(i, 1);
+                        updateHUDCounters();
+                        draw();
+                        finishSpectator();
+                        return;
+                    }
                 }
 
                 if (currentMode === 'battlefield') {
