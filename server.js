@@ -11,6 +11,18 @@ const bcrypt = require('bcryptjs');
 const { OAuth2Client } = require('google-auth-library');
 const { Server } = require('socket.io');
 
+// Carga .env local (SIEMPRE ignorado por git): permite SMTP/Google credenciales
+// en desarrollo sin tocarlas en el código. Render define las suyas por panel.
+{
+  const envFile = path.join(__dirname, '.env');
+  if (fs.existsSync(envFile)) {
+    for (const line of fs.readFileSync(envFile, 'utf8').split(/\r?\n/)) {
+      const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/);
+      if (m && !(m[1] in process.env)) process.env[m[1]] = m[2];
+    }
+  }
+}
+
 const PORT = process.env.PORT || 3000;
 const MATCH_SIZE = 35;                              // cupos por partida (jugadores reales + bots)
 const QUEUE_TIMEOUT = parseInt(process.env.MM_TIMEOUT_MS || '15000', 10); // espera máxima en cola (15 s)
