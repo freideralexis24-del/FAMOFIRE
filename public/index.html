@@ -198,18 +198,50 @@
             margin-bottom: 14px;
         }
         .fps-cap-box {
-            width: 300px;
+            width: 320px;
             background: rgba(0, 0, 0, 0.45);
             border: 2px solid #555;
-            border-radius: 10px;
-            padding: 10px 14px;
+            border-radius: 12px;
+            padding: 10px 16px 12px 16px;
             box-sizing: border-box;
+        }
+        .fps-cap-box .fps-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2px;
+        }
+        .fps-cap-box .fps-label {
+            font-size: 14px;
+            color: #fff;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .fps-cap-box .fps-badge {
+            font-family: 'Impact', sans-serif;
+            font-size: 22px;
+            color: #000;
+            background: linear-gradient(180deg, #ffe066, #ffcc00);
+            border: 2px solid #000;
+            border-radius: 8px;
+            padding: 1px 12px;
+            box-shadow: 2px 2px 0 #000;
         }
         #fps-cap-slider {
             width: 100%;
-            margin: 10px 0 4px 0;
+            margin: 10px 0 6px 0;
             accent-color: #ffcc00;
             cursor: pointer;
+            height: 6px;
+        }
+        .fps-cap-box .fps-scale {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            font-size: 10px;
+            color: #aaa;
+            padding-top: 2px;
+            border-top: 1px solid rgba(255,255,255,0.15);
         }
         .avatar-grid {
             display: grid;
@@ -897,21 +929,30 @@
         <h1 data-i18n="configTitle">CONFIGURACIÓN</h1>
         <p style="font-size: 15px; color: #aaa; margin-bottom: 15px;" data-i18n="configSubtitle">Ajustes del sistema</p>
         
+        <div style="font-size: 13px; color: #00ffff; margin-bottom: 4px; letter-spacing: 2px;" data-i18n="configSecVisual">— VISUALES Y SONIDO —</div>
+        <div class="lobby-menu">
+            <button id="toggle-fps-btn" class="btn-main"><span data-i18n="fpsBtnText">FPS</span>: <span id="fps-status-label">ACTIVADO</span></button>
+            <div class="fps-cap-box">
+                <div class="fps-row">
+                    <span class="fps-label" data-i18n="fpsLimitText">LÍMITE DE FPS:</span>
+                    <span class="fps-badge"><span id="fps-cap-value">240</span></span>
+                </div>
+                <input type="range" id="fps-cap-slider" min="30" max="240" step="30" value="240">
+                <div class="fps-scale"><span>30</span><span>60</span><span>90</span><span>120</span><span>150</span><span>180</span><span>210</span><span>240</span></div>
+            </div>
+            <button id="toggle-music-btn" class="btn-main"><span data-i18n="musicBtnText">MÚSICA</span>: <span id="music-status-label">ACTIVADA</span></button>
+        </div>
+
+        <div style="font-size: 13px; color: #00ffff; margin: 14px 0 4px 0; letter-spacing: 2px;" data-i18n="configSecControls">— IDIOMA Y CONTROLES —</div>
         <div class="lobby-menu">
             <button id="to-language-btn" class="btn-main" style="background-color: #00ffff;" data-i18n="langMenuBtn">IDIOMA</button>
             <button id="to-controls-btn" class="btn-main" style="background-color: #00ff00;" data-i18n="controlsMenuBtn">CONTROLES</button>
-            <button id="toggle-fps-btn" class="btn-main"><span data-i18n="fpsBtnText">FPS</span>: <span id="fps-status-label">ACTIVADO</span></button>
-            <div class="fps-cap-box">
-                <div style="display: flex; justify-content: space-between; width: 100%;">
-                    <span style="font-size: 15px; color: #fff; font-weight: bold;" data-i18n="fpsLimitText">LÍMITE DE FPS:</span>
-                    <span id="fps-cap-value" style="font-size: 18px; color: #ffcc00; font-weight: bold;">240</span>
-                </div>
-                <input type="range" id="fps-cap-slider" min="30" max="240" step="30" value="240">
-                <div style="display: flex; justify-content: space-between; width: 100%; font-size: 11px; color: #aaa;">
-                    <span>30</span><span>60</span><span>90</span><span>120</span><span>150</span><span>180</span><span>210</span><span>240</span>
-                </div>
-            </div>
-            <button id="toggle-music-btn" class="btn-main"><span data-i18n="musicBtnText">MÚSICA</span>: <span id="music-status-label">ACTIVADA</span></button>
+        </div>
+
+        <div style="font-size: 13px; color: #00ffff; margin: 14px 0 4px 0; letter-spacing: 2px;" data-i18n="configSecAccount">— CUENTA Y SEGURIDAD —</div>
+        <div class="lobby-menu">
+            <div id="google-link-wrap" style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 6px 0;"></div>
+            <button id="forgot-pass-btn" class="btn-main" data-i18n="forgotPassBtn">¿OLVIDASTE TU CONTRASEÑA?</button>
             <button id="logout-btn" class="btn-main" style="background-color: #ff3333; color: #fff;" data-i18n="logoutBtn">CERRAR SESIÓN</button>
             <button id="delete-account-btn" class="btn-main" style="background-color: #880000; color: #fff;" data-i18n="deleteBtn">ELIMINAR CUENTA</button>
             <button id="back-from-config" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
@@ -929,6 +970,31 @@
         </div>
         <p id="delete-msg" style="font-size: 14px; color: #ffcc00; height: 20px; margin-top: 8px; text-align: center;"></p>
         <button id="back-from-delete" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
+    </div>
+
+    <!-- OLVIDÉ MI CONTRASEÑA: pedir el enlace de recuperación -->
+    <div id="forgot-screen" class="screen" style="display: none;">
+        <h1 data-i18n="forgotTitle">RECUPERAR CONTRASEÑA</h1>
+        <p style="font-size: 14px; color: #aaa; margin-bottom: 10px;" data-i18n="forgotSubtitle">Te enviaremos un enlace al correo de Google vinculado a tu cuenta.</p>
+        <input type="text" id="forgot-name-input" placeholder="Nombre de soldado" maxlength="14" autocomplete="off">
+        <div class="lobby-menu">
+            <button id="forgot-send-btn" class="btn-main" style="background-color: #00ff00;" data-i18n="forgotSend">ENVIAR ENLACE</button>
+            <button id="forgot-back-btn" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
+        </div>
+        <p id="forgot-msg" style="font-size: 14px; color: #ffcc00; height: 40px; margin-top: 8px; text-align: center;"></p>
+    </div>
+
+    <!-- ENLACE DE RECUPERACIÓN válido: elegir contraseña nueva -->
+    <div id="reset-screen" class="screen" style="display: none;">
+        <h1 data-i18n="resetTitle">NUEVA CONTRASEÑA</h1>
+        <p style="font-size: 14px; color: #aaa; margin-bottom: 10px;">Soldado <b id="reset-account-name" style="color: #ffcc00;">—</b></p>
+        <input type="password" id="reset-pass-input" placeholder="Contraseña nueva (mín. 4)" maxlength="20" autocomplete="off">
+        <input type="password" id="reset-pass-confirm" placeholder="Repetir contraseña" maxlength="20" autocomplete="off">
+        <div class="lobby-menu">
+            <button id="reset-save-btn" class="btn-main" style="background-color: #00ff00;" data-i18n="resetSave">GUARDAR CONTRASEÑA</button>
+            <button id="reset-back-btn" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
+        </div>
+        <p id="reset-msg" style="font-size: 14px; color: #ffcc00; height: 40px; margin-top: 8px; text-align: center;"></p>
     </div>
 
     <!-- CONTROLES CON BOTÓN DE ELIMINAR CASILLA -->
@@ -1198,7 +1264,7 @@
                 <td id="stat-pos" style="color: #ffcc00;">#1</td>
                 <td id="stat-killer" style="color: #cc5555; font-size: 12px; display: none;">&nbsp;</td>
             </tr>
-            <tr>
+            <tr id="stats-row-soldier">
                 <td data-i18n="statSoldier">Soldado:</td>
                 <td id="stat-name">Jugador</td>
             </tr>
@@ -1210,11 +1276,11 @@
                 <td data-i18n="statDamage">Daño Total:</td>
                 <td id="stat-damage">0</td>
             </tr>
-            <tr>
+            <tr id="stats-row-points">
                 <td data-i18n="statPoints">Puntos Rango:</td>
                 <td id="stat-points" style="color: #ff9900;">0 PTS</td>
             </tr>
-            <tr>
+            <tr id="stats-row-exp">
                 <td data-i18n="statExp">EXP Cuenta:</td>
                 <td id="stat-exp" style="color: #00ff00;">+0 EXP</td>
             </tr>
@@ -1511,6 +1577,25 @@
                 musicBtnText: "MÚSICA",
                 musicActivated: "ACTIVADA",
                 musicDeactivated: "DESACTIVADA",
+                configSecVisual: "— VISUALES Y SONIDO —",
+                configSecControls: "— IDIOMA Y CONTROLES —",
+                configSecAccount: "— CUENTA Y SEGURIDAD —",
+                forgotPassBtn: "¿OLVIDASTE TU CONTRASEÑA?",
+                forgotTitle: "RECUPERAR CONTRASEÑA",
+                forgotSubtitle: "Te enviaremos un enlace al correo de Google vinculado a tu cuenta.",
+                forgotSend: "ENVIAR ENLACE",
+                resetTitle: "NUEVA CONTRASEÑA",
+                resetSave: "GUARDAR CONTRASEÑA",
+                linkedOk: "Cuenta vinculada a Google",
+                linkHint: "Vincula tu soldado a Google para protegerlo y poder recuperar tu contraseña por correo.",
+                linkInUse: "Ese Google ya está vinculado a otra cuenta.",
+                resetSentMsg: "✓ Enlace enviado. Revisa el correo de tu Google vinculado (incluye spam).",
+                resetLocalMsg: "Correo no configurado (modo local). Enlace de prueba:",
+                resetMismatch: "✗ Las contraseñas no coinciden.",
+                resetDone: "✓ Contraseña actualizada. Ahora también puedes entrar con Google.",
+                resetDoneShort: "✓ Contraseña guardada. Inicia sesión con tu contraseña nueva.",
+                resetInvalid: "✗ Enlace inválido o expirado.",
+                noEmailMsg: "Primero vincula tu cuenta con Google (Configuración → CUENTA Y SEGURIDAD).",
                 logoutBtn: "CERRAR SESIÓN",
                 backBtn: "REGRESAR",
                 deleteBtn: "ELIMINAR CUENTA",
@@ -1632,6 +1717,25 @@
                 musicBtnText: "MUSIC",
                 musicActivated: "ON",
                 musicDeactivated: "OFF",
+                configSecVisual: "— VISUALS & SOUND —",
+                configSecControls: "— LANGUAGE & CONTROLS —",
+                configSecAccount: "— ACCOUNT & SECURITY —",
+                forgotPassBtn: "FORGOT YOUR PASSWORD?",
+                forgotTitle: "RECOVER PASSWORD",
+                forgotSubtitle: "We will email a reset link to the Google account linked to your soldier.",
+                forgotSend: "SEND LINK",
+                resetTitle: "NEW PASSWORD",
+                resetSave: "SAVE PASSWORD",
+                linkedOk: "Account linked to Google",
+                linkHint: "Link your soldier to Google to protect it and recover your password by email.",
+                linkInUse: "That Google account is already linked to another account.",
+                resetSentMsg: "✓ Link sent. Check your linked Google email (spam folder too).",
+                resetLocalMsg: "Email not configured (local mode). Test link:",
+                resetMismatch: "✗ Passwords do not match.",
+                resetDone: "✓ Password updated. You can also log in with Google now.",
+                resetDoneShort: "✓ Password saved. Log in with your new password.",
+                resetInvalid: "✗ Invalid or expired link.",
+                noEmailMsg: "First link your account with Google (Settings → ACCOUNT & SECURITY).",
                 logoutBtn: "LOG OUT",
                 backBtn: "BACK",
                 deleteBtn: "DELETE ACCOUNT",
@@ -1753,6 +1857,25 @@ skinsTitleHeader: "CUSTOMIZE",
                 musicBtnText: "音乐",
                 musicActivated: "已开启",
                 musicDeactivated: "已关闭",
+                configSecVisual: "— 画面与声音 —",
+                configSecControls: "— 语言与控制 —",
+                configSecAccount: "— 账户与安全 —",
+                forgotPassBtn: "忘记密码？",
+                forgotTitle: "找回密码",
+                forgotSubtitle: "我们会向您绑定的谷歌邮箱发送重置链接。",
+                forgotSend: "发送链接",
+                resetTitle: "新密码",
+                resetSave: "保存密码",
+                linkedOk: "账户已绑定谷歌",
+                linkHint: "将您的角色绑定谷歌以获得保护，并可通过邮箱找回密码。",
+                linkInUse: "该谷歌账号已绑定其他账户。",
+                resetSentMsg: "✓ 链接已发送，请检查绑定的谷歌邮箱（含垃圾箱）。",
+                resetLocalMsg: "未配置邮箱（本地模式）。测试链接：",
+                resetMismatch: "✗ 两次密码不一致。",
+                resetDone: "✓ 密码已更新，现在也可以用谷歌登录。",
+                resetDoneShort: "✓ 密码已保存，请用新密码登录。",
+                resetInvalid: "✗ 链接无效或已过期。",
+                noEmailMsg: "请先在设置中绑定谷歌账户。",
                 logoutBtn: "退出登录",
                 backBtn: "返回",
                 deleteBtn: "删除账户",
@@ -1874,6 +1997,25 @@ skinsTitleHeader: "个性化",
                 musicBtnText: "MÚSICA",
                 musicActivated: "ATIVADA",
                 musicDeactivated: "DESATIVADA",
+                configSecVisual: "— VISUAIS E SOM —",
+                configSecControls: "— IDIOMA E CONTROLES —",
+                configSecAccount: "— CONTA E SEGURANÇA —",
+                forgotPassBtn: "ESQUECEU SUA SENHA?",
+                forgotTitle: "RECUPERAR SENHA",
+                forgotSubtitle: "Enviaremos um link para o e-mail do Google vinculado à sua conta.",
+                forgotSend: "ENVIAR LINK",
+                resetTitle: "NOVA SENHA",
+                resetSave: "SALVAR SENHA",
+                linkedOk: "Conta vinculada ao Google",
+                linkHint: "Vincule seu soldado ao Google para protegê-lo e recuperar a senha por e-mail.",
+                linkInUse: "Esse Google já está vinculado a outra conta.",
+                resetSentMsg: "✓ Link enviado. Verifique seu e-mail do Google vinculado (inclua spam).",
+                resetLocalMsg: "E-mail não configurado (modo local). Link de teste:",
+                resetMismatch: "✗ As senhas não coincidem.",
+                resetDone: "✓ Senha atualizada. Agora você também pode entrar com o Google.",
+                resetDoneShort: "✓ Senha salva. Entre com sua nova senha.",
+                resetInvalid: "✗ Link inválido ou expirado.",
+                noEmailMsg: "Primeiro vincule sua conta ao Google (Configurações → CONTA E SEGURANÇA).",
                 logoutBtn: "SAIR DA CONTA",
                 backBtn: "VOLTAR",
                 deleteBtn: "EXCLUIR CONTA",
@@ -2021,6 +2163,8 @@ skinsTitleHeader: "PERSONALIZAR",
             showFps: localStorage.getItem('ff_showfps') !== 'false',
             fpsCap: parseInt(localStorage.getItem('ff_fpscap')) || 240,
             music: localStorage.getItem('ff_music') !== 'false',
+            google: localStorage.getItem('ff_google') === 'true',
+            googleEmail: localStorage.getItem('ff_googlemail') || '',
             controls: (savedControls && savedControls.up && savedControls.left && savedControls.down && savedControls.right && savedControls.skill) ? savedControls : {
                 up: ['w', ''],
                 left: ['a', ''],
@@ -2241,6 +2385,9 @@ skinsTitleHeader: "PERSONALIZAR",
         const statDamage = document.getElementById('stat-damage');
         const statPoints = document.getElementById('stat-points');
         const statExp = document.getElementById('stat-exp');
+        const statsRowSoldier = document.getElementById('stats-row-soldier');
+        const statsRowPoints = document.getElementById('stats-row-points');
+        const statsRowExp = document.getElementById('stats-row-exp');
         const statLevel = document.getElementById('stat-level');
         const backToLobbyBtn = document.getElementById('back-to-lobby-btn');
         const retryTrainingBtn = document.getElementById('retry-training-btn');
@@ -2356,6 +2503,8 @@ skinsTitleHeader: "PERSONALIZAR",
             localStorage.setItem('ff_showfps', profile.showFps);
             localStorage.setItem('ff_fpscap', profile.fpsCap);
             localStorage.setItem('ff_music', profile.music);
+            localStorage.setItem('ff_google', profile.google);
+            localStorage.setItem('ff_googlemail', profile.googleEmail || '');
             localStorage.setItem('ff_ctrl_up', JSON.stringify(profile.controls.up));
             localStorage.setItem('ff_ctrl_left', JSON.stringify(profile.controls.left));
             localStorage.setItem('ff_ctrl_down', JSON.stringify(profile.controls.down));
@@ -2481,6 +2630,9 @@ skinsTitleHeader: "PERSONALIZAR",
             statPoints.innerText = (data.pointsEarned >= 0 ? "+" : "") + data.pointsEarned + " PTS";
             statPoints.style.color = data.pointsEarned >= 0 ? "#00ff00" : "#ff3333";
             statExp.innerText = "+" + data.expEarned + " EXP";
+            statsRowSoldier.style.display = '';
+            statsRowPoints.style.display = '';
+            statsRowExp.style.display = '';
             statLevel.innerText = `${dict.levelLabel} ${profile.level}`;
             retryTrainingBtn.style.display = 'none';
             statsScreen.style.display = 'flex';
@@ -2624,7 +2776,11 @@ skinsTitleHeader: "PERSONALIZAR",
         });
 
         // ---- Login con Google (se activa SOLO si el servidor tiene GOOGLE_CLIENT_ID) ----
+        // El mismo botón de Google sirve para dos cosas:
+        //  - ENTRAR con Google (pantalla de login)
+        //  - VINCULAR la cuenta nombre+contraseña a Google (Configuración)
         const googleLoginWrap = document.getElementById('google-login-wrap');
+        const googleLinkWrap = document.getElementById('google-link-wrap');
         let pendingNamePick = false;
         (function initGoogleSignIn() {
             fetch('/config').then(r => r.json()).then(cfg => {
@@ -2640,15 +2796,48 @@ skinsTitleHeader: "PERSONALIZAR",
                         auto_select: false,
                         callback: (resp) => {
                             if (!resp || !resp.credential) return;
-                            showLoginMessage("...");
-                            socket.emit('google-login', { token: resp.credential });
+                            // Mismo botón, dos usos: en la pantalla de CONFIGURACIÓN
+                            // vincula la cuenta actual a Google; en el LOGIN entra con Google.
+                            if (configScreen && configScreen.style.display !== 'none') {
+                                socket.emit('google-link', { token: resp.credential });
+                            } else {
+                                showLoginMessage("...");
+                                socket.emit('google-login', { token: resp.credential });
+                            }
                         }
                     });
                     google.accounts.id.renderButton(googleLoginWrap, { theme: 'outline', size: 'large', shape: 'pill', text: 'continue_with', width: 280 });
+                    if (googleLinkWrap) updateGoogleLinkUI();
                 };
                 document.head.appendChild(gs);
             }).catch(() => {});
         })();
+
+        // ---- VINCULAR la cuenta actual (nombre+contraseña) a Google ----
+        let googleLinkButtonDrawn = false;
+        function updateGoogleLinkUI() {
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            if (!googleLinkWrap) return;
+            if (profile.google) {
+                googleLinkWrap.innerHTML = `<div style="font-size: 15px; color: #00ff00; font-weight: bold;">✓ ${dict.linkedOk}</div>
+                                            ${profile.googleEmail ? `<div style="font-size: 12px; color: #aaa;">${profile.googleEmail}</div>` : ''}`;
+                googleLinkButtonDrawn = true;
+                return;
+            }
+            if (!googleLinkButtonDrawn) {
+                googleLinkButtonDrawn = true;
+                googleLinkWrap.innerHTML = '';
+                const hint = document.createElement('div');
+                hint.style.cssText = 'font-size: 12px; color: #aaa; text-align: center; padding: 0 6px;';
+                hint.textContent = dict.linkHint;
+                googleLinkWrap.appendChild(hint);
+                const place = document.createElement('div');
+                googleLinkWrap.appendChild(place);
+                if (window.google && google.accounts) {
+                    google.accounts.id.renderButton(place, { theme: 'outline', size: 'medium', shape: 'pill', text: 'continue_with', width: 280 });
+                }
+            }
+        }
 
         // ---- Elección de nombre (primera vez con una cuenta de Google) ----
         namepickConfirmBtn.addEventListener('click', () => {
@@ -2721,12 +2910,15 @@ skinsTitleHeader: "PERSONALIZAR",
             pendingNamePick = false;
             namepickScreen.style.display = 'none';
             showLoginMessage("");
+            profile.google = !!res.google;
+            saveProfile();
             enterLobbyWithAccount(res.account);
         });
 
         function openConfigMenu() {
             lobbyScreen.style.display = 'none';
             configScreen.style.display = 'flex';
+            updateGoogleLinkUI();
         }
 
         backFromConfig.addEventListener('click', () => {
@@ -2901,6 +3093,127 @@ skinsTitleHeader: "PERSONALIZAR",
             showLoginMessage(dict.deleteDone);
             stopLobbyMusic();
         });
+
+        // ---- VINCULAR CUENTA A GOOGLE (resultado del servidor) ----
+        const googleLinkMsg = document.getElementById('google-link-wrap');
+        socket.on('google-linked', (res) => {
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            if (!res || !res.ok) {
+                let msg = dict.errGeneric;
+                if (res && res.error === 'google-in-use') msg = dict.linkInUse;
+                else if (res && res.error === 'already-linked') msg = dict.linkedOk;
+                else if (res && res.error === 'google-unavailable') msg = "Google Sign-In no está habilitado";
+                else if (res && res.error === 'google-invalid') msg = "No se pudo verificar tu cuenta de Google";
+                if (googleLinkMsg && !profile.google) {
+                    const d = document.createElement('div');
+                    d.style.cssText = 'font-size: 13px; color: #ffcc66; text-align: center;';
+                    d.textContent = msg;
+                    googleLinkMsg.appendChild(d);
+                }
+                return;
+            }
+            profile.google = true;
+            if (res.account && res.account.googleEmail) profile.googleEmail = res.account.googleEmail;
+            saveProfile();
+            updateGoogleLinkUI();
+        });
+
+        // ---- RECUPERAR CONTRASEÑA (olvidé mi contraseña) ----
+        const forgotScreen = document.getElementById('forgot-screen');
+        const forgotNameInput = document.getElementById('forgot-name-input');
+        const forgotSendBtn = document.getElementById('forgot-send-btn');
+        const forgotBackBtn = document.getElementById('forgot-back-btn');
+        const forgotMsg = document.getElementById('forgot-msg');
+        const forgotPassBtn = document.getElementById('forgot-pass-btn');
+        const resetScreen = document.getElementById('reset-screen');
+        const resetAccountName = document.getElementById('reset-account-name');
+        const resetPassInput = document.getElementById('reset-pass-input');
+        const resetPassConfirm = document.getElementById('reset-pass-confirm');
+        const resetSaveBtn = document.getElementById('reset-save-btn');
+        const resetBackBtn = document.getElementById('reset-back-btn');
+        const resetMsg = document.getElementById('reset-msg');
+        let pendingResetToken = '';
+
+        forgotPassBtn.addEventListener('click', () => {
+            forgotMsg.innerText = "";
+            configScreen.style.display = 'none';
+            forgotScreen.style.display = 'flex';
+            forgotNameInput.value = profile.name;
+        });
+        forgotBackBtn.addEventListener('click', () => {
+            forgotScreen.style.display = 'none';
+            configScreen.style.display = 'flex';
+        });
+        forgotSendBtn.addEventListener('click', () => {
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            const name = forgotNameInput.value.trim();
+            if (!name) { forgotMsg.innerText = dict.errFillFields; return; }
+            forgotMsg.innerText = "...";
+            socket.emit('request-password-reset', { name });
+        });
+
+        socket.on('password-reset-requested', (res) => {
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            if (!res || !res.ok) {
+                if (res && res.error === 'not-found') forgotMsg.innerText = dict.errNoAccount;
+                else if (res && res.error === 'no-email') forgotMsg.innerText = dict.noEmailMsg;
+                else forgotMsg.innerText = dict.errGeneric;
+                return;
+            }
+            if (res.emailed) {
+                forgotMsg.innerText = dict.resetSentMsg; // "✓ Revisa el correo de Google vinculado"
+            } else {
+                // Sin SMTP configurado (modo local): se muestra el enlace para probar
+                forgotMsg.innerHTML = `⚠️ ${dict.resetLocalMsg}<br><a href="${res.resetUrl}" style="color:#00ffff;">${res.resetUrl}</a>`;
+            }
+        });
+
+        // ---- NUEVA CONTRASEÑA con el enlace de recuperación (?reset=TOKEN) ----
+        resetSaveBtn.addEventListener('click', () => {
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            const p1 = resetPassInput.value;
+            const p2 = resetPassConfirm.value;
+            if (p1.length < 4) { resetMsg.innerText = dict.errShortPass; return; }
+            if (p1 !== p2) { resetMsg.innerText = dict.resetMismatch; return; }
+            resetMsg.innerText = "...";
+            socket.emit('password-reset', { token: pendingResetToken, newPassword: p1 });
+        });
+        resetBackBtn.addEventListener('click', () => {
+            resetScreen.style.display = 'none';
+            loginScreen.style.display = 'flex';
+            showLoginMessage("");
+        });
+
+        socket.on('password-reset-result', (res) => {
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            if (!res || !res.ok) {
+                resetMsg.innerText = (res && res.error === 'invalid-token') ? dict.resetInvalid : dict.errGeneric;
+                return;
+            }
+            resetMsg.innerText = dict.resetDone;
+            resetPassInput.value = "";
+            resetPassConfirm.value = "";
+            setTimeout(() => {
+                resetScreen.style.display = 'none';
+                loginScreen.style.display = 'flex';
+                showLoginMessage(dict.resetDoneShort);
+            }, 1600);
+        });
+
+        // Si se abre el juego con ?reset=TOKEN (enlace llegado por correo), ir
+        // directo a la pantalla de contraseña nueva.
+        (function checkResetTokenInUrl() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const tok = params.get('reset') || '';
+                if (!tok) return;
+                pendingResetToken = tok;
+                resetAccountName.innerText = "";
+                resetMsg.innerText = "";
+                loginScreen.style.display = 'none';
+                resetScreen.style.display = 'flex';
+            } catch (e) { /* sin token: flujo normal */ }
+        })();
 
         // Botones del PERFIL COMPLETO
         backFromProfile.addEventListener('click', () => closeProfile());
@@ -4366,9 +4679,17 @@ skinsTitleHeader: "PERSONALIZAR",
                 statPoints.innerText = (rankPointsChange >= 0 ? "+" : "") + rankPointsChange + " PTS";
                 statPoints.style.color = rankPointsChange >= 0 ? "#00ff00" : "#ff3333";
                 statExp.innerText = "+" + expEarned + " EXP";
+                statsRowSoldier.style.display = '';
+                statsRowPoints.style.display = '';
+                statsRowExp.style.display = '';
             } else {
+                // ENTRENAMIENTO: no da EXP ni puntos, así que esas filas (y la de
+                // "Soldado") sobran: se ocultan para que la tabla quede limpia.
                 statPoints.innerText = dict.trainingModeText;
                 statExp.innerText = "0 EXP";
+                statsRowSoldier.style.display = 'none';
+                statsRowPoints.style.display = 'none';
+                statsRowExp.style.display = 'none';
             }
             
             statLevel.innerText = `${dict.levelLabel} ${profile.level}`;

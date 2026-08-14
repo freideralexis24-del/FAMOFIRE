@@ -42,6 +42,42 @@ const DATABASE_URL = process.env.DATABASE_URL || '';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 // Verificación de ID tokens de Google Sign-In (solo se crea si está configurado)
 const googleClient = GOOGLE_CLIENT_ID ? new OAuth2Client(GOOGLE_CLIENT_ID) : null;
+
+// ---- Recuperación de contraseña por correo (opcional) ----
+// Para que FUNCIONE tienes que definir en el entorno de Render:
+//   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM, RESET_SECRET y APP_URL
+// Sin SMTP el resto del juego funciona igual; el enlace de recuperación solo se
+// devuelve en la respuesta (para probarlo en local) en vez de enviarse por email.
+let transporter = null;
+try {
+  const nodemailer = require('nodemailer');
+  if (process.env.SMTP_HOST && process.env.SMTP_USER) {
+    transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT) || 587,
+      secure: Number(process.env.SMTP_PORT) === 465,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS || '' }
+    });
+  }
+} catch (e) { transporter = null; }
+const RESET_SECRET = process.env.RESET_SECRET || 'famofire-local-reset-secret';
+const APP_BASE_URL = process.env.APP_URL || (process.env.RENDER_EXTERNAL_URL ? 'https://' + process.env.RENDER_EXTERNAL_URL : 'http://localhost:3000');
+function resetToken(googleId, purpose) {
+  return sha(googleId + '|' + purpose + '|' + RESET_SECRET) + '.' + googleId + '.' + purpose;
+}
+function parseResetToken(token) {
+  const parts = String(token || '').split('.');
+  if (parts.length !== 3) return null;
+  const sig = parts[0], googleId = parts[1], purpose = parts[2];
+  if (sig !== sha(googleId + '|' + purpose + '|' + RESET_SECRET)) return null;
+  return { googleId, purpose };
+}
+function findAccountByGoogle(sub) {
+  for (const [n, a] of Object.entries(accounts)) {
+    if (a && a.googleId && a.googleId === sub) return n;
+  }
+  return null;
+}
 let db = null;
 if (DATABASE_URL) {
   const { Pool } = require('pg');
@@ -71,16 +107,17 @@ async function initAccounts() {
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS lastseen BIGINT NOT NULL DEFAULT 0');
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS id TEXT');
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS google_id TEXT');
+        await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS google_email TEXT');
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS matches INT NOT NULL DEFAULT 0');
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS wins INT NOT NULL DEFAULT 0');
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS kills INT NOT NULL DEFAULT 0');
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS dmg INT NOT NULL DEFAULT 0');
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS deaths INT NOT NULL DEFAULT 0');
       } catch (e) { /* versión vieja de Postgres u otro problema menor: se ignora */ }
-      const { rows } = await db.query('SELECT name, password, points, level, exp, lastseen, id, google_id, matches, wins, kills, dmg, deaths FROM accounts');
+      const { rows } = await db.query('SELECT name, password, points, level, exp, lastseen, id, google_id, google_email, matches, wins, kills, dmg, deaths FROM accounts');
       accounts = {};
       for (const r of rows) {
-        accounts[r.name] = { id: r.id || genId(), password: r.password, points: Number(r.points), level: Number(r.level), exp: Number(r.exp), lastSeen: Number(r.lastseen) || 0, googleId: r.google_id || '', matches: Number(r.matches) || 0, wins: Number(r.wins) || 0, kills: Number(r.kills) || 0, dmg: Number(r.dmg) || 0, deaths: Number(r.deaths) || 0 };
+        accounts[r.name] = { id: r.id || genId(), password: r.password, points: Number(r.points), level: Number(r.level), exp: Number(r.exp), lastSeen: Number(r.lastseen) || 0, googleId: r.google_id || '', googleEmail: r.google_email || '', matches: Number(r.matches) || 0, wins: Number(r.wins) || 0, kills: Number(r.kills) || 0, dmg: Number(r.dmg) || 0, deaths: Number(r.deaths) || 0 };
       }
       console.log(`[DB] ${rows.length} cuentas cargadas desde PostgreSQL`);
     } catch (e) {
@@ -123,8 +160,8 @@ async function dbSaveAll() {
   const client = await db.connect();
   try {
     await client.query('BEGIN');
-    const q = `INSERT INTO accounts (name, id, password, points, level, exp, lastseen, google_id, matches, wins, kills, dmg, deaths)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+    const q = `INSERT INTO accounts (name, id, password, points, level, exp, lastseen, google_id, google_email, matches, wins, kills, dmg, deaths)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
                ON CONFLICT (name) DO UPDATE SET
                  password = EXCLUDED.password,
                  points = EXCLUDED.points,
@@ -132,13 +169,14 @@ async function dbSaveAll() {
                  exp = EXCLUDED.exp,
                  lastseen = EXCLUDED.lastseen,
                  google_id = EXCLUDED.google_id,
+                 google_email = EXCLUDED.google_email,
                  matches = EXCLUDED.matches,
                  wins = EXCLUDED.wins,
                  kills = EXCLUDED.kills,
                  dmg = EXCLUDED.dmg,
                  deaths = EXCLUDED.deaths`;
     for (const [name, a] of Object.entries(accounts)) {
-      await client.query(q, [name, a.id || genId(), a.password, Number(a.points) || 0, Number(a.level) || 1, Number(a.exp) || 0, Number(a.lastSeen) || 0, a.googleId || '', Number(a.matches) || 0, Number(a.wins) || 0, Number(a.kills) || 0, Number(a.dmg) || 0, Number(a.deaths) || 0]);
+      await client.query(q, [name, a.id || genId(), a.password, Number(a.points) || 0, Number(a.level) || 1, Number(a.exp) || 0, Number(a.lastSeen) || 0, a.googleId || '', a.googleEmail || '', Number(a.matches) || 0, Number(a.wins) || 0, Number(a.kills) || 0, Number(a.dmg) || 0, Number(a.deaths) || 0]);
     }
     await client.query('COMMIT');
   } catch (e) {
@@ -504,6 +542,76 @@ io.on('connection', (socket) => {
     socket.emit('account-result', { ok: true, google: true, firstTime: isNew, account: { id: acc.id, name, points: acc.points, level: acc.level, exp: acc.exp, matches: acc.matches || 0, wins: acc.wins || 0, kills: acc.kills || 0, dmg: acc.dmg || 0, deaths: acc.deaths || 0 } });
   });
 
+  // VINCULAR la cuenta actual (creada con nombre+contraseña) a Google. Así el
+  // soldado puede entrar también con Google y, si se le olvida la contraseña,
+  // recibir un enlace de recuperación en su correo de Google.
+  socket.on('google-link', async (data = {}) => {
+    if (!socket.data.account) return socket.emit('google-linked', { ok: false, error: 'not-found' });
+    await ensureAccounts();
+    const acc = accounts[socket.data.account];
+    if (!acc) return socket.emit('google-linked', { ok: false, error: 'not-found' });
+    if (acc.googleId) return socket.emit('google-linked', { ok: false, error: 'already-linked' });
+    const token = String(data.token || '');
+    if (!token || !googleClient) return socket.emit('google-linked', { ok: false, error: 'google-unavailable' });
+    let payload;
+    try {
+      const ticket = await googleClient.verifyIdToken({ idToken: token, audience: GOOGLE_CLIENT_ID });
+      payload = ticket.getPayload();
+    } catch (e) {
+      return socket.emit('google-linked', { ok: false, error: 'google-invalid' });
+    }
+    const sub = String(payload.sub || '');
+    if (!sub) return socket.emit('google-linked', { ok: false, error: 'google-invalid' });
+    const owner = findAccountByGoogle(sub);
+    if (owner && owner !== socket.data.account) return socket.emit('google-linked', { ok: false, error: 'google-in-use' });
+    acc.googleId = sub;
+    acc.googleEmail = String(payload.email || acc.googleEmail || '');
+    acc.lastSeen = Date.now();
+    saveAccounts();
+    socket.emit('google-linked', { ok: true, account: { name: socket.data.account, googleEmail: acc.googleEmail } });
+  });
+
+  // PEDIR recuperación: el jugador dijo "olvidé mi contraseña". Se genera un
+  // enlace firmado y se envía al correo de Google vinculado (si SMTP está
+  // configurado); en local el enlace se devuelve en la respuesta para probar.
+  socket.on('request-password-reset', async (data = {}) => {
+    await ensureAccounts();
+    const name = normName(data.name);
+    const acc = name ? accounts[name] : null;
+    if (!acc) return socket.emit('password-reset-requested', { ok: false, error: 'not-found' });
+    if (!acc.googleId) return socket.emit('password-reset-requested', { ok: false, error: 'no-email' });
+    const token = resetToken(acc.googleId, 'pwreset');
+    const url = APP_BASE_URL + '/?reset=' + encodeURIComponent(token);
+    let emailed = false;
+    if (transporter && acc.googleEmail) {
+      try {
+        await transporter.sendMail({
+          from: process.env.SMTP_FROM || process.env.SMTP_USER,
+          to: acc.googleEmail,
+          subject: 'FAMOFIRE - Restablecer contraseña',
+          html: `<h2>Restablecer contraseña</h2><p>Soldado <b>${name}</b>: abre este enlace para elegir una contraseña nueva:</p><p><a href="${url}">${url}</a></p><p>Si no lo pediste, ignora este correo.</p>`
+        });
+        emailed = true;
+      } catch (e) { console.error('[EMAIL] no se pudo enviar:', e.message); }
+    }
+    socket.emit('password-reset-requested', { ok: true, emailed, resetUrl: emailed ? '' : url });
+  });
+
+  // APLICAR la nueva contraseña con el enlace válido (firmado con la cuenta de Google).
+  socket.on('password-reset', async (data = {}) => {
+    const parsed = parseResetToken(data.token);
+    if (!parsed || parsed.purpose !== 'pwreset') return socket.emit('password-reset-result', { ok: false, error: 'invalid-token' });
+    await ensureAccounts();
+    let name = findAccountByGoogle(parsed.googleId);
+    if (!name) return socket.emit('password-reset-result', { ok: false, error: 'invalid-token' });
+    const newPass = String(data.newPassword || '');
+    if (newPass.length < 4) return socket.emit('password-reset-result', { ok: false, error: 'short-pass' });
+    try { accounts[name].password = await bcrypt.hash(newPass, 10); } catch (e) { accounts[name].password = sha(newPass); }
+    accounts[name].lastSeen = Date.now();
+    saveAccounts();
+    socket.emit('password-reset-result', { ok: true });
+  });
+
   // Renombrado ÚNICO: solo la primera vez y solo para cuentas creadas con Google.
   // Después de confirmar, no existe ninguna forma de cambiar el nombre.
   socket.on('account-set-name', async (data = {}) => {
@@ -522,7 +630,7 @@ io.on('connection', (socket) => {
     socket.data.account = name;
     socket.data.name = name;
     socket.data.points = acc.points;
-    socket.emit('account-result', { ok: true, account: { id: acc.id, name, points: acc.points, level: acc.level, exp: acc.exp, matches: acc.matches || 0, wins: acc.wins || 0, kills: acc.kills || 0, dmg: acc.dmg || 0, deaths: acc.deaths || 0 } });
+    socket.emit('account-result', { ok: true, google: true, account: { id: acc.id, name, points: acc.points, level: acc.level, exp: acc.exp, matches: acc.matches || 0, wins: acc.wins || 0, kills: acc.kills || 0, dmg: acc.dmg || 0, deaths: acc.deaths || 0 } });
   });
 
   socket.on('account-update', (data = {}) => {
