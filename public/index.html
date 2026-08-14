@@ -28,12 +28,21 @@
             background: radial-gradient(circle, #3b5e2b 0%, #1a2b14 100%);
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
+            overflow-y: auto;
             z-index: 20;
             color: white;
             box-sizing: border-box;
             text-shadow: 2px 2px 4px #000;
+        }
+        /* Centrado vertical que NO corta el contenido: si la pantalla es más
+           baja que el menú, los botones de abajo (REGRESAR) siempre quedan
+           alcanzables con el scroll. */
+        .screen > *:first-child {
+            margin-top: auto;
+        }
+        .screen > *:last-child {
+            margin-bottom: auto;
         }
 
         h1 {
@@ -187,6 +196,20 @@
             gap: 10px;
             justify-content: center;
             margin-bottom: 14px;
+        }
+        .fps-cap-box {
+            width: 300px;
+            background: rgba(0, 0, 0, 0.45);
+            border: 2px solid #555;
+            border-radius: 10px;
+            padding: 10px 14px;
+            box-sizing: border-box;
+        }
+        #fps-cap-slider {
+            width: 100%;
+            margin: 10px 0 4px 0;
+            accent-color: #ffcc00;
+            cursor: pointer;
         }
         .avatar-grid {
             display: grid;
@@ -879,9 +902,16 @@
             <button id="to-controls-btn" class="btn-main" style="background-color: #00ff00;" data-i18n="controlsMenuBtn">CONTROLES</button>
             <button id="toggle-fps-btn" class="btn-main"><span data-i18n="fpsBtnText">FPS</span>: <span id="fps-status-label">ACTIVADO</span></button>
             <div class="fps-cap-box">
-                <span style="font-size: 14px; color: #fff; font-weight: bold;" data-i18n="fpsLimitText">LÍMITE DE FPS:</span>
-                <div id="fps-cap-row" style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 8px;"></div>
+                <div style="display: flex; justify-content: space-between; width: 100%;">
+                    <span style="font-size: 15px; color: #fff; font-weight: bold;" data-i18n="fpsLimitText">LÍMITE DE FPS:</span>
+                    <span id="fps-cap-value" style="font-size: 18px; color: #ffcc00; font-weight: bold;">240</span>
+                </div>
+                <input type="range" id="fps-cap-slider" min="30" max="240" step="30" value="240">
+                <div style="display: flex; justify-content: space-between; width: 100%; font-size: 11px; color: #aaa;">
+                    <span>30</span><span>60</span><span>90</span><span>120</span><span>150</span><span>180</span><span>210</span><span>240</span>
+                </div>
             </div>
+            <button id="toggle-music-btn" class="btn-main"><span data-i18n="musicBtnText">MÚSICA</span>: <span id="music-status-label">ACTIVADA</span></button>
             <button id="logout-btn" class="btn-main" style="background-color: #ff3333; color: #fff;" data-i18n="logoutBtn">CERRAR SESIÓN</button>
             <button id="delete-account-btn" class="btn-main" style="background-color: #880000; color: #fff;" data-i18n="deleteBtn">ELIMINAR CUENTA</button>
             <button id="back-from-config" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
@@ -1478,6 +1508,9 @@
                 fpsLimitText: "LÍMITE DE FPS:",
                 fpsActivated: "ACTIVADO",
                 fpsDeactivated: "DESACTIVADO",
+                musicBtnText: "MÚSICA",
+                musicActivated: "ACTIVADA",
+                musicDeactivated: "DESACTIVADA",
                 logoutBtn: "CERRAR SESIÓN",
                 backBtn: "REGRESAR",
                 deleteBtn: "ELIMINAR CUENTA",
@@ -1596,6 +1629,9 @@
                 fpsLimitText: "FPS CAP:",
                 fpsActivated: "ENABLED",
                 fpsDeactivated: "DISABLED",
+                musicBtnText: "MUSIC",
+                musicActivated: "ON",
+                musicDeactivated: "OFF",
                 logoutBtn: "LOG OUT",
                 backBtn: "BACK",
                 deleteBtn: "DELETE ACCOUNT",
@@ -1714,6 +1750,9 @@ skinsTitleHeader: "CUSTOMIZE",
                 fpsLimitText: "帧率上限：",
                 fpsActivated: "已启用",
                 fpsDeactivated: "已禁用",
+                musicBtnText: "音乐",
+                musicActivated: "已开启",
+                musicDeactivated: "已关闭",
                 logoutBtn: "退出登录",
                 backBtn: "返回",
                 deleteBtn: "删除账户",
@@ -1832,6 +1871,9 @@ skinsTitleHeader: "个性化",
                 fpsLimitText: "LIMITE DE FPS:",
                 fpsActivated: "ATIVADO",
                 fpsDeactivated: "DESATIVADO",
+                musicBtnText: "MÚSICA",
+                musicActivated: "ATIVADA",
+                musicDeactivated: "DESATIVADA",
                 logoutBtn: "SAIR DA CONTA",
                 backBtn: "VOLTAR",
                 deleteBtn: "EXCLUIR CONTA",
@@ -1922,7 +1964,7 @@ skinsTitleHeader: "PERSONALIZAR",
         };
 
         const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { desynchronized: true });
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
@@ -1978,6 +2020,7 @@ skinsTitleHeader: "PERSONALIZAR",
             language: localStorage.getItem('ff_lang') || "ESPAÑOL",
             showFps: localStorage.getItem('ff_showfps') !== 'false',
             fpsCap: parseInt(localStorage.getItem('ff_fpscap')) || 240,
+            music: localStorage.getItem('ff_music') !== 'false',
             controls: (savedControls && savedControls.up && savedControls.left && savedControls.down && savedControls.right && savedControls.skill) ? savedControls : {
                 up: ['w', ''],
                 left: ['a', ''],
@@ -2233,21 +2276,32 @@ skinsTitleHeader: "PERSONALIZAR",
             // se registra y el siguiente frame SIEMPRE se programa, así la partida
             // nunca se queda congelada en pantalla.
             try {
-                // LÍMITE DE FPS configurable (30/60/90/120/180/240): si el monitor
-                // corre más rápido que el tope elegido, este frame se salta y se
-                // espera al siguiente (el finally siempre reprograma el bucle).
-                const fpsCap = profile.fpsCap || 0;
-                if (fpsCap > 0) {
-                    const minGap = (1000 / fpsCap) * 0.98;
-                    if (lastFrameTs && (now - lastFrameTs) < minGap) return;
-                    lastFrameTs = now;
-                }
+                // LÍMITE DE FPS con barra (30–240). Dos casos:
+                //  - Cap BAJO (p.ej. 30): si el monitor corre más rápido, el frame se
+                //    salta y se espera al siguiente (limitar de verdad los FPS).
+                //  - Cap ALTO (p.ej. 240 en un monitor de 60 Hz): no se puede renderizar
+                //    más rápido que el refresco, así que la SIMULACIÓN corre varias
+                //    veces por frame (más pasos internos que el V-Sync del monitor:
+                //    movimiento y apuntado más reactivos). El contador FPS marca los
+                //    ticks internos.
+                const fpsCap = (profile.fpsCap > 0) ? profile.fpsCap : 240;
+                const tickDur = 1000 / fpsCap;
+                if (lastFrameTs && (now - lastFrameTs) < tickDur * 0.98) return;
+                lastFrameTs = now;
 
-                let delta = Math.min(now - lastTime, 5000);
+                // Pasos de simulación: 16.67 ms por paso, pero si el cap elegido es
+                // mayor que el refresco del monitor se subdivide cada paso (más
+                // precisión interna que la que da el V-Sync del navegador).
+                const elapsed = Math.min(now - lastTime, 5000);
+                const steps16 = Math.max(1, Math.min(600, Math.round(elapsed / 16.67)));
+                const sub = Math.max(1, Math.min(8, Math.round(fpsCap / 60)));
+                const stepMs = 16.67 / sub;
+                const ticks = steps16 * sub;
+
                 lastTime = now;
-                frameCount++;
-                fpsTimer += delta;
 
+                frameCount += ticks;
+                fpsTimer += elapsed;
                 if (fpsTimer >= 400) {
                     let currentFps = Math.round((frameCount * 1000) / fpsTimer);
                     fpsVal.innerText = currentFps;
@@ -2260,9 +2314,8 @@ skinsTitleHeader: "PERSONALIZAR",
                     // y la partida se "pausaba" (bots, zona y balas detenidos). Acá, si
                     // pasó mucho tiempo real, se simulan varios pasos del juego para
                     // que el combate siga avanzando mientras no estás mirando.
-                    const steps = Math.max(1, Math.min(600, Math.round(delta / 16.67)));
-                    for (let s = 0; s < steps; s++) {
-                        update(16.67);
+                    for (let s = 0; s < ticks; s++) {
+                        update(stepMs);
                         if (gameOver) break;
                     }
                 }
@@ -2302,6 +2355,7 @@ skinsTitleHeader: "PERSONALIZAR",
             localStorage.setItem('ff_lang', profile.language);
             localStorage.setItem('ff_showfps', profile.showFps);
             localStorage.setItem('ff_fpscap', profile.fpsCap);
+            localStorage.setItem('ff_music', profile.music);
             localStorage.setItem('ff_ctrl_up', JSON.stringify(profile.controls.up));
             localStorage.setItem('ff_ctrl_left', JSON.stringify(profile.controls.left));
             localStorage.setItem('ff_ctrl_down', JSON.stringify(profile.controls.down));
@@ -2340,6 +2394,8 @@ skinsTitleHeader: "PERSONALIZAR",
 
             const dict = i18n[profile.language] || i18n["ESPAÑOL"];
             fpsStatusLabel.innerText = profile.showFps ? dict.fpsActivated : dict.fpsDeactivated;
+            if (musicStatusLabel) musicStatusLabel.innerText = (profile.music !== false) ? dict.musicActivated : dict.musicDeactivated;
+            syncFpsCapUI();
             fpsCounterBox.style.display = profile.showFps ? 'block' : 'none';
         }
 
@@ -2738,39 +2794,37 @@ skinsTitleHeader: "PERSONALIZAR",
             updateLobbyUI();
         });
 
-        // ---- LÍMITE DE FPS configurable: 30 / 60 / 90 / 120 / 180 / 240 ----
-        const fpsCapRow = document.getElementById('fps-cap-row');
-        const fpsCapOptions = [30, 60, 90, 120, 180, 240];
+        // ---- LÍMITE DE FPS configurable con barra deslizante (30–240) ----
+        const fpsCapSlider = document.getElementById('fps-cap-slider');
+        const fpsCapValue = document.getElementById('fps-cap-value');
+        const toggleMusicBtn = document.getElementById('toggle-music-btn');
+        const musicStatusLabel = document.getElementById('music-status-label');
 
-        function buildFpsCapButtons() {
-            if (!fpsCapRow) return;
-            fpsCapRow.innerHTML = '';
-            fpsCapOptions.forEach(v => {
-                const b = document.createElement('button');
-                b.className = 'btn-main fps-cap-btn';
-                b.textContent = v;
-                b.addEventListener('click', () => {
-                    profile.fpsCap = v;
-                    saveProfile();
-                    updateFpsCapUI();
-                });
-                fpsCapRow.appendChild(b);
-            });
-            updateFpsCapUI();
+        function syncFpsCapUI() {
+            if (!fpsCapSlider || !fpsCapValue) return;
+            const v = profile.fpsCap || 240;
+            fpsCapSlider.value = v;
+            fpsCapValue.innerText = v;
         }
 
-        function updateFpsCapUI() {
-            if (!fpsCapRow) return;
-            fpsCapRow.querySelectorAll('.fps-cap-btn').forEach(b => {
-                const value = parseInt(b.textContent);
-                const active = value === (profile.fpsCap || 240);
-                b.style.backgroundColor = active ? '#ffcc00' : '#3a3f55';
-                b.style.color = active ? '#000' : '#fff';
-                b.style.width = 'auto';
+        if (fpsCapSlider) {
+            fpsCapSlider.value = (profile.fpsCap || 240);
+            fpsCapValue.innerText = (profile.fpsCap || 240);
+            fpsCapSlider.addEventListener('input', () => {
+                profile.fpsCap = parseInt(fpsCapSlider.value);
+                fpsCapValue.innerText = profile.fpsCap;
+                saveProfile();
             });
         }
 
-        buildFpsCapButtons();
+        // ---- Activar/desactivar la MÚSICA de la Sala de Comando ----
+        toggleMusicBtn.addEventListener('click', () => {
+            profile.music = !profile.music;
+            saveProfile();
+            updateLobbyUI();
+            if (!profile.music) stopLobbyMusic();
+            else if (lobbyScreen.style.display !== 'none') startLobbyMusic();
+        });
 
         // Cerrar sesión: olvida la cuenta local y permite entrar con otra
         logoutBtn.addEventListener('click', () => {
@@ -3442,6 +3496,7 @@ skinsTitleHeader: "PERSONALIZAR",
         // al iniciar CAMPO DE BATALLA o ENTRENAMIENTO) ----
         let lobbyMusicShouldPlay = false;
         function startLobbyMusic() {
+            if (profile.music === false) return;
             lobbyMusicShouldPlay = true;
             if (!audioLobby) return;
             try {
