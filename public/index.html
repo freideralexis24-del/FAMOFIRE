@@ -197,52 +197,6 @@
             justify-content: center;
             margin-bottom: 14px;
         }
-        .fps-cap-box {
-            width: 320px;
-            background: rgba(0, 0, 0, 0.45);
-            border: 2px solid #555;
-            border-radius: 12px;
-            padding: 10px 16px 12px 16px;
-            box-sizing: border-box;
-        }
-        .fps-cap-box .fps-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 2px;
-        }
-        .fps-cap-box .fps-label {
-            font-size: 14px;
-            color: #fff;
-            font-weight: bold;
-            letter-spacing: 1px;
-        }
-        .fps-cap-box .fps-badge {
-            font-family: 'Impact', sans-serif;
-            font-size: 22px;
-            color: #000;
-            background: linear-gradient(180deg, #ffe066, #ffcc00);
-            border: 2px solid #000;
-            border-radius: 8px;
-            padding: 1px 12px;
-            box-shadow: 2px 2px 0 #000;
-        }
-        #fps-cap-slider {
-            width: 100%;
-            margin: 10px 0 6px 0;
-            accent-color: #ffcc00;
-            cursor: pointer;
-            height: 6px;
-        }
-        .fps-cap-box .fps-scale {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-            font-size: 10px;
-            color: #aaa;
-            padding-top: 2px;
-            border-top: 1px solid rgba(255,255,255,0.15);
-        }
         .avatar-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -932,14 +886,6 @@
         <div style="font-size: 13px; color: #00ffff; margin-bottom: 4px; letter-spacing: 2px;" data-i18n="configSecVisual">— VISUALES Y SONIDO —</div>
         <div class="lobby-menu">
             <button id="toggle-fps-btn" class="btn-main"><span data-i18n="fpsBtnText">FPS</span>: <span id="fps-status-label">ACTIVADO</span></button>
-            <div class="fps-cap-box">
-                <div class="fps-row">
-                    <span class="fps-label" data-i18n="fpsLimitText">LÍMITE DE FPS:</span>
-                    <span class="fps-badge"><span id="fps-cap-value">240</span></span>
-                </div>
-                <input type="range" id="fps-cap-slider" min="30" max="240" step="30" value="240">
-                <div class="fps-scale"><span>30</span><span>60</span><span>90</span><span>120</span><span>150</span><span>180</span><span>210</span><span>240</span></div>
-            </div>
             <button id="toggle-music-btn" class="btn-main"><span data-i18n="musicBtnText">MÚSICA</span>: <span id="music-status-label">ACTIVADA</span></button>
         </div>
 
@@ -2161,7 +2107,6 @@ skinsTitleHeader: "PERSONALIZAR",
             avatar: localStorage.getItem('ff_avatar') || "👤",
             language: localStorage.getItem('ff_lang') || "ESPAÑOL",
             showFps: localStorage.getItem('ff_showfps') !== 'false',
-            fpsCap: parseInt(localStorage.getItem('ff_fpscap')) || 240,
             music: localStorage.getItem('ff_music') !== 'false',
             google: localStorage.getItem('ff_google') === 'true',
             googleEmail: localStorage.getItem('ff_googlemail') || '',
@@ -2414,7 +2359,6 @@ skinsTitleHeader: "PERSONALIZAR",
         let lastTime = performance.now();
         let frameCount = 0;
         let fpsTimer = 0;
-        let lastFrameTs = 0;
         let matchmakingInterval = null;
         let plPrevX = 0, plPrevY = 0;
 
@@ -2423,32 +2367,14 @@ skinsTitleHeader: "PERSONALIZAR",
             // se registra y el siguiente frame SIEMPRE se programa, así la partida
             // nunca se queda congelada en pantalla.
             try {
-                // LÍMITE DE FPS con barra (30–240). Dos casos:
-                //  - Cap BAJO (p.ej. 30): si el monitor corre más rápido, el frame se
-                //    salta y se espera al siguiente (limitar de verdad los FPS).
-                //  - Cap ALTO (p.ej. 240 en un monitor de 60 Hz): no se puede renderizar
-                //    más rápido que el refresco, así que la SIMULACIÓN corre varias
-                //    veces por frame (más pasos internos que el V-Sync del monitor:
-                //    movimiento y apuntado más reactivos). El contador FPS marca los
-                //    ticks internos.
-                const fpsCap = (profile.fpsCap > 0) ? profile.fpsCap : 240;
-                const tickDur = 1000 / fpsCap;
-                if (lastFrameTs && (now - lastFrameTs) < tickDur * 0.98) return;
-                lastFrameTs = now;
-
-                // Pasos de simulación: 16.67 ms por paso, pero si el cap elegido es
-                // mayor que el refresco del monitor se subdivide cada paso (más
-                // precisión interna que la que da el V-Sync del navegador).
-                const elapsed = Math.min(now - lastTime, 5000);
-                const steps16 = Math.max(1, Math.min(600, Math.round(elapsed / 16.67)));
-                const sub = Math.max(1, Math.min(8, Math.round(fpsCap / 60)));
-                const stepMs = 16.67 / sub;
-                const ticks = steps16 * sub;
-
+                // Pasos de simulación: 16.67 ms por paso, y si el navegador se quedó
+                // congelado (pestaña en segundo plano) se recupera simulando varios
+                // pasos del juego para que el combate siga avanzando.
+                const delta = Math.min(now - lastTime, 5000);
                 lastTime = now;
 
-                frameCount += ticks;
-                fpsTimer += elapsed;
+                frameCount++;
+                fpsTimer += delta;
                 if (fpsTimer >= 400) {
                     let currentFps = Math.round((frameCount * 1000) / fpsTimer);
                     fpsVal.innerText = currentFps;
@@ -2457,12 +2383,9 @@ skinsTitleHeader: "PERSONALIZAR",
                 }
 
                 if (gameStarted && !gameOver) {
-                    // PESTAÑA EN SEGUNDO PLANO: el navegador congela requestAnimationFrame
-                    // y la partida se "pausaba" (bots, zona y balas detenidos). Acá, si
-                    // pasó mucho tiempo real, se simulan varios pasos del juego para
-                    // que el combate siga avanzando mientras no estás mirando.
-                    for (let s = 0; s < ticks; s++) {
-                        update(stepMs);
+                    const steps = Math.max(1, Math.min(600, Math.round(delta / 16.67)));
+                    for (let s = 0; s < steps; s++) {
+                        update(16.67);
                         if (gameOver) break;
                     }
                 }
@@ -2501,7 +2424,6 @@ skinsTitleHeader: "PERSONALIZAR",
             localStorage.setItem('ff_avatar', profile.avatar);
             localStorage.setItem('ff_lang', profile.language);
             localStorage.setItem('ff_showfps', profile.showFps);
-            localStorage.setItem('ff_fpscap', profile.fpsCap);
             localStorage.setItem('ff_music', profile.music);
             localStorage.setItem('ff_google', profile.google);
             localStorage.setItem('ff_googlemail', profile.googleEmail || '');
@@ -2544,7 +2466,6 @@ skinsTitleHeader: "PERSONALIZAR",
             const dict = i18n[profile.language] || i18n["ESPAÑOL"];
             fpsStatusLabel.innerText = profile.showFps ? dict.fpsActivated : dict.fpsDeactivated;
             if (musicStatusLabel) musicStatusLabel.innerText = (profile.music !== false) ? dict.musicActivated : dict.musicDeactivated;
-            syncFpsCapUI();
             fpsCounterBox.style.display = profile.showFps ? 'block' : 'none';
         }
 
@@ -2985,29 +2906,6 @@ skinsTitleHeader: "PERSONALIZAR",
             saveProfile();
             updateLobbyUI();
         });
-
-        // ---- LÍMITE DE FPS configurable con barra deslizante (30–240) ----
-        const fpsCapSlider = document.getElementById('fps-cap-slider');
-        const fpsCapValue = document.getElementById('fps-cap-value');
-        const toggleMusicBtn = document.getElementById('toggle-music-btn');
-        const musicStatusLabel = document.getElementById('music-status-label');
-
-        function syncFpsCapUI() {
-            if (!fpsCapSlider || !fpsCapValue) return;
-            const v = profile.fpsCap || 240;
-            fpsCapSlider.value = v;
-            fpsCapValue.innerText = v;
-        }
-
-        if (fpsCapSlider) {
-            fpsCapSlider.value = (profile.fpsCap || 240);
-            fpsCapValue.innerText = (profile.fpsCap || 240);
-            fpsCapSlider.addEventListener('input', () => {
-                profile.fpsCap = parseInt(fpsCapSlider.value);
-                fpsCapValue.innerText = profile.fpsCap;
-                saveProfile();
-            });
-        }
 
         // ---- Activar/desactivar la MÚSICA de la Sala de Comando ----
         toggleMusicBtn.addEventListener('click', () => {
