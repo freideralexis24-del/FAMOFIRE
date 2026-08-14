@@ -108,16 +108,18 @@ async function initAccounts() {
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS id TEXT');
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS google_id TEXT');
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS google_email TEXT');
+        await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS unnamed BOOLEAN NOT NULL DEFAULT FALSE');
+        await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS device_token TEXT');
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS matches INT NOT NULL DEFAULT 0');
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS wins INT NOT NULL DEFAULT 0');
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS kills INT NOT NULL DEFAULT 0');
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS dmg INT NOT NULL DEFAULT 0');
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS deaths INT NOT NULL DEFAULT 0');
       } catch (e) { /* versión vieja de Postgres u otro problema menor: se ignora */ }
-      const { rows } = await db.query('SELECT name, password, points, level, exp, lastseen, id, google_id, google_email, matches, wins, kills, dmg, deaths FROM accounts');
+      const { rows } = await db.query('SELECT name, password, points, level, exp, lastseen, id, google_id, google_email, unnamed, device_token, matches, wins, kills, dmg, deaths FROM accounts');
       accounts = {};
       for (const r of rows) {
-        accounts[r.name] = { id: r.id || genId(), password: r.password, points: Number(r.points), level: Number(r.level), exp: Number(r.exp), lastSeen: Number(r.lastseen) || 0, googleId: r.google_id || '', googleEmail: r.google_email || '', matches: Number(r.matches) || 0, wins: Number(r.wins) || 0, kills: Number(r.kills) || 0, dmg: Number(r.dmg) || 0, deaths: Number(r.deaths) || 0 };
+        accounts[r.name] = { id: r.id || genId(), password: r.password, points: Number(r.points), level: Number(r.level), exp: Number(r.exp), lastSeen: Number(r.lastseen) || 0, googleId: r.google_id || '', googleEmail: r.google_email || '', unnamed: !!r.unnamed, deviceToken: r.device_token || '', matches: Number(r.matches) || 0, wins: Number(r.wins) || 0, kills: Number(r.kills) || 0, dmg: Number(r.dmg) || 0, deaths: Number(r.deaths) || 0 };
       }
       console.log(`[DB] ${rows.length} cuentas cargadas desde PostgreSQL`);
     } catch (e) {
@@ -160,8 +162,8 @@ async function dbSaveAll() {
   const client = await db.connect();
   try {
     await client.query('BEGIN');
-    const q = `INSERT INTO accounts (name, id, password, points, level, exp, lastseen, google_id, google_email, matches, wins, kills, dmg, deaths)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+    const q = `INSERT INTO accounts (name, id, password, points, level, exp, lastseen, google_id, google_email, unnamed, device_token, matches, wins, kills, dmg, deaths)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
                ON CONFLICT (name) DO UPDATE SET
                  password = EXCLUDED.password,
                  points = EXCLUDED.points,
@@ -170,13 +172,15 @@ async function dbSaveAll() {
                  lastseen = EXCLUDED.lastseen,
                  google_id = EXCLUDED.google_id,
                  google_email = EXCLUDED.google_email,
+                 unnamed = EXCLUDED.unnamed,
+                 device_token = EXCLUDED.device_token,
                  matches = EXCLUDED.matches,
                  wins = EXCLUDED.wins,
                  kills = EXCLUDED.kills,
                  dmg = EXCLUDED.dmg,
                  deaths = EXCLUDED.deaths`;
     for (const [name, a] of Object.entries(accounts)) {
-      await client.query(q, [name, a.id || genId(), a.password, Number(a.points) || 0, Number(a.level) || 1, Number(a.exp) || 0, Number(a.lastSeen) || 0, a.googleId || '', a.googleEmail || '', Number(a.matches) || 0, Number(a.wins) || 0, Number(a.kills) || 0, Number(a.dmg) || 0, Number(a.deaths) || 0]);
+      await client.query(q, [name, a.id || genId(), a.password, Number(a.points) || 0, Number(a.level) || 1, Number(a.exp) || 0, Number(a.lastSeen) || 0, a.googleId || '', a.googleEmail || '', !!a.unnamed, a.deviceToken || '', Number(a.matches) || 0, Number(a.wins) || 0, Number(a.kills) || 0, Number(a.dmg) || 0, Number(a.deaths) || 0]);
     }
     await client.query('COMMIT');
   } catch (e) {
@@ -452,11 +456,28 @@ io.on('connection', (socket) => {
   // así ningún nombre se puede repetir aunque cambien mayúsculas o espacios.
   const normName = (n) => String(n || '').trim().toUpperCase().slice(0, 12);
 
+  // ---- INICIAR SESIÓN con CORREO (verificado con Google) o NOMBRE de soldado ----
+  // El identificador puede ser el correo vinculado a la cuenta o el nombre del
+  // soldado. La contraseña siempre es la del juego (la que se eligió al crear
+  // la cuenta o con el enlace de recuperación / la de configuración).
   socket.on('account-login', async (data = {}) => {
     await ensureAccounts();
-    const name = normName(data.name);
-    const acc = accounts[name];
+    const rawId = String(data.name || '').trim();
+    let accountKey = null;
+    if (rawId && rawId.includes('@')) {
+      // Buscar por correo de Google vinculado (coincidencia sin mayúsculas)
+      const email = rawId.toLowerCase();
+      for (const [n, a] of Object.entries(accounts)) {
+        if (a && a.googleEmail && String(a.googleEmail).toLowerCase() === email) { accountKey = n; break; }
+      }
+    } else {
+      accountKey = normName(rawId) || null;
+    }
+    const acc = accountKey ? accounts[accountKey] : null;
     if (!acc) return socket.emit('account-result', { ok: false, error: 'not-found' });
+    // Invitado SIN contraseña: solo puede volver a entrar con el token del mismo
+    // dispositivo (evento guest-login); no hay contraseña que verificar aquí.
+    if (!acc.password) return socket.emit('account-result', { ok: false, error: 'needs-device' });
     const stored = String(acc.password || '');
     // Contraseñas nuevas: hash bcrypt con sal. Las viejas (hash SHA-256 sin sal,
     // de la era inicial del juego) todavía se validan y se MIGRAN a bcrypt en
@@ -473,10 +494,10 @@ io.on('connection', (socket) => {
     if (!ok) return socket.emit('account-result', { ok: false, error: 'bad-pass' });
     acc.lastSeen = Date.now();
     saveAccounts();
-    socket.data.account = name;
-    socket.data.name = name;
+    socket.data.account = accountKey;
+    socket.data.name = accountKey;
     socket.data.points = acc.points;
-    socket.emit('account-result', { ok: true, account: { id: acc.id, name, points: acc.points, level: acc.level, exp: acc.exp, matches: acc.matches || 0, wins: acc.wins || 0, kills: acc.kills || 0, dmg: acc.dmg || 0, deaths: acc.deaths || 0 } });
+    socket.emit('account-result', { ok: true, google: !!acc.googleId, hasPassword: !!(acc.password && !String(acc.password).includes('\\google')), account: { id: acc.id, name: accountKey, googleEmail: acc.googleEmail || '', points: acc.points, level: acc.level, exp: acc.exp, matches: acc.matches || 0, wins: acc.wins || 0, kills: acc.kills || 0, dmg: acc.dmg || 0, deaths: acc.deaths || 0 } });
   });
 
   socket.on('account-register', async (data = {}) => {
@@ -495,9 +516,13 @@ io.on('connection', (socket) => {
     socket.emit('account-result', { ok: true, account: { id: accounts[name].id, name, points: 0, level: 1, exp: 0, matches: 0, wins: 0, kills: 0, dmg: 0, deaths: 0 } });
   });
 
-  // ---- Login con Google Sign-In ----
-  // El cliente envía el ID token (JWT corto, 1 h de vida); acá se verifica la
-  // firma contra el servidor de Google y se vincula/retoma la cuenta por googleId.
+  // ---- CREAR CUENTA / ENTRAR con Google Sign-In ----
+  // Las cuentas se crean SI O SI con Google: el correo queda verificado por la
+  // ventana de Google y es el destino de los enlaces de recuperación.
+  // Flujo de creación (primera vez): google-login crea la cuenta SIN nombre y
+  // con "unnamed" -> el cliente pide la contraseña del juego (google-set-password)
+  // -> luego el nombre definitivo (account-set-name). Si se volvía a abrir el
+  // juego a mitad del proceso, el siguiente google-login retoma donde quedó.
   socket.on('google-login', async (data = {}) => {
     const token = String(data.token || '');
     if (!token || !googleClient) return socket.emit('account-result', { ok: false, error: 'google-unavailable' });
@@ -511,35 +536,124 @@ io.on('connection', (socket) => {
     await ensureAccounts();
     const sub = String(payload.sub || '');
     if (!sub) return socket.emit('account-result', { ok: false, error: 'google-invalid' });
-    let name = null;
-    for (const [n, a] of Object.entries(accounts)) {
-      if (a && a.googleId === sub) { name = n; break; }
-    }
+    let name = findAccountByGoogle(sub);
     let isNew = false;
     if (!name) {
-      // Cuenta nueva: se usa el nombre de Google (o el correo) como nickname;
-      // si está tomado, se agrega un sufijo numérico hasta encontrar uno libre.
-      const raw = String(payload.name || payload.email || 'jugador').toUpperCase().replace(/[^A-Z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
-      let base = normName(raw) || ('J' + sub.slice(0, 7));
-      for (let i = 0; i < 100 && accounts[base]; i++) {
-        base = normName(raw) + String(i + 1);
-        if (base.length > 12) base = normName(raw).slice(0, 11 - String(i + 1).length) + String(i + 1);
-        if (!base) break;
+      // Si el correo ya pertenece a otra cuenta, no se puede usar para crear una nueva.
+      const email = String(payload.email || '').toLowerCase();
+      if (email) {
+        for (const [n, a] of Object.entries(accounts)) {
+          if (a && a.googleEmail && String(a.googleEmail).toLowerCase() === email) {
+            return socket.emit('account-result', { ok: false, error: 'email-taken' });
+          }
+        }
       }
-      if (!base || accounts[base]) return socket.emit('account-result', { ok: false, error: 'google-name' });
-      // Contraseña inutilizable: solo se entra con Google.
-      accounts[base] = { id: genId(), googleId: sub, password: sha(crypto.randomBytes(16).toString('hex')) + '\\google', points: 0, level: 1, exp: 0, lastSeen: Date.now(), matches: 0, wins: 0, kills: 0, dmg: 0, deaths: 0 };
+      // Nombre provisional interno mientras el jugador elige su nombre definitivo
+      // (el nombre de la cuenta aún no se muestra en ranking ni en partidas).
+      let base = 'J' + sub.slice(0, 7).toUpperCase();
+      for (let i = 0; i < 100 && accounts[base]; i++) base = 'J' + sub.slice(0, 6).toUpperCase() + i;
+      accounts[base] = { id: genId(), googleId: sub, googleEmail: email, password: sha(crypto.randomBytes(16).toString('hex')) + '\\google', unnamed: true, points: 0, level: 1, exp: 0, lastSeen: Date.now(), matches: 0, wins: 0, kills: 0, dmg: 0, deaths: 0 };
       name = base;
       isNew = true;
       saveAccounts();
     }
     const acc = accounts[name];
     acc.lastSeen = Date.now();
+    if (acc.unnamed) {
+      // Cuenta creada pero aún sin terminar: seguimos con contraseña + nombre.
+      socket.data.account = name;
+      socket.data.name = name;
+      socket.data.points = 0;
+      saveAccounts();
+      return socket.emit('account-result', { ok: true, google: true, needsName: true, firstTime: isNew, account: { id: acc.id, googleEmail: acc.googleEmail || '' } });
+    }
     saveAccounts();
     socket.data.account = name;
     socket.data.name = name;
     socket.data.points = acc.points;
-    socket.emit('account-result', { ok: true, google: true, firstTime: isNew, account: { id: acc.id, name, points: acc.points, level: acc.level, exp: acc.exp, matches: acc.matches || 0, wins: acc.wins || 0, kills: acc.kills || 0, dmg: acc.dmg || 0, deaths: acc.deaths || 0 } });
+    socket.emit('account-result', { ok: true, google: true, firstTime: isNew, hasPassword: !!(acc.password && !String(acc.password).includes('\\google')), account: { id: acc.id, name, googleEmail: acc.googleEmail || '', points: acc.points, level: acc.level, exp: acc.exp, matches: acc.matches || 0, wins: acc.wins || 0, kills: acc.kills || 0, dmg: acc.dmg || 0, deaths: acc.deaths || 0 } });
+  });
+
+  // Poner la CONTRASEÑA DEL JUEGO a una cuenta de Google recién creada
+  // (verificada por la ventana de Google). Sin contraseña no se puede iniciar
+  // sesión con nombre/correo; con ella también se puede usar la recuperación.
+  socket.on('google-set-password', async (data = {}) => {
+    if (!socket.data.account) return socket.emit('account-result', { ok: false, error: 'not-found' });
+    await ensureAccounts();
+    const acc = accounts[socket.data.account];
+    if (!acc || !acc.googleId) return socket.emit('account-result', { ok: false, error: 'not-renamable' });
+    const p = String(data.password || '');
+    if (p.length < 4) return socket.emit('account-result', { ok: false, error: 'short-pass' });
+    try { acc.password = await bcrypt.hash(p, 10); } catch (e) { acc.password = sha(p); }
+    saveAccounts();
+    if (acc.unnamed) return socket.emit('account-result', { ok: true, google: true, needsName: true, account: { id: acc.id, googleEmail: acc.googleEmail || '' } });
+    socket.emit('account-result', { ok: true, google: true, hasPassword: true, account: { id: acc.id, name: socket.data.account, googleEmail: acc.googleEmail || '' } });
+  });
+
+  // ---- JUGAR COMO INVITADO: cuenta sin correo ni Google ----
+  // El invitado elige nombre (+ contraseña OPCIONAL). Sin contraseña solo puede
+  // volver a entrar desde el MISMO dispositivo (token guardado localmente); con
+  // contraseña entra desde cualquier dispositivo recordando nombre + contraseña.
+  // Para RECUPERAR una contraseña olvidada NO hay método: debe primero vincular
+  // su cuenta a un correo (google-link), y entonces sí llega el enlace.
+  socket.on('guest-register', async (data = {}) => {
+    await ensureAccounts();
+    const name = normName(data.name);
+    if (name.length < 2) return socket.emit('account-result', { ok: false, error: 'short-name' });
+    if (accounts[name]) return socket.emit('account-result', { ok: false, error: 'name-taken' });
+    const p = String(data.password || '');
+    let passHash = '';
+    if (p) { try { passHash = await bcrypt.hash(p, 10); } catch (e) { passHash = sha(p); } }
+    const tok = String(data.deviceToken || '').slice(0, 64);
+    accounts[name] = { id: genId(), password: passHash, deviceToken: tok ? sha('dlv:' + tok) : '', points: 0, level: 1, exp: 0, lastSeen: Date.now(), matches: 0, wins: 0, kills: 0, dmg: 0, deaths: 0 };
+    saveAccounts();
+    socket.data.account = name;
+    socket.data.name = name;
+    socket.data.points = 0;
+    socket.emit('account-result', { ok: true, guest: true, hasPassword: !!passHash, account: { id: accounts[name].id, name, points: 0, level: 1, exp: 0, matches: 0, wins: 0, kills: 0, dmg: 0, deaths: 0 } });
+  });
+
+  // Reentrada del invitado SIN contraseña: exige el token del mismo dispositivo.
+  socket.on('guest-login', async (data = {}) => {
+    await ensureAccounts();
+    const name = normName(data.name);
+    const acc = name ? accounts[name] : null;
+    if (!acc) return socket.emit('account-result', { ok: false, error: 'not-found' });
+    if (acc.password) return socket.emit('account-result', { ok: false, error: 'has-password' });
+    const tok = String(data.deviceToken || '').slice(0, 64);
+    if (!acc.deviceToken || !tok || acc.deviceToken !== sha('dlv:' + tok)) return socket.emit('account-result', { ok: false, error: 'device-only' });
+    acc.lastSeen = Date.now();
+    saveAccounts();
+    socket.data.account = name;
+    socket.data.name = name;
+    socket.data.points = acc.points;
+    socket.emit('account-result', { ok: true, guest: true, hasPassword: false, account: { id: acc.id, name, points: acc.points, level: acc.level, exp: acc.exp, matches: acc.matches || 0, wins: acc.wins || 0, kills: acc.kills || 0, dmg: acc.dmg || 0, deaths: acc.deaths || 0 } });
+  });
+
+  // Poner/cambiar la CONTRASEÑA DEL JUEGO desde Configuración. Si la cuenta ya
+  // tiene contraseña se pide la actual; los invitados sin contraseña la ponen
+  // directamente. (Google-created sin contraseña usan google-set-password.)
+  socket.on('account-set-password', async (data = {}) => {
+    if (!socket.data.account) return socket.emit('account-password-set', { ok: false, error: 'not-found' });
+    await ensureAccounts();
+    const acc = accounts[socket.data.account];
+    if (!acc) return socket.emit('account-password-set', { ok: false, error: 'not-found' });
+    const stored = String(acc.password || '');
+    const hasReal = !!stored && !String(stored).includes('\\google');
+    if (hasReal) {
+      let ok = false;
+      if (stored.startsWith('$2')) {
+        try { ok = await bcrypt.compare(String(data.currentPassword || ''), stored); } catch (e) { ok = false; }
+      } else {
+        ok = stored === sha(data.currentPassword);
+      }
+      if (!ok) return socket.emit('account-password-set', { ok: false, error: 'bad-pass' });
+    }
+    const p = String(data.newPassword || '');
+    if (p.length < 4) return socket.emit('account-password-set', { ok: false, error: 'short-pass' });
+    try { acc.password = await bcrypt.hash(p, 10); } catch (e) { acc.password = sha(p); }
+    saveAccounts();
+    socket.emit('account-password-set', { ok: true });
   });
 
   // VINCULAR la cuenta actual (creada con nombre+contraseña) a Google. Así el
@@ -571,13 +685,23 @@ io.on('connection', (socket) => {
     socket.emit('google-linked', { ok: true, account: { name: socket.data.account, googleEmail: acc.googleEmail } });
   });
 
-  // PEDIR recuperación: el jugador dijo "olvidé mi contraseña". Se genera un
-  // enlace firmado y se envía al correo de Google vinculado (si SMTP está
-  // configurado); en local el enlace se devuelve en la respuesta para probar.
+  // PEDIR recuperación: el jugador dijo "olvidé mi contraseña". El identificador
+  // puede ser el CORREO vinculado o el NOMBRE de soldado. Se genera un enlace
+  // firmado y se envía al correo de Google vinculado (si SMTP está configurado);
+  // en local el enlace se devuelve en la respuesta para probar.
+  // Los invitados SIN correo no tienen recuperación: para eso está el vinculo.
   socket.on('request-password-reset', async (data = {}) => {
     await ensureAccounts();
-    const name = normName(data.name);
-    const acc = name ? accounts[name] : null;
+    const rawId = String(data.name || '').trim();
+    let accountKey = null;
+    if (rawId && rawId.includes('@')) {
+      for (const [n, a] of Object.entries(accounts)) {
+        if (a && a.googleEmail && String(a.googleEmail).toLowerCase() === rawId.toLowerCase()) { accountKey = n; break; }
+      }
+    } else {
+      accountKey = normName(rawId) || null;
+    }
+    const acc = accountKey ? accounts[accountKey] : null;
     if (!acc) return socket.emit('password-reset-requested', { ok: false, error: 'not-found' });
     if (!acc.googleId) return socket.emit('password-reset-requested', { ok: false, error: 'no-email' });
     const token = resetToken(acc.googleId, 'pwreset');
@@ -589,7 +713,7 @@ io.on('connection', (socket) => {
           from: process.env.SMTP_FROM || process.env.SMTP_USER,
           to: acc.googleEmail,
           subject: 'FAMOFIRE - Restablecer contraseña',
-          html: `<h2>Restablecer contraseña</h2><p>Soldado <b>${name}</b>: abre este enlace para elegir una contraseña nueva:</p><p><a href="${url}">${url}</a></p><p>Si no lo pediste, ignora este correo.</p>`
+          html: `<h2>Restablecer contraseña</h2><p>Soldado <b>${accountKey}</b>: abre este enlace para elegir una contraseña nueva:</p><p><a href="${url}">${url}</a></p><p>Si no lo pediste, ignora este correo.</p>`
         });
         emailed = true;
       } catch (e) { console.error('[EMAIL] no se pudo enviar:', e.message); }
@@ -612,13 +736,13 @@ io.on('connection', (socket) => {
     socket.emit('password-reset-result', { ok: true });
   });
 
-  // Renombrado ÚNICO: solo la primera vez y solo para cuentas creadas con Google.
-  // Después de confirmar, no existe ninguna forma de cambiar el nombre.
+  // Renombrado ÚNICO: solo la primera vez y solo para cuentas creadas con Google
+  // que aún no eligieron nombre (unnamed). Después, no hay forma de cambiarlo.
   socket.on('account-set-name', async (data = {}) => {
     if (!socket.data.account) return socket.emit('account-result', { ok: false, error: 'not-found' });
     await ensureAccounts();
     const acc = accounts[socket.data.account];
-    if (!acc || !acc.googleId) return socket.emit('account-result', { ok: false, error: 'not-renamable' });
+    if (!acc || !acc.googleId || !acc.unnamed) return socket.emit('account-result', { ok: false, error: 'not-renamable' });
     const name = normName(data.name);
     if (name.length < 2) return socket.emit('account-result', { ok: false, error: 'short-name' });
     if (name !== socket.data.account && accounts[name]) return socket.emit('account-result', { ok: false, error: 'name-taken' });
@@ -627,10 +751,12 @@ io.on('connection', (socket) => {
       delete accounts[socket.data.account];
       saveAccounts();
     }
+    acc.unnamed = false;
     socket.data.account = name;
     socket.data.name = name;
     socket.data.points = acc.points;
-    socket.emit('account-result', { ok: true, google: true, account: { id: acc.id, name, points: acc.points, level: acc.level, exp: acc.exp, matches: acc.matches || 0, wins: acc.wins || 0, kills: acc.kills || 0, dmg: acc.dmg || 0, deaths: acc.deaths || 0 } });
+    saveAccounts();
+    socket.emit('account-result', { ok: true, google: true, hasPassword: !!(acc.password && !String(acc.password).includes('\\google')), account: { id: acc.id, name, googleEmail: acc.googleEmail || '', points: acc.points, level: acc.level, exp: acc.exp, matches: acc.matches || 0, wins: acc.wins || 0, kills: acc.kills || 0, dmg: acc.dmg || 0, deaths: acc.deaths || 0 } });
   });
 
   socket.on('account-update', (data = {}) => {
@@ -688,7 +814,7 @@ io.on('connection', (socket) => {
     const acc = accounts[name];
     if (!acc) return socket.emit('account-deleted', { ok: false, error: 'not-found' });
     let ok = true;
-    if (!acc.googleId) {
+    if (!acc.googleId && acc.password) {
       const stored = String(acc.password || '');
       if (stored.startsWith('$2')) {
         try { ok = await bcrypt.compare(String(data.password || ''), stored); } catch (e) { ok = false; }

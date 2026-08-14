@@ -773,6 +773,76 @@
             text-align: right;
             color: #ffcc00;
         }
+    .login-panel {
+            width: min(320px, 90vw);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 12px;
+            padding: 12px 14px;
+            box-sizing: border-box;
+        }
+        .login-section-label {
+            font-size: 13px;
+            color: #00ffff;
+            letter-spacing: 2px;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+        .login-hint {
+            font-size: 12px;
+            color: #aaa;
+            max-width: 280px;
+            text-align: center;
+            margin: 0;
+        }
+        .login-divider {
+            width: min(320px, 90vw);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #666;
+            font-size: 12px;
+            margin: 2px 0;
+        }
+        .login-divider::before, .login-divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: rgba(255,255,255,0.15);
+        }
+        .login-panel .btn-main, .login-panel input {
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .btn-link {
+            background: none;
+            border: none;
+            color: #00ffff;
+            font-size: 13px;
+            text-decoration: underline;
+            cursor: pointer;
+            padding: 2px;
+            font-family: inherit;
+        }
+        .btn-link:hover {
+            color: #fff;
+        }
+        #account-badge {
+            width: 100%;
+            font-size: 13px;
+            color: #00ff00;
+            text-align: center;
+            background: rgba(0, 255, 0, 0.07);
+            border: 1px solid rgba(0, 255, 0, 0.25);
+            border-radius: 8px;
+            padding: 6px 8px;
+            box-sizing: border-box;
+            word-break: break-all;
+        }
     </style>
 </head>
 <body>
@@ -782,14 +852,66 @@
 
     <div id="login-screen" class="screen">
         <h1>FAMOFIRE</h1>
-        <input type="text" id="username-input" placeholder="Ingresa tu Nickname" maxlength="12">
-        <input type="password" id="password-input" placeholder="Contraseña" maxlength="20" style="margin-bottom: 8px;">
-        <div class="lobby-menu">
-            <button id="login-btn" class="btn-main" data-i18n="loginBtn">CONTINUAR</button>
-            <button id="register-btn" class="btn-main" style="background-color: #00ffff;" data-i18n="registerBtn">CREAR CUENTA</button>
+        <div class="login-panel">
+            <div class="login-section-label" data-i18n="loginSection">— INICIAR SESIÓN —</div>
+            <input type="text" id="username-input" placeholder="Correo o nombre de soldado" maxlength="40" autocomplete="username">
+            <input type="password" id="password-input" placeholder="Contraseña del juego" maxlength="20" autocomplete="current-password" style="margin-bottom: 8px;">
+            <button id="login-btn" class="btn-main" data-i18n="loginEnter">ENTRAR</button>
+            <button id="forgot-pass-link" class="btn-link" data-i18n="forgotPassBtn">¿OLVIDASTE TU CONTRASEÑA?</button>
+            <div id="google-login-wrap" style="display: none; margin-top: 10px;"></div>
         </div>
-        <div id="google-login-wrap" style="display: none; margin-top: 12px;"></div>
+        <div class="login-divider"><span data-i18n="loginOr">O</span></div>
+        <div class="login-panel">
+            <div class="login-section-label" data-i18n="createSection">— CREAR CUENTA CON GOOGLE —</div>
+            <p class="login-hint" data-i18n="createHint">Se abrirá la ventana de Google para confirmar tu correo; luego eliges la contraseña del juego y el nombre de tu soldado.</p>
+            <div id="google-create-wrap" style="display: none; margin-top: 6px;"></div>
+        </div>
+        <div class="login-divider"><span data-i18n="loginOr">O</span></div>
+        <div class="login-panel">
+            <div class="login-section-label" data-i18n="guestSection">— JUGAR SIN CUENTA —</div>
+            <button id="guest-btn" class="btn-main" style="background-color: #00ff00;" data-i18n="guestBtn">JUGAR COMO INVITADO</button>
+        </div>
         <p id="login-msg" style="font-size: 14px; color: #ffcc00; height: 36px; margin-top: 8px; text-align: center;"></p>
+    </div>
+
+    <!-- CREAR CUENTA CON GOOGLE: correo verificado + contraseña del juego -->
+    <div id="create-screen" class="screen" style="display: none;">
+        <h1 data-i18n="createTitle">CREAR CUENTA CON GOOGLE</h1>
+        <p style="font-size: 14px; color: #aaa; margin-bottom: 10px;" data-i18n="createEmailOk">Tu correo fue verificado con Google:</p>
+        <input type="text" id="create-email-input" readonly maxlength="60" style="background: rgba(255,255,255,0.08); color: #9ff;">
+        <input type="password" id="create-pass-input" placeholder="Contraseña del juego (mín. 4)" maxlength="20" autocomplete="new-password">
+        <div class="lobby-menu">
+            <button id="create-confirm-btn" class="btn-main" style="background-color: #00ff00;" data-i18n="createContinue">CREAR CUENTA</button>
+            <button id="create-cancel-btn" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
+        </div>
+        <p id="create-msg" style="font-size: 14px; color: #ffcc00; height: 36px; margin-top: 8px; text-align: center;"></p>
+    </div>
+
+    <!-- INVITADO: nombre + contraseña OPCIONAL -->
+    <div id="guest-screen" class="screen" style="display: none;">
+        <h1 data-i18n="guestTitle">ENTRAR COMO INVITADO</h1>
+        <p class="login-hint" data-i18n="guestHint">Elige el nombre de tu soldado. La contraseña es opcional: si no la pones, solo podrás jugar desde este dispositivo.</p>
+        <input type="text" id="guest-name-input" placeholder="Tu nombre en FAMOFIRE" maxlength="12" autocomplete="off">
+        <input type="password" id="guest-pass-input" placeholder="Contraseña (opcional)" maxlength="20" autocomplete="new-password">
+        <div class="lobby-menu">
+            <button id="guest-confirm-btn" class="btn-main" style="background-color: #00ff00;" data-i18n="guestConfirm">ENTRAR COMO INVITADO</button>
+            <button id="guest-cancel-btn" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
+        </div>
+        <p id="guest-msg" style="font-size: 14px; color: #ffcc00; height: 36px; margin-top: 8px; text-align: center;"></p>
+    </div>
+
+    <!-- PONER / CAMBIAR CONTRASEÑA DEL JUEGO (desde Configuración) -->
+    <div id="setpass-screen" class="screen" style="display: none;">
+        <h1 data-i18n="setPassTitle">CONTRASEÑA DEL JUEGO</h1>
+        <input type="password" id="setpass-current-input" placeholder="Contraseña actual" maxlength="20" autocomplete="current-password">
+        <input type="password" id="setpass-new-input" placeholder="Contraseña nueva (mín. 4)" maxlength="20" autocomplete="new-password">
+        <input type="password" id="setpass-confirm-input" placeholder="Repetir contraseña nueva" maxlength="20" autocomplete="new-password">
+        <div class="lobby-menu">
+            <button id="setpass-save-btn" class="btn-main" style="background-color: #00ff00;" data-i18n="setPassSave">GUARDAR</button>
+            <button id="setpass-back-btn" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
+        </div>
+        <p id="setpass-msg" style="font-size: 14px; color: #ffcc00; height: 36px; margin-top: 8px; text-align: center;"></p>
+        <p class="login-hint" id="setpass-warn" data-i18n="guestWarn" style="display: none;">⚠️ Como invitado, si olvidas tu contraseña no hay forma de recuperarla. Vincula tu cuenta a un correo con Google para protegerla.</p>
     </div>
 
     <!-- ELECCIÓN DE NOMBRE (solo la primera vez, al crear cuenta con Google) -->
@@ -897,7 +1019,9 @@
 
         <div style="font-size: 13px; color: #00ffff; margin: 14px 0 4px 0; letter-spacing: 2px;" data-i18n="configSecAccount">— CUENTA Y SEGURIDAD —</div>
         <div class="lobby-menu">
+            <div id="account-badge" style="display: none;"></div>
             <div id="google-link-wrap" style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 6px 0;"></div>
+            <button id="set-pass-btn" class="btn-main" style="background-color: #ffaa00;">PONER CONTRASEÑA</button>
             <button id="forgot-pass-btn" class="btn-main" data-i18n="forgotPassBtn">¿OLVIDASTE TU CONTRASEÑA?</button>
             <button id="logout-btn" class="btn-main" style="background-color: #ff3333; color: #fff;" data-i18n="logoutBtn">CERRAR SESIÓN</button>
             <button id="delete-account-btn" class="btn-main" style="background-color: #880000; color: #fff;" data-i18n="deleteBtn">ELIMINAR CUENTA</button>
@@ -922,7 +1046,7 @@
     <div id="forgot-screen" class="screen" style="display: none;">
         <h1 data-i18n="forgotTitle">RECUPERAR CONTRASEÑA</h1>
         <p style="font-size: 14px; color: #aaa; margin-bottom: 10px;" data-i18n="forgotSubtitle">Te enviaremos un enlace al correo de Google vinculado a tu cuenta.</p>
-        <input type="text" id="forgot-name-input" placeholder="Nombre de soldado" maxlength="14" autocomplete="off">
+        <input type="text" id="forgot-name-input" placeholder="Correo o nombre de soldado" maxlength="40" autocomplete="off">
         <div class="lobby-menu">
             <button id="forgot-send-btn" class="btn-main" style="background-color: #00ff00;" data-i18n="forgotSend">ENVIAR ENLACE</button>
             <button id="forgot-back-btn" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
@@ -1270,13 +1394,17 @@
         socket.on('connect', () => {
             console.log("Conectado al servidor central de FAMOFIRE (LATAM) con ID:", socket.id);
             // Inicio de sesión automático: si este navegador ya tiene una cuenta
-            // guardada, entra solo (y si el servidor la perdió en una actualización,
-            // la recrea automáticamente con el mismo usuario y contraseña).
-            if (localStorage.getItem('ff_username') && localStorage.getItem('ff_userpass')) {
-                socket.emit('account-login', {
-                    name: localStorage.getItem('ff_username'),
-                    password: atob(localStorage.getItem('ff_userpass'))
-                });
+            // guardada, entra solo. Si tiene contraseña guardada hace login normal;
+            // si no (invitado sin contraseña), se reentra con el token del dispositivo
+            // y, si el servidor perdió la cuenta en una actualización, se recrea.
+            const savedName = localStorage.getItem('ff_username');
+            const savedPass = localStorage.getItem('ff_userpass');
+            if (savedName) {
+                if (savedPass) {
+                    socket.emit('account-login', { name: savedName, password: atob(savedPass) });
+                } else {
+                    socket.emit('guest-login', { name: savedName, deviceToken: getDeviceToken() });
+                }
             }
         });
 
@@ -1492,11 +1620,37 @@
             "ESPAÑOL": {
                 loginBtn: "CONTINUAR",
                 registerBtn: "CREAR CUENTA",
+                loginSection: "— INICIAR SESIÓN —",
+                createSection: "— CREAR CUENTA CON GOOGLE —",
+                guestSection: "— JUGAR SIN CUENTA —",
+                loginOr: "O",
+                loginEnter: "ENTRAR",
+                loginIdPlaceholder: "Correo o nombre de soldado",
+                createHint: "Se abrirá la ventana de Google para confirmar tu correo; luego eliges la contraseña del juego y el nombre de tu soldado.",
+                createTitle: "CREAR CUENTA CON GOOGLE",
+                createEmailOk: "Tu correo fue verificado con Google:",
+                createContinue: "CREAR CUENTA",
+                guestTitle: "ENTRAR COMO INVITADO",
+                guestHint: "Elige el nombre de tu soldado. La contraseña es opcional: si no la pones, solo podrás jugar desde este dispositivo.",
+                guestConfirm: "ENTRAR COMO INVITADO",
+                guestBtn: "JUGAR COMO INVITADO",
+                setPassTitle: "CONTRASEÑA DEL JUEGO",
+                setPassSave: "GUARDAR CONTRASEÑA",
+                setPassBtn: "PONER CONTRASEÑA",
+                changePassBtn: "CAMBIAR CONTRASEÑA",
+                setPassDone: "Contraseña guardada.",
+                guestWarn: "⚠️ Como invitado, si olvidas tu contraseña no hay forma de recuperarla. Vincula tu cuenta a un correo con Google para protegerla.",
+                badgeGuest: "👤 INVITADO — SIN CORREO",
+                badgeGoogle: "✓ CUENTA CON GOOGLE",
+                badgeEmail: "✓ CUENTA CON CORREO:",
+                errHasPassword: "⚠️ Esa cuenta ya tiene contraseña: inicia sesión con ella.",
+                errDeviceOnly: "⚠️ Este invitado sin contraseña solo puede abrirse en el mismo dispositivo donde se creó.",
+                errEmailTaken: "⚠️ Ese correo ya está vinculado a otra cuenta.",
                 passwordPlaceholder: "Contraseña",
-                errFillFields: "Ingresa tu nickname y tu contraseña",
+                errFillFields: "Ingresa tu correo o nombre y tu contraseña",
                 errShortPass: "⚠️ La contraseña debe tener al menos 4 caracteres",
                 errShortName: "⚠️ El nickname debe tener al menos 2 caracteres",
-                errNoAccount: "⚠️ Esa cuenta no existe. Crea una con CREAR CUENTA",
+                errNoAccount: "⚠️ Esa cuenta no existe. Créala con Google o entra como invitado",
                 errBadPass: "⚠️ Contraseña incorrecta",
                 errNameTaken: "⚠️ Ese nickname ya está registrado. Inicia sesión con tu contraseña",
                 errGeneric: "⚠️ Sin conexión con el servidor. Intenta de nuevo",
@@ -1632,11 +1786,37 @@
             "ENGLISH": {
                 loginBtn: "CONTINUE",
                 registerBtn: "CREATE ACCOUNT",
+                loginSection: "— SIGN IN —",
+                createSection: "— CREATE ACCOUNT WITH GOOGLE —",
+                guestSection: "— PLAY WITHOUT ACCOUNT —",
+                loginOr: "OR",
+                loginEnter: "SIGN IN",
+                loginIdPlaceholder: "Email or soldier name",
+                createHint: "The Google window will open to confirm your email; then you pick your game password and your soldier name.",
+                createTitle: "CREATE ACCOUNT WITH GOOGLE",
+                createEmailOk: "Your email was verified with Google:",
+                createContinue: "CREATE ACCOUNT",
+                guestTitle: "PLAY AS GUEST",
+                guestHint: "Choose your soldier name. Password is optional: without it you can only play from this device.",
+                guestConfirm: "PLAY AS GUEST",
+                guestBtn: "PLAY AS GUEST",
+                setPassTitle: "GAME PASSWORD",
+                setPassSave: "SAVE PASSWORD",
+                setPassBtn: "SET PASSWORD",
+                changePassBtn: "CHANGE PASSWORD",
+                setPassDone: "Password saved.",
+                guestWarn: "⚠️ As a guest, if you forget your password there is no way to recover it. Link your account to an email with Google to protect it.",
+                badgeGuest: "👤 GUEST — NO EMAIL",
+                badgeGoogle: "✓ ACCOUNT WITH GOOGLE",
+                badgeEmail: "✓ ACCOUNT WITH EMAIL:",
+                errHasPassword: "⚠️ That account already has a password: sign in with it.",
+                errDeviceOnly: "⚠️ This guest without a password can only be opened on the same device where it was created.",
+                errEmailTaken: "⚠️ That email is already linked to another account.",
                 passwordPlaceholder: "Password",
-                errFillFields: "Enter your nickname and password",
+                errFillFields: "Enter your email or name and your password",
                 errShortPass: "⚠️ Password must be at least 4 characters",
                 errShortName: "⚠️ Nickname must be at least 2 characters",
-                errNoAccount: "⚠️ That account doesn't exist. Create one with CREATE ACCOUNT",
+                errNoAccount: "⚠️ That account doesn't exist. Create one with Google or play as guest",
                 errBadPass: "⚠️ Incorrect password",
                 errNameTaken: "⚠️ That nickname is already registered. Log in with your password",
                 errGeneric: "⚠️ No server connection. Try again",
@@ -1772,6 +1952,32 @@ skinsTitleHeader: "CUSTOMIZE",
             "中国人": {
                 loginBtn: "继续",
                 registerBtn: "创建账户",
+                loginSection: "— 登录 —",
+                createSection: "— 使用谷歌创建账户 —",
+                guestSection: "— 无账户游玩 —",
+                loginOr: "或",
+                loginEnter: "登录",
+                loginIdPlaceholder: "邮箱或士兵名称",
+                createHint: "将打开谷歌窗口确认你的邮箱；然后你设置游戏密码和士兵名称。",
+                createTitle: "使用谷歌创建账户",
+                createEmailOk: "你的邮箱已经通过谷歌验证：",
+                createContinue: "创建账户",
+                guestTitle: "以游客身份进入",
+                guestHint: "选择你的士兵名称。密码是可选的：不设置的话只能在此设备上游戏。",
+                guestConfirm: "以游客身份进入",
+                guestBtn: "以游客身份游玩",
+                setPassTitle: "游戏密码",
+                setPassSave: "保存密码",
+                setPassBtn: "设置密码",
+                changePassBtn: "修改密码",
+                setPassDone: "密码已保存。",
+                guestWarn: "⚠️ 作为游客，如果你忘记密码将无法找回。请用谷歌将账户绑定到邮箱以保护它。",
+                badgeGuest: "👤 游客 — 无邮箱",
+                badgeGoogle: "✓ 谷歌账户",
+                badgeEmail: "✓ 已绑定邮箱:",
+                errHasPassword: "⚠️ 该账户已有密码：请用它登录。",
+                errDeviceOnly: "⚠️ 没有密码的游客只能在其创建的设备上打开。",
+                errEmailTaken: "⚠️ 该邮箱已绑定到另一个账户。",
                 passwordPlaceholder: "密码",
                 errFillFields: "请输入昵称和密码",
                 errShortPass: "⚠️ 密码至少需要4个字符",
@@ -1912,11 +2118,37 @@ skinsTitleHeader: "个性化",
             "BRASIL": {
                 loginBtn: "CONTINUAR",
                 registerBtn: "CRIAR CONTA",
+                loginSection: "— ENTRAR —",
+                createSection: "— CRIAR CONTA COM GOOGLE —",
+                guestSection: "— JOGAR SEM CONTA —",
+                loginOr: "OU",
+                loginEnter: "ENTRAR",
+                loginIdPlaceholder: "E-mail ou nome do soldado",
+                createHint: "A janela do Google abrirá para confirmar seu e-mail; depois você escolhe a senha do jogo e o nome do seu soldado.",
+                createTitle: "CRIAR CONTA COM GOOGLE",
+                createEmailOk: "Seu e-mail foi verificado com o Google:",
+                createContinue: "CRIAR CONTA",
+                guestTitle: "ENTRAR COMO CONVIDADO",
+                guestHint: "Escolha o nome do seu soldado. A senha é opcional: sem ela, você só poderá jogar neste dispositivo.",
+                guestConfirm: "ENTRAR COMO CONVIDADO",
+                guestBtn: "JOGAR COMO CONVIDADO",
+                setPassTitle: "SENHA DO JOGO",
+                setPassSave: "SALVAR SENHA",
+                setPassBtn: "DEFINIR SENHA",
+                changePassBtn: "ALTERAR SENHA",
+                setPassDone: "Senha salva.",
+                guestWarn: "⚠️ Como convidado, se você esquecer sua senha não há como recuperá-la. Vincule sua conta a um e-mail com o Google para protegê-la.",
+                badgeGuest: "👤 CONVIDADO — SEM E-MAIL",
+                badgeGoogle: "✓ CONTA COM GOOGLE",
+                badgeEmail: "✓ CONTA COM E-MAIL:",
+                errHasPassword: "⚠️ Essa conta já tem senha: entre com ela.",
+                errDeviceOnly: "⚠️ Este convidado sem senha só pode ser aberto no mesmo dispositivo onde foi criado.",
+                errEmailTaken: "⚠️ Esse e-mail já está vinculado a outra conta.",
                 passwordPlaceholder: "Senha",
-                errFillFields: "Digite seu apelido e senha",
+                errFillFields: "Digite seu e-mail ou nome e sua senha",
                 errShortPass: "⚠️ A senha deve ter pelo menos 4 caracteres",
                 errShortName: "⚠️ O apelido deve ter pelo menos 2 caracteres",
-                errNoAccount: "⚠️ Essa conta não existe. Crie uma com CRIAR CONTA",
+                errNoAccount: "⚠️ Essa conta não existe. Crie uma com o Google ou jogue como convidado",
                 errBadPass: "⚠️ Senha incorreta",
                 errNameTaken: "⚠️ Esse apelido já está registrado. Faça login com sua senha",
                 errGeneric: "⚠️ Sem conexão com o servidor. Tente novamente",
@@ -2110,6 +2342,7 @@ skinsTitleHeader: "PERSONALIZAR",
             music: localStorage.getItem('ff_music') !== 'false',
             google: localStorage.getItem('ff_google') === 'true',
             googleEmail: localStorage.getItem('ff_googlemail') || '',
+            hasPassword: localStorage.getItem('ff_haspw') === 'true',
             controls: (savedControls && savedControls.up && savedControls.left && savedControls.down && savedControls.right && savedControls.skill) ? savedControls : {
                 up: ['w', ''],
                 left: ['a', ''],
@@ -2191,7 +2424,7 @@ skinsTitleHeader: "PERSONALIZAR",
                     el.innerHTML = dict[key];
                 }
             });
-            if (usernameInput) usernameInput.placeholder = dict.nicknamePlaceholder;
+            if (usernameInput) usernameInput.placeholder = dict.loginIdPlaceholder;
             if (passwordInput) passwordInput.placeholder = dict.passwordPlaceholder;
 
             const ranksTableBody = document.getElementById('ranks-table-body');
@@ -2250,8 +2483,31 @@ skinsTitleHeader: "PERSONALIZAR",
         const usernameInput = document.getElementById('username-input');
         const passwordInput = document.getElementById('password-input');
         const loginBtn = document.getElementById('login-btn');
-        const registerBtn = document.getElementById('register-btn');
+        const forgotPassLink = document.getElementById('forgot-pass-link');
+        const guestBtn = document.getElementById('guest-btn');
         const loginMsg = document.getElementById('login-msg');
+        const createScreen = document.getElementById('create-screen');
+        const createEmailInput = document.getElementById('create-email-input');
+        const createPassInput = document.getElementById('create-pass-input');
+        const createConfirmBtn = document.getElementById('create-confirm-btn');
+        const createCancelBtn = document.getElementById('create-cancel-btn');
+        const createMsg = document.getElementById('create-msg');
+        const guestScreen = document.getElementById('guest-screen');
+        const guestNameInput = document.getElementById('guest-name-input');
+        const guestPassInput = document.getElementById('guest-pass-input');
+        const guestConfirmBtn = document.getElementById('guest-confirm-btn');
+        const guestCancelBtn = document.getElementById('guest-cancel-btn');
+        const guestMsg = document.getElementById('guest-msg');
+        const setpassScreen = document.getElementById('setpass-screen');
+        const setpassCurrentInput = document.getElementById('setpass-current-input');
+        const setpassNewInput = document.getElementById('setpass-new-input');
+        const setpassConfirmInput = document.getElementById('setpass-confirm-input');
+        const setpassSaveBtn = document.getElementById('setpass-save-btn');
+        const setpassBackBtn = document.getElementById('setpass-back-btn');
+        const setpassMsg = document.getElementById('setpass-msg');
+        const setpassWarn = document.getElementById('setpass-warn');
+        const accountBadge = document.getElementById('account-badge');
+        const setPassBtn = document.getElementById('set-pass-btn');
         const namepickScreen = document.getElementById('namepick-screen');
         const namepickInput = document.getElementById('namepick-input');
         const namepickConfirmBtn = document.getElementById('namepick-confirm-btn');
@@ -2427,6 +2683,7 @@ skinsTitleHeader: "PERSONALIZAR",
             localStorage.setItem('ff_music', profile.music);
             localStorage.setItem('ff_google', profile.google);
             localStorage.setItem('ff_googlemail', profile.googleEmail || '');
+            localStorage.setItem('ff_haspw', profile.hasPassword);
             localStorage.setItem('ff_ctrl_up', JSON.stringify(profile.controls.up));
             localStorage.setItem('ff_ctrl_left', JSON.stringify(profile.controls.left));
             localStorage.setItem('ff_ctrl_down', JSON.stringify(profile.controls.down));
@@ -2467,6 +2724,7 @@ skinsTitleHeader: "PERSONALIZAR",
             fpsStatusLabel.innerText = profile.showFps ? dict.fpsActivated : dict.fpsDeactivated;
             if (musicStatusLabel) musicStatusLabel.innerText = (profile.music !== false) ? dict.musicActivated : dict.musicDeactivated;
             fpsCounterBox.style.display = profile.showFps ? 'block' : 'none';
+            updateAccountUI();
         }
 
         function openProfile() {
@@ -2651,6 +2909,17 @@ skinsTitleHeader: "PERSONALIZAR",
             startLobbyMusic();
         }
 
+        // Token del dispositivo: identifica a un invitado SIN contraseña en la misma
+        // computadora/celular. Se genera una sola vez y queda guardado localmente.
+        function getDeviceToken() {
+            let t = localStorage.getItem('ff_device');
+            if (!t) {
+                try { t = crypto.randomUUID(); } catch (e) { t = 'd' + Date.now() + Math.random().toString(36).slice(2); }
+                localStorage.setItem('ff_device', t);
+            }
+            return t;
+        }
+
         // Recordar la última cuenta: usuario y contraseña quedan cargados al abrir
         // el juego y, si el servidor los perdió en una actualización, se restauran solos.
         if (localStorage.getItem('ff_username')) usernameInput.value = localStorage.getItem('ff_username');
@@ -2674,39 +2943,115 @@ skinsTitleHeader: "PERSONALIZAR",
             socket.emit('account-login', { name: typedName, password: typedPass });
         });
 
-        registerBtn.addEventListener('click', () => {
+        // ¿OLVIDASTE TU CONTRASEÑA? desde la pantalla de LOGIN (también está en
+        // Configuración). Volverá a la pantalla desde donde se abrió.
+        let forgotReturnTo = 'config';
+        function openForgotScreen(returnTo) {
+            forgotReturnTo = returnTo;
+            forgotMsg.innerText = "";
+            configScreen.style.display = 'none';
+            loginScreen.style.display = 'none';
+            forgotScreen.style.display = 'flex';
+            forgotNameInput.value = profile.name || '';
+        }
+        forgotPassLink.addEventListener('click', () => openForgotScreen('login'));
+
+        // ---- JUGAR COMO INVITADO ----
+        guestBtn.addEventListener('click', () => {
+            authStep = 'guest';
+            showLoginMessage("");
+            guestMsg.innerText = "";
+            guestScreen.style.display = 'flex';
+            loginScreen.style.display = 'none';
+            guestNameInput.value = profile.name || "";
+            guestPassInput.value = "";
+        });
+        guestCancelBtn.addEventListener('click', () => {
+            authStep = 'none';
+            guestScreen.style.display = 'none';
+            loginScreen.style.display = 'flex';
+        });
+        guestConfirmBtn.addEventListener('click', () => {
             const dict = i18n[profile.language] || i18n["ESPAÑOL"];
-            let typedName = usernameInput.value.trim();
-            let typedPass = passwordInput.value;
-            if (typedName === "" || typedPass === "") {
-                showLoginMessage(dict.errFillFields);
+            const name = guestNameInput.value.trim();
+            if (name === "") { guestMsg.innerText = dict.errShortName; return; }
+            if (guestPassInput.value.length > 0 && guestPassInput.value.length < 4) { guestMsg.innerText = dict.errShortPass; return; }
+            if (!socket.connected) { guestMsg.innerText = dict.errGeneric; return; }
+            guestMsg.innerText = "...";
+            localStorage.setItem('ff_username', name);
+            if (guestPassInput.value) localStorage.setItem('ff_userpass', btoa(guestPassInput.value));
+            else localStorage.removeItem('ff_userpass');
+            socket.emit('guest-login', { name, deviceToken: getDeviceToken() });
+        });
+
+        // ---- CREAR CUENTA CON GOOGLE: paso 2 (contraseña del juego) ----
+        createCancelBtn.addEventListener('click', () => {
+            createScreen.style.display = 'none';
+            loginScreen.style.display = 'flex';
+        });
+        createConfirmBtn.addEventListener('click', () => {
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            const pass = createPassInput.value;
+            if (pass.length < 4) { createMsg.innerText = dict.errShortPass; return; }
+            if (!socket.connected) { createMsg.innerText = dict.errGeneric; return; }
+            createMsg.innerText = "...";
+            socket.emit('google-set-password', { password: pass });
+        });
+
+        // ---- PONER / CAMBIAR CONTRASEÑA (Configuración) ----
+        setPassBtn.addEventListener('click', () => {
+            setpassMsg.innerText = "";
+            setpassCurrentInput.style.display = profile.hasPassword ? 'block' : 'none';
+            setpassCurrentInput.value = "";
+            setpassNewInput.value = "";
+            setpassConfirmInput.value = "";
+            setpassWarn.style.display = profile.google ? 'none' : 'block';
+            configScreen.style.display = 'none';
+            setpassScreen.style.display = 'flex';
+        });
+        setpassBackBtn.addEventListener('click', () => {
+            setpassScreen.style.display = 'none';
+            configScreen.style.display = 'flex';
+        });
+        setpassSaveBtn.addEventListener('click', () => {
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            const p1 = setpassNewInput.value;
+            const p2 = setpassConfirmInput.value;
+            if (p1.length < 4) { setpassMsg.innerText = dict.errShortPass; return; }
+            if (p1 !== p2) { setpassMsg.innerText = dict.resetMismatch; return; }
+            if (!socket.connected) { setpassMsg.innerText = dict.errGeneric; return; }
+            setpassMsg.innerText = "...";
+            socket.emit('account-set-password', { currentPassword: setpassCurrentInput.value, newPassword: p1 });
+        });
+        socket.on('account-password-set', (res) => {
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            if (!res || !res.ok) {
+                if (res && res.error === 'bad-pass') setpassMsg.innerText = dict.errBadPass;
+                else if (res && res.error === 'short-pass') setpassMsg.innerText = dict.errShortPass;
+                else setpassMsg.innerText = dict.errGeneric;
                 return;
             }
-            if (typedPass.length < 4) {
-                showLoginMessage(dict.errShortPass);
-                return;
-            }
-            if (!socket.connected) {
-                showLoginMessage(dict.errGeneric);
-                return;
-            }
-            showLoginMessage("...");
-            localStorage.setItem('ff_username', typedName);
-            localStorage.setItem('ff_userpass', btoa(typedPass));
-            socket.emit('account-register', { name: typedName, password: typedPass });
+            profile.hasPassword = true;
+            saveProfile();
+            updateAccountUI();
+            setpassMsg.innerText = "✓ " + dict.setPassDone;
+            setpassCurrentInput.value = "";
+            setpassNewInput.value = "";
+            setpassConfirmInput.value = "";
         });
 
         // ---- Login con Google (se activa SOLO si el servidor tiene GOOGLE_CLIENT_ID) ----
-        // El mismo botón de Google sirve para dos cosas:
-        //  - ENTRAR con Google (pantalla de login)
-        //  - VINCULAR la cuenta nombre+contraseña a Google (Configuración)
+        // Hay DOS botones: "ENTRAR CON GOOGLE" (login) y "CREAR CUENTA" (registro);
+        // ambos verifican el correo en la ventana de Google.
         const googleLoginWrap = document.getElementById('google-login-wrap');
+        const googleCreateWrap = document.getElementById('google-create-wrap');
         const googleLinkWrap = document.getElementById('google-link-wrap');
-        let pendingNamePick = false;
+        let authStep = 'none';
         (function initGoogleSignIn() {
             fetch('/config').then(r => r.json()).then(cfg => {
                 if (!cfg.googleClientId) return;
                 googleLoginWrap.style.display = 'block';
+                googleCreateWrap.style.display = 'block';
                 const gs = document.createElement('script');
                 gs.src = 'https://accounts.google.com/gsi/client';
                 gs.async = true;
@@ -2717,8 +3062,8 @@ skinsTitleHeader: "PERSONALIZAR",
                         auto_select: false,
                         callback: (resp) => {
                             if (!resp || !resp.credential) return;
-                            // Mismo botón, dos usos: en la pantalla de CONFIGURACIÓN
-                            // vincula la cuenta actual a Google; en el LOGIN entra con Google.
+                            // En la pantalla de CONFIGURACIÓN el botón VINCULA la cuenta
+                            // actual de invitado a Google; en el LOGIN entra o crea.
                             if (configScreen && configScreen.style.display !== 'none') {
                                 socket.emit('google-link', { token: resp.credential });
                             } else {
@@ -2728,23 +3073,23 @@ skinsTitleHeader: "PERSONALIZAR",
                         }
                     });
                     google.accounts.id.renderButton(googleLoginWrap, { theme: 'outline', size: 'large', shape: 'pill', text: 'continue_with', width: 280 });
+                    google.accounts.id.renderButton(googleCreateWrap, { theme: 'filled_blue', size: 'large', shape: 'pill', text: 'signup_with', width: 280 });
                     if (googleLinkWrap) updateGoogleLinkUI();
                 };
                 document.head.appendChild(gs);
             }).catch(() => {});
         })();
 
-        // ---- VINCULAR la cuenta actual (nombre+contraseña) a Google ----
+        // ---- VINCULAR la cuenta actual (invitado) a Google ----
         let googleLinkButtonDrawn = false;
         function updateGoogleLinkUI() {
-            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
             if (!googleLinkWrap) return;
             if (profile.google) {
-                googleLinkWrap.innerHTML = `<div style="font-size: 15px; color: #00ff00; font-weight: bold;">✓ ${dict.linkedOk}</div>
-                                            ${profile.googleEmail ? `<div style="font-size: 12px; color: #aaa;">${profile.googleEmail}</div>` : ''}`;
-                googleLinkButtonDrawn = true;
+                // Ya tiene correo: la insignia en Configuración muestra la cuenta
+                googleLinkWrap.innerHTML = '';
                 return;
             }
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
             if (!googleLinkButtonDrawn) {
                 googleLinkButtonDrawn = true;
                 googleLinkWrap.innerHTML = '';
@@ -2758,6 +3103,17 @@ skinsTitleHeader: "PERSONALIZAR",
                     google.accounts.id.renderButton(place, { theme: 'outline', size: 'medium', shape: 'pill', text: 'continue_with', width: 280 });
                 }
             }
+        }
+
+        // Insignia de estado de la cuenta + botón de contraseña (Configuración)
+        function updateAccountUI() {
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            if (!accountBadge || !setPassBtn) return;
+            accountBadge.style.display = 'block';
+            if (profile.google && profile.googleEmail) accountBadge.textContent = dict.badgeEmail + ' ' + profile.googleEmail;
+            else if (profile.google) accountBadge.textContent = dict.badgeGoogle;
+            else accountBadge.textContent = dict.badgeGuest;
+            setPassBtn.innerText = profile.hasPassword ? dict.changePassBtn : dict.setPassBtn;
         }
 
         // ---- Elección de nombre (primera vez con una cuenta de Google) ----
@@ -2779,31 +3135,49 @@ skinsTitleHeader: "PERSONALIZAR",
         socket.on('account-result', (res) => {
             const dict = i18n[profile.language] || i18n["ESPAÑOL"];
             if (!res || !res.ok) {
-                // Durante la elección de nombre (cuenta de Google): los errores se
-                // muestran en esa pantalla, sin tocar el login normal.
-                if (pendingNamePick) {
-                    let npMsg = dict.errGeneric;
-                    if (res && res.error === 'name-taken') npMsg = dict.errNameTaken;
-                    else if (res && res.error === 'short-name') npMsg = dict.errShortName;
-                    namepickMsg.innerText = npMsg;
+                // Pantallas especiales de creación de cuenta / invitado
+                if (authStep === 'create-name') {
+                    if (res && res.error === 'name-taken') namepickMsg.innerText = dict.errNameTaken;
+                    else if (res && res.error === 'short-name') namepickMsg.innerText = dict.errShortName;
+                    else namepickMsg.innerText = dict.errGeneric;
+                    return;
+                }
+                if (authStep === 'create-pass') {
+                    if (res && res.error === 'short-pass') createMsg.innerText = dict.errShortPass;
+                    else createMsg.innerText = dict.errGeneric;
+                    return;
+                }
+                if (authStep === 'guest') {
+                    if (res && res.error === 'not-found') {
+                        // El invitado no existe aún: se crea con nombre + contraseña opcional
+                        socket.emit('guest-register', { name: guestNameInput.value.trim(), password: guestPassInput.value, deviceToken: getDeviceToken() });
+                        return;
+                    }
+                    if (res && res.error === 'has-password') guestMsg.innerText = dict.errHasPassword;
+                    else if (res && res.error === 'device-only') guestMsg.innerText = dict.errDeviceOnly;
+                    else if (res && res.error === 'name-taken') guestMsg.innerText = dict.errNameTaken;
+                    else guestMsg.innerText = dict.errGeneric;
                     return;
                 }
                 // AUTO-RESTAURACIÓN: si el servidor perdió las cuentas (actualización
                 // sin base de datos persistente), el juego la recrea SOLO con el mismo
-                // usuario y contraseña guardados, sin pedirte crear nada.
+                // usuario guardado, sin pedirte crear nada.
                 const savedName = localStorage.getItem('ff_username');
                 const savedPassRaw = localStorage.getItem('ff_userpass');
                 const typedName = usernameInput.value.trim() || savedName || '';
-                if (savedName && savedPassRaw && savedName.toUpperCase() === typedName.toUpperCase()) {
-                    const savedPass = atob(savedPassRaw);
+                if (savedName && savedName.toUpperCase() === typedName.toUpperCase()) {
                     if (res && res.error === 'not-found') {
                         showLoginMessage("🔄 Restaurando tu cuenta...");
-                        socket.emit('account-register', { name: typedName, password: savedPass });
+                        if (savedPassRaw) {
+                            socket.emit('account-register', { name: typedName, password: atob(savedPassRaw) });
+                        } else {
+                            socket.emit('guest-register', { name: typedName, password: '', deviceToken: getDeviceToken() });
+                        }
                         return;
                     }
                     if (res && res.error === 'name-taken') {
                         showLoginMessage("🔄 Recuperando tu cuenta...");
-                        socket.emit('account-login', { name: typedName, password: savedPass });
+                        socket.emit('account-login', { name: typedName, password: atob(savedPassRaw || '') });
                         return;
                     }
                 }
@@ -2815,30 +3189,50 @@ skinsTitleHeader: "PERSONALIZAR",
                 else if (res && res.error === 'short-name') msg = dict.errShortName;
                 else if (res && res.error === 'google-unavailable') msg = "Google Sign-In no está habilitado";
                 else if (res && res.error === 'google-invalid') msg = "No se pudo verificar tu cuenta de Google";
-                else if (res && res.error === 'google-name') msg = "No se pudo crear tu cuenta con ese nombre";
+                else if (res && res.error === 'email-taken') msg = dict.errEmailTaken;
+                else if (res && res.error === 'needs-device') msg = dict.errDeviceOnly;
                 showLoginMessage(msg);
                 return;
             }
-            // Primera vez con Google: pedir el nombre definitivo del jugador.
-            if (res.google && res.firstTime) {
-                pendingNamePick = true;
+            // Cuenta nueva de Google verificada: poner la contraseña del juego.
+            // (needsName llega también si se cerró el juego a mitad del proceso.)
+            if (res.needsName) {
+                authStep = 'create-pass';
+                createEmailInput.value = (res.account && res.account.googleEmail) || '';
+                createPassInput.value = "";
+                createMsg.innerText = "";
                 loginScreen.style.display = 'none';
+                createScreen.style.display = 'flex';
+                return;
+            }
+            // Contraseña del juego ya puesta: elegir el nombre definitivo.
+            if (authStep === 'create-pass') {
+                authStep = 'create-name';
+                createScreen.style.display = 'none';
                 namepickScreen.style.display = 'flex';
-                namepickInput.value = res.account.name || '';
+                namepickInput.value = profile.name || "";
                 namepickMsg.innerText = "";
                 return;
             }
-            pendingNamePick = false;
-            namepickScreen.style.display = 'none';
-            showLoginMessage("");
-            profile.google = !!res.google;
-            saveProfile();
-            enterLobbyWithAccount(res.account);
+            // Cuenta completa: entrar al lobby
+            if (res.account && res.account.name) {
+                authStep = 'none';
+                namepickScreen.style.display = 'none';
+                createScreen.style.display = 'none';
+                guestScreen.style.display = 'none';
+                showLoginMessage("");
+                profile.google = !!res.google;
+                profile.hasPassword = !!res.hasPassword;
+                if (res.account.googleEmail) profile.googleEmail = res.account.googleEmail;
+                saveProfile();
+                enterLobbyWithAccount(res.account);
+            }
         });
 
         function openConfigMenu() {
             lobbyScreen.style.display = 'none';
             configScreen.style.display = 'flex';
+            updateAccountUI();
             updateGoogleLinkUI();
         }
 
@@ -2925,13 +3319,22 @@ skinsTitleHeader: "PERSONALIZAR",
             localStorage.removeItem('ff_deaths');
             localStorage.removeItem('ff_username');
             localStorage.removeItem('ff_userpass');
+            localStorage.removeItem('ff_google');
+            localStorage.removeItem('ff_googlemail');
+            localStorage.removeItem('ff_haspw');
             profile.name = "";
             profile.level = 1;
             profile.exp = 0;
             profile.points = 0;
             profile.deaths = 0;
+            profile.google = false;
+            profile.googleEmail = "";
+            profile.hasPassword = false;
             saveProfile();
             configScreen.style.display = 'none';
+            guestScreen.style.display = 'none';
+            createScreen.style.display = 'none';
+            namepickScreen.style.display = 'none';
             loginScreen.style.display = 'flex';
             usernameInput.value = "";
             passwordInput.value = "";
@@ -2976,12 +3379,15 @@ skinsTitleHeader: "PERSONALIZAR",
                 return;
             }
             // Cuenta borrada: salir al login con todos los datos locales limpios
-            ['ff_name','ff_level','ff_exp','ff_points','ff_deaths','ff_username','ff_userpass','ff_matches','ff_wins','ff_kills','ff_dmg','ff_color','ff_skill','ff_avatar','ff_id'].forEach(k => localStorage.removeItem(k));
+            ['ff_name','ff_level','ff_exp','ff_points','ff_deaths','ff_username','ff_userpass','ff_matches','ff_wins','ff_kills','ff_dmg','ff_color','ff_skill','ff_avatar','ff_id','ff_google','ff_googlemail','ff_haspw'].forEach(k => localStorage.removeItem(k));
             profile.name = "";
             profile.level = 1;
             profile.exp = 0;
             profile.points = 0;
             profile.deaths = 0;
+            profile.google = false;
+            profile.googleEmail = "";
+            profile.hasPassword = false;
             saveProfile();
             deleteScreen.style.display = 'none';
             configScreen.style.display = 'none';
@@ -3013,6 +3419,7 @@ skinsTitleHeader: "PERSONALIZAR",
             profile.google = true;
             if (res.account && res.account.googleEmail) profile.googleEmail = res.account.googleEmail;
             saveProfile();
+            updateAccountUI();
             updateGoogleLinkUI();
         });
 
@@ -3032,15 +3439,11 @@ skinsTitleHeader: "PERSONALIZAR",
         const resetMsg = document.getElementById('reset-msg');
         let pendingResetToken = '';
 
-        forgotPassBtn.addEventListener('click', () => {
-            forgotMsg.innerText = "";
-            configScreen.style.display = 'none';
-            forgotScreen.style.display = 'flex';
-            forgotNameInput.value = profile.name;
-        });
+        forgotPassBtn.addEventListener('click', () => openForgotScreen('config'));
         forgotBackBtn.addEventListener('click', () => {
             forgotScreen.style.display = 'none';
-            configScreen.style.display = 'flex';
+            if (forgotReturnTo === 'login') loginScreen.style.display = 'flex';
+            else configScreen.style.display = 'flex';
         });
         forgotSendBtn.addEventListener('click', () => {
             const dict = i18n[profile.language] || i18n["ESPAÑOL"];
