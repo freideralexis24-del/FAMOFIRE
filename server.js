@@ -730,7 +730,7 @@ io.on('connection', (socket) => {
     // depende de una sola vía: si el correo falla o no hay SMTP, el jugador ve
     // el enlace en pantalla.
     const resetUrl = APP_BASE_URL + '/?reset=' + encodeURIComponent(token);
-    let emailed = false;
+    let emailed = false, emailStatus = 'off';
     if (transporter && acc.googleEmail) {
       try {
         await transporter.sendMail({
@@ -740,9 +740,10 @@ io.on('connection', (socket) => {
           html: `<h2>Restablecer contraseña</h2><p>Soldado <b>${accountKey}</b>: abre este enlace para elegir una contraseña nueva:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>El enlace expira en <b>${RESET_TTL_MIN} minutos</b>. Si no lo pediste, ignora este correo.</p>`
         });
         emailed = true;
-      } catch (e) { console.error('[EMAIL] no se pudo enviar:', e.message); }
+        emailStatus = 'sent';
+      } catch (e) { emailStatus = 'failed'; console.error('[EMAIL] no se pudo enviar:', e.message); }
     }
-    socket.emit('password-reset-requested', { ok: true, emailed, resetUrl });
+    socket.emit('password-reset-requested', { ok: true, emailed, emailStatus, resetUrl });
   });
 
   // APLICAR la nueva contraseña con el enlace válido (firmado con la cuenta de Google).

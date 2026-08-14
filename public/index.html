@@ -1927,6 +1927,8 @@
                 linkHint: "Vincula tu soldado a Google para protegerlo y poder recuperar tu contraseña por correo.",
                 linkInUse: "Ese Google ya está vinculado a otra cuenta.",
                 resetSentMsg: "✓ Enlace enviado. Revisa el correo de tu Google vinculado (incluye spam).",
+                resetFailMsg: "No se pudo enviar el correo (revisa la configuración del servidor). Usa este enlace:",
+                resetLinkAlso: "También puedes usar este enlace directo:",
                 resetLocalMsg: "Correo no configurado (modo local). Enlace de prueba:",
                 resetMismatch: "✗ Las contraseñas no coinciden.",
                 resetDone: "✓ Contraseña actualizada. Ahora también puedes entrar con Google.",
@@ -2116,6 +2118,8 @@
                 linkHint: "Link your soldier to Google to protect it and recover your password by email.",
                 linkInUse: "That Google account is already linked to another account.",
                 resetSentMsg: "✓ Link sent. Check your linked Google email (spam folder too).",
+                resetFailMsg: "Could not send the email (check the server settings). Use this link:",
+                resetLinkAlso: "You can also use this direct link:",
                 resetLocalMsg: "Email not configured (local mode). Test link:",
                 resetMismatch: "✗ Passwords do not match.",
                 resetDone: "✓ Password updated. You can also log in with Google now.",
@@ -2305,6 +2309,8 @@ skinsTitleHeader: "CUSTOMIZE",
                 linkHint: "将您的角色绑定谷歌以获得保护，并可通过邮箱找回密码。",
                 linkInUse: "该谷歌账号已绑定其他账户。",
                 resetSentMsg: "✓ 链接已发送，请检查绑定的谷歌邮箱（含垃圾箱）。",
+                resetFailMsg: "无法发送邮件（请检查服务器设置）。请使用此链接：",
+                resetLinkAlso: "你也可以直接使用此链接：",
                 resetLocalMsg: "未配置邮箱（本地模式）。测试链接：",
                 resetMismatch: "✗ 两次密码不一致。",
                 resetDone: "✓ 密码已更新，现在也可以用谷歌登录。",
@@ -2494,6 +2500,8 @@ skinsTitleHeader: "个性化",
                 linkHint: "Vincule seu soldado ao Google para protegê-lo e recuperar a senha por e-mail.",
                 linkInUse: "Esse Google já está vinculado a outra conta.",
                 resetSentMsg: "✓ Link enviado. Verifique seu e-mail do Google vinculado (inclua spam).",
+                resetFailMsg: "Não foi possível enviar o e-mail (verifique as configurações do servidor). Use este link:",
+                resetLinkAlso: "Você também pode usar este link direto:",
                 resetLocalMsg: "E-mail não configurado (modo local). Link de teste:",
                 resetMismatch: "✗ As senhas não coincidem.",
                 resetDone: "✓ Senha atualizada. Agora você também pode entrar com o Google.",
@@ -3769,7 +3777,9 @@ skinsTitleHeader: "PERSONALIZAR",
             // tardara o fallara el envío.
             if (res.resetUrl) {
                 if (res.emailed) {
-                    forgotMsg.innerHTML = `✅ ${dict.resetSentMsg}<br><span style="font-size:12px;color:#888;">${dict.resetLocalMsg}</span><a href="${res.resetUrl}" style="color:#00ffff;font-size:12px;word-break:break-all;">${res.resetUrl}</a>`;
+                    forgotMsg.innerHTML = `✅ ${dict.resetSentMsg}<br><span style="font-size:12px;color:#888;">${dict.resetLinkAlso}</span><a href="${res.resetUrl}" style="color:#00ffff;font-size:12px;word-break:break-all;">${res.resetUrl}</a>`;
+                } else if (res.emailStatus === 'failed') {
+                    forgotMsg.innerHTML = `⚠️ ${dict.resetFailMsg}<br><a href="${res.resetUrl}" style="color:#00ffff;word-break:break-all;">${res.resetUrl}</a>`;
                 } else {
                     forgotMsg.innerHTML = `⚠️ ${dict.resetLocalMsg}<br><a href="${res.resetUrl}" style="color:#00ffff;word-break:break-all;">${res.resetUrl}</a>`;
                 }
