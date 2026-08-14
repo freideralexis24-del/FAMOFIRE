@@ -705,7 +705,11 @@ io.on('connection', (socket) => {
     if (!acc) return socket.emit('password-reset-requested', { ok: false, error: 'not-found' });
     if (!acc.googleId) return socket.emit('password-reset-requested', { ok: false, error: 'no-email' });
     const token = resetToken(acc.googleId, 'pwreset');
-    const url = APP_BASE_URL + '/?reset=' + encodeURIComponent(token);
+    // El enlace SIEMPRE viaja en la respuesta (siempre visible), y además se
+    // envía por correo cuando SMTP está configurado. Así la recuperación nunca
+    // depende de una sola vía: si el correo falla o no hay SMTP, el jugador ve
+    // el enlace en pantalla.
+    const resetUrl = APP_BASE_URL + '/?reset=' + encodeURIComponent(token);
     let emailed = false;
     if (transporter && acc.googleEmail) {
       try {
@@ -713,12 +717,12 @@ io.on('connection', (socket) => {
           from: process.env.SMTP_FROM || process.env.SMTP_USER,
           to: acc.googleEmail,
           subject: 'FAMOFIRE - Restablecer contraseña',
-          html: `<h2>Restablecer contraseña</h2><p>Soldado <b>${accountKey}</b>: abre este enlace para elegir una contraseña nueva:</p><p><a href="${url}">${url}</a></p><p>Si no lo pediste, ignora este correo.</p>`
+          html: `<h2>Restablecer contraseña</h2><p>Soldado <b>${accountKey}</b>: abre este enlace para elegir una contraseña nueva:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>Si no lo pediste, ignora este correo.</p>`
         });
         emailed = true;
       } catch (e) { console.error('[EMAIL] no se pudo enviar:', e.message); }
     }
-    socket.emit('password-reset-requested', { ok: true, emailed, resetUrl: emailed ? '' : url });
+    socket.emit('password-reset-requested', { ok: true, emailed, resetUrl });
   });
 
   // APLICAR la nueva contraseña con el enlace válido (firmado con la cuenta de Google).

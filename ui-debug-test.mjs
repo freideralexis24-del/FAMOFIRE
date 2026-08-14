@@ -34,6 +34,8 @@ try {
 // 2) Cerrar sesión y volver a entrar -> login, sin pantallas raras
 await page.click('#gear-btn').catch(() => {});
 await new Promise(r => setTimeout(r, 500));
+await page.click('#cfg-tab-account').catch(() => {});
+await new Promise(r => setTimeout(r, 300));
 await page.click('#logout-btn').catch(() => {});
 await new Promise(r => setTimeout(r, 600));
 const backLogin = await page.evaluate(() => document.getElementById('login-screen').style.display === 'flex');

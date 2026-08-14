@@ -226,6 +226,38 @@
             box-shadow: 0px 0px 10px #ffcc00;
             background: rgba(255, 204, 0, 0.15);
         }
+        .config-tabs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .config-tab {
+            background: #3a3f55;
+            color: #fff;
+            border: 1px solid #555;
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 12.5px;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: background 0.15s ease, color 0.15s ease;
+        }
+        .config-tab.active {
+            background: #00ffff;
+            color: #000;
+            border-color: #00ffff;
+            font-weight: bold;
+        }
+        .config-tab-panel {
+            width: 100%;
+            animation: cfgFade 0.15s ease;
+        }
+        @keyframes cfgFade {
+            from { opacity: 0.4; }
+            to { opacity: 1; }
+        }
         .rank-player-name {
             color: #00ffff;
             cursor: pointer;
@@ -996,27 +1028,36 @@
         <h1 data-i18n="configTitle">CONFIGURACIÓN</h1>
         <p style="font-size: 15px; color: #aaa; margin-bottom: 15px;" data-i18n="configSubtitle">Ajustes del sistema</p>
         
-        <div style="font-size: 13px; color: #00ffff; margin-bottom: 4px; letter-spacing: 2px;" data-i18n="configSecVisual">— VISUALES Y SONIDO —</div>
-        <div class="lobby-menu">
-            <button id="toggle-fps-btn" class="btn-main"><span data-i18n="fpsBtnText">FPS</span>: <span id="fps-status-label">ACTIVADO</span></button>
-            <button id="toggle-music-btn" class="btn-main"><span data-i18n="musicBtnText">MÚSICA</span>: <span id="music-status-label">ACTIVADA</span></button>
+        <div class="config-tabs">
+            <button id="cfg-tab-visual" class="config-tab active" data-i18n="configSecVisual">— VISUALES Y SONIDO —</button>
+            <button id="cfg-tab-lang" class="config-tab" data-i18n="configSecControls">— IDIOMA Y CONTROLES —</button>
+            <button id="cfg-tab-account" class="config-tab" data-i18n="configSecAccount">— CUENTA Y SEGURIDAD —</button>
         </div>
 
-        <div style="font-size: 13px; color: #00ffff; margin: 14px 0 4px 0; letter-spacing: 2px;" data-i18n="configSecControls">— IDIOMA Y CONTROLES —</div>
-        <div class="lobby-menu">
-            <button id="to-language-btn" class="btn-main" style="background-color: #00ffff;" data-i18n="langMenuBtn">IDIOMA</button>
-            <button id="to-controls-btn" class="btn-main" style="background-color: #00ff00;" data-i18n="controlsMenuBtn">CONTROLES</button>
+        <div id="cfg-panel-visual" class="config-tab-panel">
+            <div class="lobby-menu">
+                <button id="toggle-fps-btn" class="btn-main"><span data-i18n="fpsBtnText">FPS</span>: <span id="fps-status-label">ACTIVADO</span></button>
+                <button id="toggle-music-btn" class="btn-main"><span data-i18n="musicBtnText">MÚSICA</span>: <span id="music-status-label">ACTIVADA</span></button>
+            </div>
         </div>
 
-        <div style="font-size: 13px; color: #00ffff; margin: 14px 0 4px 0; letter-spacing: 2px;" data-i18n="configSecAccount">— CUENTA Y SEGURIDAD —</div>
-        <div class="lobby-menu">
-            <div id="account-badge" style="display: none;"></div>
-            <div id="google-link-wrap" style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 6px 0;"></div>
-            <button id="set-pass-btn" class="btn-main" style="background-color: #ffaa00;">PONER CONTRASEÑA</button>
-            <button id="forgot-pass-btn" class="btn-main" data-i18n="forgotPassBtn">¿OLVIDASTE TU CONTRASEÑA?</button>
-            <button id="logout-btn" class="btn-main" style="background-color: #ff3333; color: #fff;" data-i18n="logoutBtn">CERRAR SESIÓN</button>
-            <button id="delete-account-btn" class="btn-main" style="background-color: #880000; color: #fff;" data-i18n="deleteBtn">ELIMINAR CUENTA</button>
-            <button id="back-from-config" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
+        <div id="cfg-panel-lang" class="config-tab-panel" style="display: none;">
+            <div class="lobby-menu">
+                <button id="to-language-btn" class="btn-main" style="background-color: #00ffff;" data-i18n="langMenuBtn">IDIOMA</button>
+                <button id="to-controls-btn" class="btn-main" style="background-color: #00ff00;" data-i18n="controlsMenuBtn">CONTROLES</button>
+            </div>
+        </div>
+
+        <div id="cfg-panel-account" class="config-tab-panel" style="display: none;">
+            <div class="lobby-menu">
+                <div id="account-badge" style="display: none;"></div>
+                <div id="google-link-wrap" style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 6px 0;"></div>
+                <button id="set-pass-btn" class="btn-main" style="background-color: #ffaa00;">PONER CONTRASEÑA</button>
+                <button id="forgot-pass-btn" class="btn-main" data-i18n="forgotPassBtn">¿OLVIDASTE TU CONTRASEÑA?</button>
+                <button id="logout-btn" class="btn-main" style="background-color: #ff3333; color: #fff;" data-i18n="logoutBtn">CERRAR SESIÓN</button>
+                <button id="delete-account-btn" class="btn-main" style="background-color: #880000; color: #fff;" data-i18n="deleteBtn">ELIMINAR CUENTA</button>
+                <button id="back-from-config" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
+            </div>
         </div>
     </div>
 
@@ -2279,7 +2320,7 @@ skinsTitleHeader: "PERSONALIZAR",
         };
 
         const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d', { desynchronized: true });
+        const ctx = canvas.getContext('2d', { alpha: false });
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
@@ -2562,6 +2603,12 @@ skinsTitleHeader: "PERSONALIZAR",
         const profileAvatarBig = document.getElementById('profile-avatar-big');
 
         const backFromConfig = document.getElementById('back-from-config');
+        const cfgTabVisual = document.getElementById('cfg-tab-visual');
+        const cfgTabLang = document.getElementById('cfg-tab-lang');
+        const cfgTabAccount = document.getElementById('cfg-tab-account');
+        const cfgPanelVisual = document.getElementById('cfg-panel-visual');
+        const cfgPanelLang = document.getElementById('cfg-panel-lang');
+        const cfgPanelAccount = document.getElementById('cfg-panel-account');
         const backFromControls = document.getElementById('back-from-controls');
         const backFromLanguage = document.getElementById('back-from-language');
         const backFromBattlefield = document.getElementById('back-from-battlefield');
@@ -2607,6 +2654,7 @@ skinsTitleHeader: "PERSONALIZAR",
         let safeZone = { x: 0, y: 0, radius: 0, maxRadius: 0, targetRadius: 0, startX: 0, startY: 0, targetX: 0, targetY: 0, startDelay: 900, duration: 5760, timer: 0 };
 
         let lastTime = performance.now();
+        let lastRendered = 0;
         let frameCount = 0;
         let fpsTimer = 0;
         let matchmakingInterval = null;
@@ -2622,6 +2670,11 @@ skinsTitleHeader: "PERSONALIZAR",
                 // pasos del juego para que el combate siga avanzando.
                 const delta = Math.min(now - lastTime, 5000);
                 lastTime = now;
+                // Tope de 120 FPS (V-Sync: el navegador sincroniza cada frame con el
+                // refresco del monitor). La simulación sigue avanzando siempre; solo
+                // se saltan frames de DIBUJO para no gastar recursos de más.
+                if (now - lastRendered < 1000 / 120) return;
+                lastRendered = now;
 
                 frameCount++;
                 fpsTimer += delta;
@@ -3141,28 +3194,8 @@ skinsTitleHeader: "PERSONALIZAR",
                     else guestMsg.innerText = dict.errGeneric;
                     return;
                 }
-                // AUTO-RESTAURACIÓN: si el servidor perdió las cuentas (actualización
-                // sin base de datos persistente), el juego la recrea SOLO con el mismo
-                // usuario guardado, sin pedirte crear nada.
-                const savedName = localStorage.getItem('ff_username');
-                const savedPassRaw = localStorage.getItem('ff_userpass');
-                const typedName = usernameInput.value.trim() || savedName || '';
-                if (savedName && savedName.toUpperCase() === typedName.toUpperCase()) {
-                    if (res && res.error === 'not-found') {
-                        showLoginMessage("🔄 Restaurando tu cuenta...");
-                        if (savedPassRaw) {
-                            socket.emit('account-register', { name: typedName, password: atob(savedPassRaw) });
-                        } else {
-                            socket.emit('guest-register', { name: typedName, password: '', deviceToken: getDeviceToken() });
-                        }
-                        return;
-                    }
-                    if (res && res.error === 'name-taken') {
-                        showLoginMessage("🔄 Recuperando tu cuenta...");
-                        socket.emit('account-login', { name: typedName, password: atob(savedPassRaw || '') });
-                        return;
-                    }
-                }
+                // Las cuentas SOLO se crean con Google o como invitado: si el
+                // servidor dice que no existe, se informa (nada de recrearla sola).
                 let msg = dict.errGeneric;
                 if (res && res.error === 'not-found') msg = dict.errNoAccount;
                 else if (res && res.error === 'bad-pass') msg = dict.errBadPass;
@@ -3219,7 +3252,23 @@ skinsTitleHeader: "PERSONALIZAR",
             configScreen.style.display = 'flex';
             updateAccountUI();
             updateGoogleLinkUI();
+            showConfigTab('visual');
         }
+
+        // ---- PESTAÑAS DE CONFIGURACIÓN: Visuales y Sonido / Idioma y Controles / Cuenta y Seguridad ----
+        function showConfigTab(tab) {
+            const isVisual = tab === 'visual';
+            const isLang = tab === 'lang';
+            cfgPanelVisual.style.display = isVisual ? 'block' : 'none';
+            cfgPanelLang.style.display = isLang ? 'block' : 'none';
+            cfgPanelAccount.style.display = (isVisual || isLang) ? 'none' : 'block';
+            cfgTabVisual.classList.toggle('active', isVisual);
+            cfgTabLang.classList.toggle('active', isLang);
+            cfgTabAccount.classList.toggle('active', !isVisual && !isLang);
+        }
+        cfgTabVisual.addEventListener('click', () => showConfigTab('visual'));
+        cfgTabLang.addEventListener('click', () => showConfigTab('lang'));
+        cfgTabAccount.addEventListener('click', () => showConfigTab('account'));
 
         backFromConfig.addEventListener('click', () => {
             configScreen.style.display = 'none';
@@ -3292,7 +3341,7 @@ skinsTitleHeader: "PERSONALIZAR",
             saveProfile();
             updateLobbyUI();
             if (!profile.music) stopLobbyMusic();
-            else if (lobbyScreen.style.display !== 'none') startLobbyMusic();
+            else startLobbyMusic(); // suena aunque estés en Configuración (la música es del menú)
         });
 
         // Cerrar sesión: olvida la cuenta local y permite entrar con otra
@@ -3445,11 +3494,17 @@ skinsTitleHeader: "PERSONALIZAR",
                 else forgotMsg.innerText = dict.errGeneric;
                 return;
             }
-            if (res.emailed) {
-                forgotMsg.innerText = dict.resetSentMsg; // "✓ Revisa el correo de Google vinculado"
+            // El enlace de recuperación SIEMPRE llega: por correo (si hay SMTP) y,
+            // además, se muestra en pantalla como respaldo por si el correo
+            // tardara o fallara el envío.
+            if (res.resetUrl) {
+                if (res.emailed) {
+                    forgotMsg.innerHTML = `✅ ${dict.resetSentMsg}<br><span style="font-size:12px;color:#888;">${dict.resetLocalMsg}</span><a href="${res.resetUrl}" style="color:#00ffff;font-size:12px;word-break:break-all;">${res.resetUrl}</a>`;
+                } else {
+                    forgotMsg.innerHTML = `⚠️ ${dict.resetLocalMsg}<br><a href="${res.resetUrl}" style="color:#00ffff;word-break:break-all;">${res.resetUrl}</a>`;
+                }
             } else {
-                // Sin SMTP configurado (modo local): se muestra el enlace para probar
-                forgotMsg.innerHTML = `⚠️ ${dict.resetLocalMsg}<br><a href="${res.resetUrl}" style="color:#00ffff;">${res.resetUrl}</a>`;
+                forgotMsg.innerText = dict.resetSentMsg;
             }
         });
 
@@ -3519,6 +3574,10 @@ skinsTitleHeader: "PERSONALIZAR",
             // entrenamiento y lo hagan parecer "otra parte del Campo de Batalla".
             gameOver = false;
             gameStarted = true;
+            // Reiniciar la base de tiempo: evita que un catch-up de la partida que
+            // acaba de terminar se arrastre y arranque la nueva a cámara ultrarápida.
+            lastTime = performance.now();
+            lastRendered = lastTime;
             spectateMode = false;
             spectateId = null;
             spectateTargetType = 'none';
@@ -3661,6 +3720,10 @@ skinsTitleHeader: "PERSONALIZAR",
             skillHud.style.display = 'flex';
             killFeedContainer.innerHTML = '';
             gameStarted = true;
+            // Reiniciar la base de tiempo: sin esto la primera partida puede
+            // arrancar con un catch-up acumulado (cámara/velocidad ultrarápida).
+            lastTime = performance.now();
+            lastRendered = lastTime;
             matchStats.kills = 0;
             matchStats.damage = 0;
             spawnEnemies();
@@ -3770,6 +3833,8 @@ skinsTitleHeader: "PERSONALIZAR",
             profile.avatar = emoji;
             saveProfile();
             updateAvatarSelectionUI();
+            // Refrescar en vivo el avatar del perfil y de la sala de comando
+            updateLobbyUI();
         }
 
         // ---- VER PERFIL PÚBLICO DE UN SOLDADO DEL TOP 100 ----
@@ -4071,43 +4136,60 @@ skinsTitleHeader: "PERSONALIZAR",
                 if (p && p.catch) p.catch(() => {});
             } catch (e) { /* sin audio: se ignora */ }
         }
-        document.addEventListener('pointerdown', () => {
-            try {
-                // Desbloqueo de audio (Safari/iOS): toca el elemento en silencio
-                // para que los próximos disparos sí suenen.
-                sfxShot.volume = 0;
-                const p = sfxShot.play();
-                if (p && p.catch) p.catch(() => {});
-                sfxShot.pause();
-                sfxShot.volume = 0.35;
-                // Si la música de la Sala de Comando debería estar sonando pero el
-                // navegador la bloqueó por autoplay, este primer toque la libera.
-                if (lobbyMusicShouldPlay && audioLobby && audioLobby.paused) {
-                    audioLobby.volume = 0.22;
-                    const m = audioLobby.play();
-                    if (m && m.catch) m.catch(() => {});
-                }
-            } catch (e) {}
-        }, { once: true, capture: true });
 
         // ---- Música de la Sala de Comando (suena solo en los menús; se detiene
         // al iniciar CAMPO DE BATALLA o ENTRENAMIENTO) ----
         let lobbyMusicShouldPlay = false;
+        let musicPendingStart = false;
         function startLobbyMusic() {
             if (profile.music === false) return;
             lobbyMusicShouldPlay = true;
+            musicPendingStart = true;
             if (!audioLobby) return;
             try {
+                // Recargar el elemento evita estados rotos tras pause()+currentTime=0.
+                audioLobby.load();
                 audioLobby.volume = 0.22;
                 const p = audioLobby.play();
-                if (p && p.catch) p.catch(() => {});
-            } catch (e) {}
+                if (p) {
+                    p.then(() => { musicPendingStart = false; })
+                     .catch(() => { musicPendingStart = true; });
+                }
+            } catch (e) { musicPendingStart = true; }
         }
         function stopLobbyMusic() {
             lobbyMusicShouldPlay = false;
+            musicPendingStart = false;
             if (!audioLobby) return;
             try { audioLobby.pause(); audioLobby.currentTime = 0; } catch (e) {}
         }
+
+        // Desbloqueo de audio (Safari/iOS y autoplay bloqueado): el primer toque y
+        // CADA interacción posterior reintentan la música pendiente de reproducir,
+        // así reactivar la música siempre vuelve a sonar aunque el navegador la
+        // haya bloqueado al encenderla.
+        let audioUnlocked = false;
+        function unlockAudio() {
+            if (!audioUnlocked) {
+                audioUnlocked = true;
+                try {
+                    sfxShot.volume = 0;
+                    const p = sfxShot.play();
+                    if (p && p.catch) p.catch(() => {});
+                    sfxShot.pause();
+                    sfxShot.volume = 0.35;
+                } catch (e) {}
+            }
+            if (musicPendingStart && lobbyMusicShouldPlay && audioLobby && audioLobby.paused) {
+                try {
+                    audioLobby.volume = 0.22;
+                    const m = audioLobby.play();
+                    if (m) m.then(() => { musicPendingStart = false; }).catch(() => {});
+                } catch (e) {}
+            }
+        }
+        document.addEventListener('pointerdown', unlockAudio, { capture: true });
+        document.addEventListener('keydown', unlockAudio);
 
         function isActionPressed(actionName) {
             let keysArr = profile.controls[actionName];
@@ -5011,6 +5093,13 @@ skinsTitleHeader: "PERSONALIZAR",
         setInterval(() => {
             if (document.hidden) masterGameLoop(performance.now());
         }, 250);
+
+        // Al volver a la pestaña se reinicia la base de tiempo: el catch-up
+        // acumulado se descarta y la partida sigue donde estaba, sin arranques
+        // a cámara rápida.
+        document.addEventListener('visibilitychange', () => {
+            lastTime = performance.now();
+        });
     </script>
 </body>
 </html>
