@@ -874,12 +874,14 @@
         <p id="login-msg" style="font-size: 14px; color: #ffcc00; height: 36px; margin-top: 8px; text-align: center;"></p>
     </div>
 
-    <!-- CREAR CUENTA CON GOOGLE: correo verificado + contraseña del juego -->
+    <!-- CREAR CUENTA CON GOOGLE: correo verificado + nombre + contraseña del juego -->
     <div id="create-screen" class="screen" style="display: none;">
         <h1 data-i18n="createTitle">CREAR CUENTA CON GOOGLE</h1>
         <p style="font-size: 14px; color: #aaa; margin-bottom: 10px;" data-i18n="createEmailOk">Tu correo fue verificado con Google:</p>
         <input type="text" id="create-email-input" readonly maxlength="60" style="background: rgba(255,255,255,0.08); color: #9ff;">
+        <input type="text" id="create-name-input" placeholder="Tu nombre en FAMOFIRE" maxlength="12" autocomplete="off">
         <input type="password" id="create-pass-input" placeholder="Contraseña del juego (mín. 4)" maxlength="20" autocomplete="new-password">
+        <p style="font-size: 12px; color: #aaa; margin: 0;" data-i18n="createNameHint">Tu nombre solo se elige una vez y no se puede cambiar.</p>
         <div class="lobby-menu">
             <button id="create-confirm-btn" class="btn-main" style="background-color: #00ff00;" data-i18n="createContinue">CREAR CUENTA</button>
             <button id="create-cancel-btn" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
@@ -912,17 +914,6 @@
         </div>
         <p id="setpass-msg" style="font-size: 14px; color: #ffcc00; height: 36px; margin-top: 8px; text-align: center;"></p>
         <p class="login-hint" id="setpass-warn" data-i18n="guestWarn" style="display: none;">⚠️ Como invitado, si olvidas tu contraseña no hay forma de recuperarla. Vincula tu cuenta a un correo con Google para protegerla.</p>
-    </div>
-
-    <!-- ELECCIÓN DE NOMBRE (solo la primera vez, al crear cuenta con Google) -->
-    <div id="namepick-screen" class="screen" style="display: none;">
-        <h1 data-i18n="namepickTitle">ELIGE TU NOMBRE</h1>
-        <p style="margin-bottom: 14px; max-width: 300px;">Tu nombre dentro del juego. Solo se elige una vez y no se puede cambiar.</p>
-        <input type="text" id="namepick-input" placeholder="Tu nombre en FAMOFIRE" maxlength="12">
-        <div class="lobby-menu">
-            <button id="namepick-confirm-btn" class="btn-main" data-i18n="loginBtn">CONTINUAR</button>
-        </div>
-        <p id="namepick-msg" style="font-size: 14px; color: #ffcc00; height: 36px; margin-top: 8px; text-align: center;"></p>
     </div>
 
     <div id="lobby-screen" class="screen" style="display: none;">
@@ -1629,6 +1620,7 @@
                 createHint: "Se abrirá la ventana de Google para confirmar tu correo; luego eliges la contraseña del juego y el nombre de tu soldado.",
                 createTitle: "CREAR CUENTA CON GOOGLE",
                 createEmailOk: "Tu correo fue verificado con Google:",
+                createNameHint: "Tu nombre solo se elige una vez y no se puede cambiar.",
                 createContinue: "CREAR CUENTA",
                 guestTitle: "ENTRAR COMO INVITADO",
                 guestHint: "Elige el nombre de tu soldado. La contraseña es opcional: si no la pones, solo podrás jugar desde este dispositivo.",
@@ -1795,6 +1787,7 @@
                 createHint: "The Google window will open to confirm your email; then you pick your game password and your soldier name.",
                 createTitle: "CREATE ACCOUNT WITH GOOGLE",
                 createEmailOk: "Your email was verified with Google:",
+                createNameHint: "Your name is chosen only once and cannot be changed.",
                 createContinue: "CREATE ACCOUNT",
                 guestTitle: "PLAY AS GUEST",
                 guestHint: "Choose your soldier name. Password is optional: without it you can only play from this device.",
@@ -1961,6 +1954,7 @@ skinsTitleHeader: "CUSTOMIZE",
                 createHint: "将打开谷歌窗口确认你的邮箱；然后你设置游戏密码和士兵名称。",
                 createTitle: "使用谷歌创建账户",
                 createEmailOk: "你的邮箱已经通过谷歌验证：",
+                createNameHint: "你的名字只能选择一次，之后不能更改。",
                 createContinue: "创建账户",
                 guestTitle: "以游客身份进入",
                 guestHint: "选择你的士兵名称。密码是可选的：不设置的话只能在此设备上游戏。",
@@ -2127,6 +2121,7 @@ skinsTitleHeader: "个性化",
                 createHint: "A janela do Google abrirá para confirmar seu e-mail; depois você escolhe a senha do jogo e o nome do seu soldado.",
                 createTitle: "CRIAR CONTA COM GOOGLE",
                 createEmailOk: "Seu e-mail foi verificado com o Google:",
+                createNameHint: "Seu nome é escolhido apenas uma vez e não pode ser alterado.",
                 createContinue: "CRIAR CONTA",
                 guestTitle: "ENTRAR COMO CONVIDADO",
                 guestHint: "Escolha o nome do seu soldado. A senha é opcional: sem ela, você só poderá jogar neste dispositivo.",
@@ -2488,6 +2483,7 @@ skinsTitleHeader: "PERSONALIZAR",
         const loginMsg = document.getElementById('login-msg');
         const createScreen = document.getElementById('create-screen');
         const createEmailInput = document.getElementById('create-email-input');
+        const createNameInput = document.getElementById('create-name-input');
         const createPassInput = document.getElementById('create-pass-input');
         const createConfirmBtn = document.getElementById('create-confirm-btn');
         const createCancelBtn = document.getElementById('create-cancel-btn');
@@ -2508,10 +2504,8 @@ skinsTitleHeader: "PERSONALIZAR",
         const setpassWarn = document.getElementById('setpass-warn');
         const accountBadge = document.getElementById('account-badge');
         const setPassBtn = document.getElementById('set-pass-btn');
-        const namepickScreen = document.getElementById('namepick-screen');
-        const namepickInput = document.getElementById('namepick-input');
-        const namepickConfirmBtn = document.getElementById('namepick-confirm-btn');
-        const namepickMsg = document.getElementById('namepick-msg');
+        const toggleMusicBtn = document.getElementById('toggle-music-btn');
+        const musicStatusLabel = document.getElementById('music-status-label');
         const lobbyName = document.getElementById('lobby-name');
         const lobbyId = document.getElementById('lobby-id');
         const lobbyLevel = document.getElementById('lobby-level');
@@ -2984,17 +2978,22 @@ skinsTitleHeader: "PERSONALIZAR",
             socket.emit('guest-login', { name, deviceToken: getDeviceToken() });
         });
 
-        // ---- CREAR CUENTA CON GOOGLE: paso 2 (contraseña del juego) ----
+        // ---- CREAR CUENTA CON GOOGLE: correo + nombre + contraseña en UNA pantalla ----
         createCancelBtn.addEventListener('click', () => {
+            authStep = 'none';
             createScreen.style.display = 'none';
             loginScreen.style.display = 'flex';
         });
         createConfirmBtn.addEventListener('click', () => {
             const dict = i18n[profile.language] || i18n["ESPAÑOL"];
             const pass = createPassInput.value;
+            const name = createNameInput.value.trim();
             if (pass.length < 4) { createMsg.innerText = dict.errShortPass; return; }
+            if (name.length < 2) { createMsg.innerText = dict.errShortName; return; }
             if (!socket.connected) { createMsg.innerText = dict.errGeneric; return; }
             createMsg.innerText = "...";
+            // Paso 1: contraseña del juego. Al confirmar, el servidor sigue con el
+            // nombre automáticamente (sin pantallas intermedias).
             socket.emit('google-set-password', { password: pass });
         });
 
@@ -3116,35 +3115,18 @@ skinsTitleHeader: "PERSONALIZAR",
             setPassBtn.innerText = profile.hasPassword ? dict.changePassBtn : dict.setPassBtn;
         }
 
-        // ---- Elección de nombre (primera vez con una cuenta de Google) ----
-        namepickConfirmBtn.addEventListener('click', () => {
-            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
-            const name = namepickInput.value.trim();
-            if (name === "") {
-                namepickMsg.innerText = dict.errShortName;
-                return;
-            }
-            if (!socket.connected) {
-                namepickMsg.innerText = dict.errGeneric;
-                return;
-            }
-            namepickMsg.innerText = "...";
-            socket.emit('account-set-name', { name });
-        });
-
         socket.on('account-result', (res) => {
             const dict = i18n[profile.language] || i18n["ESPAÑOL"];
             if (!res || !res.ok) {
                 // Pantallas especiales de creación de cuenta / invitado
-                if (authStep === 'create-name') {
-                    if (res && res.error === 'name-taken') namepickMsg.innerText = dict.errNameTaken;
-                    else if (res && res.error === 'short-name') namepickMsg.innerText = dict.errShortName;
-                    else namepickMsg.innerText = dict.errGeneric;
-                    return;
-                }
-                if (authStep === 'create-pass') {
-                    if (res && res.error === 'short-pass') createMsg.innerText = dict.errShortPass;
+                if (authStep === 'create-name' || authStep === 'create-pass') {
+                    // El nombre está tomado o la contraseña no es válida: volvemos
+                    // a la pantalla de crear cuenta con el mensaje (sigue visible)
+                    if (res && res.error === 'name-taken') createMsg.innerText = dict.errNameTaken;
+                    else if (res && res.error === 'short-name') createMsg.innerText = dict.errShortName;
+                    else if (res && res.error === 'short-pass') createMsg.innerText = dict.errShortPass;
                     else createMsg.innerText = dict.errGeneric;
+                    authStep = 'create-pass';
                     return;
                 }
                 if (authStep === 'guest') {
@@ -3194,30 +3176,33 @@ skinsTitleHeader: "PERSONALIZAR",
                 showLoginMessage(msg);
                 return;
             }
-            // Cuenta nueva de Google verificada: poner la contraseña del juego.
-            // (needsName llega también si se cerró el juego a mitad del proceso.)
+            // Cuenta nueva de Google verificada o retomada a mitad de proceso:
+            // mostrar la pantalla de crear cuenta (correo + nombre + contraseña).
             if (res.needsName) {
+                if (authStep === 'create-pass') {
+                    // Acabamos de guardar la contraseña: ahora guardar el nombre
+                    // que ya está escrito en la misma pantalla, sin pasos extra.
+                    const nm = createNameInput.value.trim();
+                    if (nm.length < 2) {
+                        createMsg.innerText = dict.errShortName;
+                        return;
+                    }
+                    authStep = 'create-name';
+                    socket.emit('account-set-name', { name: nm });
+                    return;
+                }
                 authStep = 'create-pass';
                 createEmailInput.value = (res.account && res.account.googleEmail) || '';
+                createNameInput.value = (res.account && res.account.name) || '';
                 createPassInput.value = "";
                 createMsg.innerText = "";
                 loginScreen.style.display = 'none';
                 createScreen.style.display = 'flex';
                 return;
             }
-            // Contraseña del juego ya puesta: elegir el nombre definitivo.
-            if (authStep === 'create-pass') {
-                authStep = 'create-name';
-                createScreen.style.display = 'none';
-                namepickScreen.style.display = 'flex';
-                namepickInput.value = profile.name || "";
-                namepickMsg.innerText = "";
-                return;
-            }
             // Cuenta completa: entrar al lobby
             if (res.account && res.account.name) {
                 authStep = 'none';
-                namepickScreen.style.display = 'none';
                 createScreen.style.display = 'none';
                 guestScreen.style.display = 'none';
                 showLoginMessage("");
@@ -3334,7 +3319,6 @@ skinsTitleHeader: "PERSONALIZAR",
             configScreen.style.display = 'none';
             guestScreen.style.display = 'none';
             createScreen.style.display = 'none';
-            namepickScreen.style.display = 'none';
             loginScreen.style.display = 'flex';
             usernameInput.value = "";
             passwordInput.value = "";
