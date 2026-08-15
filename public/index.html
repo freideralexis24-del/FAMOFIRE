@@ -819,6 +819,64 @@
         .mail-done { color: #2ede62; font-weight: bold; font-size: 13px; }
         .mail-new-tag { color: #ffcc00; font-size: 10px; font-weight: bold; letter-spacing: 1px; }
         .mail-empty { color: #aaa; font-size: 14px; margin-top: 12px; }
+        .mail-inbox-title {
+            width: 100%; text-align: center; font-size: 13px; font-weight: 700;
+            color: #ffcc00; letter-spacing: 2px; margin: 10px 0 4px; padding-top: 10px;
+            border-top: 1px dashed rgba(255, 204, 0, 0.25);
+        }
+        .mail-tabs {
+            display: flex; gap: 6px; justify-content: center; margin: 6px 0 2px;
+        }
+        .mail-tab {
+            background: rgba(0, 0, 0, 0.45); color: #bbb; border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px; padding: 5px 12px; font-size: 11px; font-weight: 700; letter-spacing: 1px;
+            cursor: pointer; transition: all 0.15s ease;
+        }
+        .mail-tab.active {
+            background: #ffcc00; color: #1a1a1a; border-color: #ffcc00;
+            box-shadow: 0 0 10px rgba(255, 204, 0, 0.45);
+        }
+        .mail-card {
+            background: rgba(8, 10, 16, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .mail-card.unclaimed {
+            border-color: rgba(255, 204, 0, 0.7);
+            box-shadow: 0 0 12px rgba(255, 204, 0, 0.22);
+        }
+        .mail-card-icon {
+            width: 46px; height: 46px; flex: 0 0 46px;
+            border-radius: 12px;
+            background: linear-gradient(160deg, rgba(255, 204, 0, 0.22), rgba(255, 204, 0, 0.05));
+            border: 1px solid rgba(255, 204, 0, 0.35);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px;
+        }
+        .mail-card-info { flex: 1; min-width: 0; text-align: left; }
+        .mail-card-title { font-weight: bold; color: #fff; font-size: 14px; line-height: 1.25; }
+        .mail-card-title .mail-new-pill {
+            display: inline-block; margin-left: 6px; vertical-align: 2px;
+            background: #ffcc00; color: #1a1a1a; border-radius: 8px;
+            font-size: 9px; font-weight: 800; letter-spacing: 1px; padding: 2px 6px;
+        }
+        .mail-card-meta { color: #9aa; font-size: 11px; margin-top: 3px; }
+        .mail-card-msg { color: #cbcbd8; font-size: 12px; margin-top: 2px; font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .mail-card-btn {
+            background: linear-gradient(180deg, #ffb300, #ff8c00); color: #1a1a1a;
+            border: none; border-radius: 18px; font-weight: 800; font-size: 12px;
+            padding: 8px 14px; letter-spacing: 1px; cursor: pointer; flex: 0 0 auto;
+            box-shadow: 0 2px 8px rgba(255, 140, 0, 0.4); transition: transform 0.12s ease;
+        }
+        .mail-card-btn:hover { transform: translateY(-1px); }
+        .mail-card-done {
+            color: #2ede62; font-weight: 800; font-size: 12px; flex: 0 0 auto; letter-spacing: 1px;
+        }
+        .mail-card-empty { color: #9aa; font-size: 13px; margin-top: 16px; }
         .premium-frame {
             position: relative;
             border: 3px solid #ffcc00 !important;
@@ -1589,6 +1647,12 @@
             <button id="mail-send-btn" class="btn-main" style="background-color: #ffcc00; font-size: 14px; padding: 8px 14px;" data-i18n="mailSend">ENVIAR</button>
         </div>
         <p id="mail-msg" style="font-size: 14px; color: #ffcc00; height: 20px; margin-top: 6px; text-align: center;"></p>
+        <div class="mail-inbox-title" data-i18n="mailInbox">RECIBIDOS</div>
+        <div class="mail-tabs">
+            <button class="mail-tab active" data-filter="all" data-i18n="mailTabAll">TODO</button>
+            <button class="mail-tab" data-filter="pending" data-i18n="mailTabPending">POR RECIBIR</button>
+            <button class="mail-tab" data-filter="claimed" data-i18n="mailTabClaimed">RECIBIDOS</button>
+        </div>
         <div id="mail-list" class="mail-list"></div>
         <div class="lobby-menu">
             <button id="mail-back-btn" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
@@ -1988,7 +2052,6 @@
             <button id="shop-tab-skins" class="shop-tab active" onclick="setShopTab('skins')"><span data-i18n="shopTabSkins">SKINS</span></button>
             <button id="shop-tab-avatars" class="shop-tab" onclick="setShopTab('avatars')"><span data-i18n="shopTabAvatars">AVATARES</span></button>
         </div>
-        <div class="shop-sub" id="shop-balance-line"></div>
         <div class="shop-grid" id="shop-grid"></div>
         <p id="shop-msg" style="font-size: 14px; color: #ffcc00; height: 36px; margin-top: 8px; text-align: center;"></p>
         <div class="lobby-menu">
@@ -2451,6 +2514,15 @@ loginSection: "— INICIAR SESIÓN —",
                 needMoreCoins: "Te faltan FamoCoins",
                 mailBtn: "CORREO",
                 mailTitle: "CORREO",
+                mailInbox: "BUZÓN",
+                mailTabAll: "TODO",
+                mailTabPending: "POR RECIBIR",
+                mailTabClaimed: "RECIBIDOS",
+                mailNoFilter: "Nada aquí con este filtro.",
+                timeJust: "ahora mismo",
+                timeMin: "min",
+                timeHour: "h",
+                timeDay: "d",
                 mailEmpty: "Buzón vacío: aún no tienes mensajes.",
                 mailNew: "NUEVO",
                 mailClaim: "RECLAMAR",
@@ -2683,6 +2755,15 @@ loginSection: "— SIGN IN —",
                 needMoreCoins: "Need FamoCoins",
                 mailBtn: "MAIL",
                 mailTitle: "MAIL",
+                mailInbox: "INBOX",
+                mailTabAll: "ALL",
+                mailTabPending: "TO CLAIM",
+                mailTabClaimed: "CLAIMED",
+                mailNoFilter: "Nothing here with this filter.",
+                timeJust: "just now",
+                timeMin: "min",
+                timeHour: "h",
+                timeDay: "d",
                 mailEmpty: "Inbox empty: you have no messages yet.",
                 mailNew: "NEW",
                 mailClaim: "CLAIM",
@@ -2915,6 +2996,15 @@ loginSection: "— 登录 —",
                 needMoreCoins: "FamoCoins 不足",
                 mailBtn: "邮件",
                 mailTitle: "邮件",
+                mailInbox: "收件箱",
+                mailTabAll: "全部",
+                mailTabPending: "待领取",
+                mailTabClaimed: "已领取",
+                mailNoFilter: "此筛选条件下暂无内容。",
+                timeJust: "刚刚",
+                timeMin: "分钟",
+                timeHour: "小时",
+                timeDay: "天",
                 mailEmpty: "收件箱为空：暂无消息。",
                 mailNew: "新",
                 mailClaim: "领取",
@@ -3147,6 +3237,15 @@ loginSection: "— ENTRAR —",
                 needMoreCoins: "Faltam FamoCoins",
                 mailBtn: "CORREIO",
                 mailTitle: "CORREIO",
+                mailInbox: "CAIXA",
+                mailTabAll: "TODOS",
+                mailTabPending: "PEGAR",
+                mailTabClaimed: "PEGOS",
+                mailNoFilter: "Nada aqui com este filtro.",
+                timeJust: "agora mesmo",
+                timeMin: "min",
+                timeHour: "h",
+                timeDay: "d",
                 mailEmpty: "Caixa vazia: você ainda não tem mensagens.",
                 mailNew: "NOVO",
                 mailClaim: "RESGATAR",
@@ -3524,7 +3623,7 @@ skinsTitleHeader: "PERSONALIZAR",
         const coinsBackBtn = document.getElementById('coins-back-btn');
         const shopTabSkins = document.getElementById('shop-tab-skins');
         const shopTabAvatars = document.getElementById('shop-tab-avatars');
-        const shopBalanceLine = document.getElementById('shop-balance-line');
+        const shopMsgEl = document.getElementById('shop-msg');
         let shopTab = 'skins';
         const ranksScreen = document.getElementById('ranks-screen');
         const rankingScreen = document.getElementById('ranking-screen');
@@ -5067,33 +5166,55 @@ skinsTitleHeader: "PERSONALIZAR",
                 mailItemSelect.appendChild(opt);
             });
         }
+        let mailFilter = 'all';
+        function timeAgo(ts, d) {
+            const s = Math.max(0, (Date.now() - ts) / 1000);
+            if (s < 60) return d.timeJust;
+            const m = Math.floor(s / 60);
+            if (m < 60) return m + ' ' + d.timeMin;
+            const h = Math.floor(m / 60);
+            if (h < 24) return h + ' ' + d.timeHour;
+            return Math.floor(h / 24) + ' ' + d.timeDay;
+        }
         function renderMailList(mails) {
             lastMails = mails || [];
             updateMailBadge();
             mailList.innerHTML = '';
-            if (!lastMails.length) {
-                mailList.innerHTML = '<div class="mail-empty">' + shopDict('mailEmpty') + '</div>';
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            const filtered = lastMails.filter(m => mailFilter === 'all' || (mailFilter === 'pending' ? !m.claimed : m.claimed));
+            if (!filtered.length) {
+                mailList.innerHTML = '<div class="mail-card-empty">' + (lastMails.length ? shopDict('mailNoFilter') : shopDict('mailEmpty')) + '</div>';
                 return;
             }
-            lastMails.forEach(m => {
+            filtered.forEach(m => {
                 const it = MAIL_ITEMS[m.itemId] || { name: m.itemId, emoji: '🎁' };
-                const item = document.createElement('div');
-                item.className = 'mail-item' + (m.claimed ? '' : ' unclaimed');
-                item.innerHTML =
-                    '<div class="mail-item-emoji">' + it.emoji + '</div>' +
-                    '<div class="mail-item-info">' +
-                    '<div class="mail-item-name">' + it.name + (m.claimed ? '' : ' <span class="mail-new-tag">· ' + shopDict('mailNew') + '</span>') + '</div>' +
-                    '<div class="mail-item-meta">' + shopDict('mailFrom') + ' ' + m.from + ' · ' + new Date(m.sentAt || Date.now()).toLocaleDateString() + (m.msg ? ' · "' + m.msg + '"' : '') + '</div>' +
+                const card = document.createElement('div');
+                card.className = 'mail-card' + (m.claimed ? '' : ' unclaimed');
+                const meta = shopDict('mailFrom') + ' ' + m.from + ' · ' + timeAgo(m.sentAt || Date.now(), dict);
+                card.innerHTML =
+                    '<div class="mail-card-icon">' + it.emoji + '</div>' +
+                    '<div class="mail-card-info">' +
+                    '<div class="mail-card-title">' + it.name + (m.claimed ? '' : ' <span class="mail-new-pill">' + shopDict('mailNew') + '</span>') + '</div>' +
+                    '<div class="mail-card-meta">' + meta + '</div>' +
+                    (m.msg ? '<div class="mail-card-msg">"' + m.msg + '"</div>' : '') +
                     '</div>' +
                     (m.claimed
-                        ? '<div class="mail-done">✓ ' + shopDict('mailClaimed') + '</div>'
-                        : '<button class="btn-main mail-claim-btn" data-mail-id="' + m.id + '">' + shopDict('mailClaim') + '</button>');
-                mailList.appendChild(item);
+                        ? '<div class="mail-card-done">✓ ' + shopDict('mailClaimed') + '</div>'
+                        : '<button class="mail-card-btn" data-mail-id="' + m.id + '">' + shopDict('mailClaim') + '</button>');
+                mailList.appendChild(card);
             });
-            mailList.querySelectorAll('.mail-claim-btn').forEach(btn => {
+            mailList.querySelectorAll('.mail-card-btn').forEach(btn => {
                 btn.addEventListener('click', () => socket.emit('claim-mail', { mailId: btn.dataset.mailId }));
             });
         }
+        document.querySelectorAll('.mail-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.mail-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                mailFilter = tab.dataset.filter;
+                renderMailList(lastMails);
+            });
+        });
         toMailBtn.addEventListener('click', () => {
             fillMailSendSelect();
             mailMsgEl.innerText = "";
@@ -5169,19 +5290,104 @@ skinsTitleHeader: "PERSONALIZAR",
             if (gemPill) gemPill.style.display = profile.name ? 'inline-flex' : 'none';
             const shopGemsVal = document.getElementById('shop-gems-val');
             if (shopGemsVal) shopGemsVal.innerText = String(profile.gems || 0);
-            if (shopBalanceLine) shopBalanceLine.innerText = '';
-            if (shopBalanceLine && gemCfg.name) {
-                shopBalanceLine.innerHTML = shopDict('shopGemsTitle') + ': <b style="color:#00e5ff;">' + String(profile.gems || 0) + '</b> ' + gemIconHtml(16);
-            }
         }
         // Carga la info de la moneda (nombre + imagen) apenas entras al lobby.
         async function refreshGemCfg() {
             try {
                 const cfg = await fetch('/config').then(r => r.json());
                 if (cfg.shop && cfg.shop.currency) gemCfg = cfg.shop.currency;
+                await finalizeGemImg();
                 applyGemConfig();
                 updateGemUI();
             } catch (e) { }
+        }
+        // Aísla la moneda de su fondo: rellena desde las esquinas (el fondo suele
+        // ser un color sólido contiguo), borra los píxeles tocados y recorta el
+        // margen transparente. El resultado sustituye a la imagen original.
+        async function finalizeGemImg() {
+            if (!gemCfg || !gemCfg.img || String(gemCfg.img).startsWith('data:')) return;
+            try {
+                const img = new Image();
+                img.src = gemCfg.img;
+                await new Promise((res, rej) => { img.onload = res; img.onerror = rej; });
+                const W = 128;
+                const H = Math.max(1, Math.round(img.naturalHeight * W / img.naturalWidth));
+                const c = document.createElement('canvas');
+                c.width = W; c.height = H;
+                const ctx = c.getContext('2d');
+                ctx.drawImage(img, 0, 0, W, H);
+                const id = ctx.getImageData(0, 0, W, H);
+                const d = id.data;
+                // Si la imagen YA es transparente (esquinas vacías), no hay fondo que quitar:
+                // se usa tal cual, con su resolución original.
+                const c1 = [0, 0, 0, 0]; let cn = 0;
+                for (const [cx, cy] of [[0, 0], [W - 1, 0], [0, H - 1], [W - 1, H - 1]]) {
+                    const i = (cy * W + cx) * 4;
+                    c1[0] += d[i]; c1[1] += d[i + 1]; c1[2] += d[i + 2]; c1[3] += d[i + 3]; cn++;
+                }
+                c1[0] = c1[0] / cn; c1[1] = c1[1] / cn; c1[2] = c1[2] / cn; c1[3] = c1[3] / cn;
+                if (c1[3] <= 8) return;
+                // Color base del fondo = promedio de las 4 esquinas.
+                const c0 = [Math.round(c1[0]), Math.round(c1[1]), Math.round(c1[2])];
+                const nearBg = (i, tol) => Math.abs(d[i] - c0[0]) <= tol && Math.abs(d[i + 1] - c0[1]) <= tol && Math.abs(d[i + 2] - c0[2]) <= tol;
+                const removed = new Uint8Array(W * H);
+                const stack = [[0, 0], [W - 1, 0], [0, H - 1], [W - 1, H - 1]];
+                let guard = 0;
+                while (stack.length && guard < W * H * 3) {
+                    guard++;
+                    const [x, y] = stack.pop();
+                    if (x < 0 || y < 0 || x >= W || y >= H) continue;
+                    const p = y * W + x;
+                    if (removed[p]) continue;
+                    if (d[p * 4 + 3] <= 8 || nearBg(p * 4, 34)) {
+                        removed[p] = 1;
+                        stack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+                    }
+                }
+                // Suavizado: píxeles pegados al borde recortado con el color del fondo.
+                const removedCount = removed.reduce((s, v) => s + v, 0);
+                if (removedCount < W * H * 0.85) {
+                    for (let y = 0; y < H; y++) {
+                        for (let x = 0; x < W; x++) {
+                            const p = y * W + x;
+                            if (removed[p]) continue;
+                            const nbr = [x > 0 ? removed[p - 1] : 0, x < W - 1 ? removed[p + 1] : 0, y > 0 ? removed[p - W] : 0, y < H - 1 ? removed[p + W] : 0];
+                            if ((nbr[0] || nbr[1] || nbr[2] || nbr[3]) && nearBg(p * 4, 64)) removed[p] = 1;
+                        }
+                    }
+                }
+                // Recorte al área visible de la moneda.
+                let minX = W, minY = H, maxX = -1, maxY = -1;
+                for (let y = 0; y < H; y++) {
+                    for (let x = 0; x < W; x++) {
+                        const p = y * W + x;
+                        if (!removed[p] && d[p * 4 + 3] > 8) {
+                            if (x < minX) minX = x; if (x > maxX) maxX = x;
+                            if (y < minY) minY = y; if (y > maxY) maxY = y;
+                        }
+                    }
+                }
+                if (maxX >= minX && maxY >= minY) {
+                    const pad = 2;
+                    const w2 = Math.min(W, maxX - minX + 1 + pad * 2);
+                    const h2 = Math.min(H, maxY - minY + 1 + pad * 2);
+                    const sx = Math.max(0, minX - pad), sy = Math.max(0, minY - pad);
+                    const out = ctx.createImageData(w2, h2);
+                    for (let y = 0; y < h2; y++) {
+                        for (let x = 0; x < w2; x++) {
+                            const sp = ((sy + y) * W + (sx + x)) * 4;
+                            const dp = (y * w2 + x) * 4;
+                            const keep = !removed[(sy + y) * W + (sx + x)] && d[sp + 3] > 8;
+                            out.data[dp] = d[sp]; out.data[dp + 1] = d[sp + 1]; out.data[dp + 2] = d[sp + 2];
+                            out.data[dp + 3] = keep ? d[sp + 3] : 0;
+                        }
+                    }
+                    const outc = document.createElement('canvas');
+                    outc.width = w2; outc.height = h2;
+                    outc.getContext('2d').putImageData(out, 0, 0);
+                    gemCfg.img = outc.toDataURL('image/png');
+                }
+            } catch (e) { /* si algo falla se conserva la imagen original */ }
         }
         async function loadShopCatalog() {
             try {
