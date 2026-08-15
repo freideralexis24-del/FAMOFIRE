@@ -920,10 +920,25 @@
             color: #ffcc00;
         }
     /* ============ LOGIN PROFESIONAL V2 ============ */
-        #login-screen {
+#login-screen {
             justify-content: center;
             gap: 12px;
-            padding: 24px 12px;
+            padding: 20px 12px;
+        }
+        .auth-company {
+            display: flex;
+            justify-content: center;
+        }
+        .auth-company img {
+            max-height: 46px;
+            max-width: 200px;
+            filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
+        }
+        .auth-logo {
+            display: none;
+            max-width: 150px;
+            max-height: 150px;
+            filter: drop-shadow(0 8px 22px rgba(255, 170, 0, 0.28));
         }
         .auth-hero {
             display: flex;
@@ -952,7 +967,8 @@
             border-right: 1px solid rgba(255, 255, 255, 0.08);
             text-align: center;
         }
-        .auth-emblem {
+#auth-emblem {
+            display: flex;
             font-size: 54px;
             line-height: 1;
             filter: drop-shadow(0 6px 14px rgba(255, 170, 0, 0.35));
@@ -964,35 +980,12 @@
             text-shadow: 0 0 26px rgba(255, 190, 0, 0.55), 0 3px 6px rgba(0, 0, 0, 0.6);
             margin: 0;
         }
-        .auth-tagline {
-            color: #cfe5c0;
-            font-size: 12px;
-            letter-spacing: 4px;
-            text-transform: uppercase;
-            opacity: 0.85;
-            margin: 0;
-        }
-        .auth-feats {
-            list-style: none;
-            margin: 8px 0 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            gap: 9px;
-            color: #e9f1df;
-            font-size: 13.5px;
-        }
-        .auth-feats li {
-            display: flex;
-            align-items: center;
-            gap: 9px;
-        }
-        .auth-form {
+.auth-form {
             flex: 1 1 58%;
-            padding: 26px 26px 24px;
+            padding: 20px 22px 18px;
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 11px;
             box-sizing: border-box;
         }
         .auth-section {
@@ -1014,9 +1007,9 @@
             width: 100%;
             margin: 0;
         }
-        #login-screen input[type="text"], #login-screen input[type="password"] {
+#login-screen input[type="text"], #login-screen input[type="password"] {
             width: 100%;
-            padding: 12px 14px;
+            padding: 10px 12px;
             font-size: 15px;
             font-family: inherit;
             border: 1px solid rgba(255, 255, 255, 0.16);
@@ -1110,11 +1103,20 @@
             box-sizing: border-box;
             min-height: 40px;
         }
-        @media (max-width: 760px) {
+@media (max-width: 760px) {
             .auth-hero { flex-direction: column; }
-            .auth-brand { border-right: none; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding: 26px 20px; }
-            .auth-feats { display: none; }
-            .auth-form { padding: 20px 20px 18px; }
+            .auth-brand { border-right: none; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding: 22px 20px; }
+            .auth-logo { max-width: 110px; max-height: 110px; }
+            .auth-company { display: none; }
+            .auth-form { padding: 18px 18px 16px; }
+        }
+        @media (max-height: 720px) and (min-width: 761px) {
+            .auth-form { gap: 9px; padding: 14px 18px 12px; }
+            #login-screen .login-hint { font-size: 11.5px; }
+            .auth-brand { gap: 8px; padding: 26px 24px; }
+            #login-screen h1 { font-size: clamp(28px, 5vw, 44px); letter-spacing: 8px; }
+            .auth-emblem { font-size: 42px; }
+            .auth-logo { max-width: 120px; max-height: 120px; }
         }
         .btn-link {
             background: none;
@@ -1148,17 +1150,13 @@
     <!-- Efectos de sonido (el audio requiere el primer clic/tecla del usuario) -->
     <audio id="sfx-shot" preload="auto" src="sounds/shot.wav"></audio>
 
-    <div id="login-screen" class="screen">
+<div id="login-screen" class="screen">
+        <div class="auth-company"><img id="company-logo-img" src="/img/logo-empresa.png" alt="" onerror="this.style.display='none';"></div>
         <div class="auth-hero">
             <div class="auth-brand">
-                <div class="auth-emblem">🔥</div>
+                <div id="auth-emblem" class="auth-emblem">🔥</div>
+                <img id="game-logo-img" class="auth-logo" src="/img/logo-juego.png" alt="FAMOFIRE" onerror="this.style.display='none';document.getElementById('auth-emblem').style.display='flex';" onload="this.style.display='block';document.getElementById('auth-emblem').style.display='none';">
                 <h1>FAMOFIRE</h1>
-                <p class="auth-tagline" data-i18n="loginTagline">Servidor LATAM · Campo de Batalla</p>
-                <ul class="auth-feats">
-                    <li data-i18n="loginFeat1">⚔️ Batallas de 35 soldados</li>
-                    <li data-i18n="loginFeat2">🏆 Ranking Top 100</li>
-                    <li data-i18n="loginFeat3">🛡️ Cuenta segura · Correo vinculado</li>
-                </ul>
             </div>
             <div class="auth-form">
                 <div class="auth-section">
@@ -1172,7 +1170,7 @@
                 <div class="login-divider" id="create-google-divider"><span data-i18n="loginOr">O</span></div>
                 <div class="auth-section" id="create-google-section">
                     <div class="login-section-label" data-i18n="createSection">Crear cuenta con Google</div>
-                    <p class="login-hint" data-i18n="createHint">Se abrirá la ventana de Google para confirmar tu correo; luego eliges la contraseña del juego y el nombre de tu soldado.</p>
+                    <p class="login-hint" data-i18n="createHint">Se abrirá Google para confirmar tu correo; luego eliges tu contraseña y nombre.</p>
                     <div id="google-create-wrap" style="display: none;"></div>
                 </div>
                 <div class="login-divider"><span data-i18n="loginOr">O</span></div>
