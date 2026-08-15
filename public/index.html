@@ -666,6 +666,60 @@
             height: 100%;
             display: block;
         }
+        /* CORREO del juego: badge, buzón y regalos */
+        .mail-badge {
+            display: inline-block;
+            min-width: 18px;
+            height: 18px;
+            line-height: 18px;
+            background: #ff2d2d;
+            color: #fff;
+            border-radius: 10px;
+            font-size: 11px;
+            padding: 0 4px;
+            margin-left: 6px;
+            vertical-align: middle;
+            box-shadow: 0 0 8px rgba(255, 45, 45, 0.8);
+        }
+        .mail-send-box {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            width: 330px;
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 12px;
+            margin-top: 8px;
+        }
+        .mail-send-title { font-size: 13px; font-weight: bold; color: #ffcc00; }
+        .mail-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 360px;
+            max-height: 44vh;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        .mail-item {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 12px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .mail-item.unclaimed { border-color: #ffcc00; box-shadow: 0 0 10px rgba(255, 204, 0, 0.25); }
+        .mail-item-emoji { font-size: 26px; }
+        .mail-item-info { flex: 1; text-align: left; font-size: 13px; min-width: 0; }
+        .mail-item-name { font-weight: bold; color: #ffcc00; }
+        .mail-item-meta { color: #aaa; font-size: 11px; }
+        .mail-claim-btn { font-size: 12px; padding: 6px 10px; }
+        .mail-done { color: #2ede62; font-weight: bold; font-size: 13px; }
+        .mail-new-tag { color: #ffcc00; font-size: 10px; font-weight: bold; letter-spacing: 1px; }
+        .mail-empty { color: #aaa; font-size: 14px; margin-top: 12px; }
         .premium-frame {
             position: relative;
             border: 3px solid #ffcc00 !important;
@@ -1400,6 +1454,7 @@
             <button id="to-skills-btn" class="btn-main" style="background-color: #00ffff;" data-i18n="skillsBtn">HABILIDADES</button>
             <button id="to-skins-btn" class="btn-main" data-i18n="skinsBtn">PERSONALIZAR SKIN</button>
             <button id="to-shop-btn" class="btn-main" style="background-color: #ffcc00;" data-i18n="shopBtn">TIENDA</button>
+            <button id="to-mail-btn" class="btn-main" style="background-color: #ff8c00;"><span data-i18n="mailBtn">CORREO</span> <span id="mail-badge" class="mail-badge" style="display: none;">0</span></button>
             <button id="to-ranks-btn" class="btn-main" data-i18n="ranksBtn">RANGOS MILITARES</button>
             <button id="to-ranking-btn" class="btn-main" data-i18n="rankingBtn">RANKING GLOBAL</button>
         </div>
@@ -1414,6 +1469,23 @@
         <p class="shop-sub" data-i18n="luckySoon">PRÓXIMAMENTE</p>
         <div class="lobby-menu">
             <button id="lucky-back-btn" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
+        </div>
+    </div>
+
+    <!-- CORREO del juego: recibe y envía regalos de artículos premium (estilo Free Fire) -->
+    <div id="mail-screen" class="screen" style="display: none;">
+        <h1 data-i18n="mailTitle">CORREO</h1>
+        <div class="mail-send-box">
+            <div class="mail-send-title" data-i18n="mailSendTitle">ENVIAR UN REGALO</div>
+            <select id="mail-item-select"></select>
+            <input type="text" id="mail-dest-input" placeholder="Nombre o ID del soldado" maxlength="40" autocomplete="off">
+            <input type="text" id="mail-msg-input" placeholder="Mensaje (opcional)" maxlength="60" autocomplete="off">
+            <button id="mail-send-btn" class="btn-main" style="background-color: #ffcc00; font-size: 14px; padding: 8px 14px;" data-i18n="mailSend">ENVIAR</button>
+        </div>
+        <p id="mail-msg" style="font-size: 14px; color: #ffcc00; height: 20px; margin-top: 6px; text-align: center;"></p>
+        <div id="mail-list" class="mail-list"></div>
+        <div class="lobby-menu">
+            <button id="mail-back-btn" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
         </div>
     </div>
 
@@ -2245,6 +2317,26 @@ loginSection: "— INICIAR SESIÓN —",
                 luckyTitle: "LUCKY ROYALE",
                 luckySoon: "PRÓXIMAMENTE",
                 errAlreadyOpen: "Esta cuenta ya está abierta en otra página. Ciérrala allí para poder entrar aquí.",
+                mailBtn: "CORREO",
+                mailTitle: "CORREO",
+                mailEmpty: "Buzón vacío: aún no tienes mensajes.",
+                mailNew: "NUEVO",
+                mailClaim: "RECLAMAR",
+                mailClaimed: "RECLAMADO",
+                mailClaimedOk: "¡Regalo reclamado! Ya está en tu inventario.",
+                mailClaimed2: "Este regalo ya fue reclamado.",
+                mailSendTitle: "ENVIAR UN REGALO (un artículo que poseas a otro soldado)",
+                mailDestPh: "Nombre o ID del soldado",
+                mailMsgPh: "Mensaje (opcional)",
+                mailSend: "ENVIAR",
+                mailNeedDest: "Elige un artículo y escribe el nombre o ID del soldado.",
+                mailSentOk: "Regalo enviado. El artículo salió de tu inventario.",
+                mailNoTo: "Ese soldado no existe. Revisa el nombre o ID.",
+                mailNoOwn: "Ya no tienes ese artículo en tu inventario.",
+                mailNoItems: "No tienes artículos para regalar (compra skins o banners en la TIENDA).",
+                mailSelf: "No puedes enviarte un regalo a ti mismo.",
+                mailErr: "No se pudo procesar tu mensaje. Intenta de nuevo.",
+                mailFrom: "De",
                 ranksBtn: "RANGOS MILITARES",
                 rankingBtn: "RANGO GLOBAL",
                 configTitle: "CONFIGURACIÓN",
@@ -2447,6 +2539,26 @@ loginSection: "— SIGN IN —",
                 luckyTitle: "LUCKY ROYALE",
                 luckySoon: "COMING SOON",
                 errAlreadyOpen: "This account is already open in another page. Close it there to log in here.",
+                mailBtn: "MAIL",
+                mailTitle: "MAIL",
+                mailEmpty: "Inbox empty: you have no messages yet.",
+                mailNew: "NEW",
+                mailClaim: "CLAIM",
+                mailClaimed: "CLAIMED",
+                mailClaimedOk: "Gift claimed! It's in your inventory now.",
+                mailClaimed2: "This gift was already claimed.",
+                mailSendTitle: "SEND A GIFT (an item you own to another soldier)",
+                mailDestPh: "Soldier name or ID",
+                mailMsgPh: "Message (optional)",
+                mailSend: "SEND",
+                mailNeedDest: "Pick an item and type the soldier's name or ID.",
+                mailSentOk: "Gift sent. The item left your inventory.",
+                mailNoTo: "That soldier does not exist. Check the name or ID.",
+                mailNoOwn: "You no longer have that item in your inventory.",
+                mailNoItems: "You have no items to gift (buy skins or banners in the SHOP).",
+                mailSelf: "You cannot send a gift to yourself.",
+                mailErr: "Could not process your mail. Try again.",
+                mailFrom: "From",
                 ranksBtn: "MILITARY RANKS",
                 rankingBtn: "GLOBAL RANKING",
                 configTitle: "SETTINGS",
@@ -2649,6 +2761,26 @@ loginSection: "— 登录 —",
                 luckyTitle: "LUCKY ROYALE",
                 luckySoon: "即将推出",
                 errAlreadyOpen: "⚠️ 此账户已在另一个页面打开。请先在那里关闭，再在此处登录。",
+                mailBtn: "邮件",
+                mailTitle: "邮件",
+                mailEmpty: "收件箱为空：暂无消息。",
+                mailNew: "新",
+                mailClaim: "领取",
+                mailClaimed: "已领取",
+                mailClaimedOk: "礼物已领取！已在您的背包中。",
+                mailClaimed2: "此礼物已被领取。",
+                mailSendTitle: "赠送礼物（将您拥有的物品送给其他士兵）",
+                mailDestPh: "士兵名称或ID",
+                mailMsgPh: "消息（可选）",
+                mailSend: "发送",
+                mailNeedDest: "请选择物品并输入士兵名称或ID。",
+                mailSentOk: "礼物已发送。物品已从您的背包中移除。",
+                mailNoTo: "该士兵不存在。请检查名称或ID。",
+                mailNoOwn: "您的背包中已无此物品。",
+                mailNoItems: "您没有可赠送的物品（可在商店购买皮肤或横幅）。",
+                mailSelf: "您不能向自己发送礼物。",
+                mailErr: "无法处理您的邮件。请重试。",
+                mailFrom: "来自",
                 ranksBtn: "军衔等级",
                 rankingBtn: "全球排名",
                 configTitle: "设置",
@@ -2851,6 +2983,26 @@ loginSection: "— ENTRAR —",
                 luckyTitle: "LUCKY ROYALE",
                 luckySoon: "EM BREVE",
                 errAlreadyOpen: "⚠️ Esta conta já está aberta em outra página. Feche-a lá para entrar aqui.",
+                mailBtn: "CORREIO",
+                mailTitle: "CORREIO",
+                mailEmpty: "Caixa vazia: você ainda não tem mensagens.",
+                mailNew: "NOVO",
+                mailClaim: "RESGATAR",
+                mailClaimed: "RESGATADO",
+                mailClaimedOk: "Presente resgatado! Já está no seu inventário.",
+                mailClaimed2: "Este presente já foi resgatado.",
+                mailSendTitle: "ENVIAR UM PRESENTE (um item seu para outro soldado)",
+                mailDestPh: "Nome ou ID do soldado",
+                mailMsgPh: "Mensagem (opcional)",
+                mailSend: "ENVIAR",
+                mailNeedDest: "Escolha um item e digite o nome ou ID do soldado.",
+                mailSentOk: "Presente enviado. O item saiu do seu inventário.",
+                mailNoTo: "Esse soldado não existe. Verifique o nome ou ID.",
+                mailNoOwn: "Você não tem mais esse item no inventário.",
+                mailNoItems: "Você não tem itens para presentear (compre skins ou banners na LOJA).",
+                mailSelf: "Você não pode enviar um presente para si mesmo.",
+                mailErr: "Não foi possível processar sua mensagem. Tente novamente.",
+                mailFrom: "De",
                 ranksBtn: "PATENTES MILITARES",
                 rankingBtn: "RANKING GLOBAL",
                 configTitle: "CONFIGURAÇÕES",
@@ -3185,6 +3337,16 @@ skinsTitleHeader: "PERSONALIZAR",
         const luckyScreen = document.getElementById('lucky-screen');
         const toLuckyBtn = document.getElementById('to-lucky-btn');
         const luckyBackBtn = document.getElementById('lucky-back-btn');
+        const mailScreen = document.getElementById('mail-screen');
+        const toMailBtn = document.getElementById('to-mail-btn');
+        const mailBackBtn = document.getElementById('mail-back-btn');
+        const mailList = document.getElementById('mail-list');
+        const mailItemSelect = document.getElementById('mail-item-select');
+        const mailDestInput = document.getElementById('mail-dest-input');
+        const mailMsgInput = document.getElementById('mail-msg-input');
+        const mailSendBtn = document.getElementById('mail-send-btn');
+        const mailMsgEl = document.getElementById('mail-msg');
+        const mailBadge = document.getElementById('mail-badge');
         let shopCatalog = [];
         let shopEnabled = false;
         let shopProvider = 'none';
@@ -3655,6 +3817,7 @@ skinsTitleHeader: "PERSONALIZAR",
             saveProfile();
             updateLobbyUI();
             socket.emit('player-join', { name: profile.name, color: profile.color, skin: profile.skin || '' });
+            socket.emit('get-mails'); // badge del buzón al entrar
             loginScreen.style.display = 'none';
             lobbyScreen.style.display = 'flex';
             startLobbyMusic();
@@ -4636,6 +4799,116 @@ skinsTitleHeader: "PERSONALIZAR",
         luckyBackBtn.addEventListener('click', () => {
             luckyScreen.style.display = 'none';
             lobbyScreen.style.display = 'flex';
+        });
+
+        // ---- CORREO del juego (estilo Free Fire): buzón + regalos ----
+        const MAIL_ITEMS = {
+            skin_fuego: { name: 'Skin Fuego Dorado', emoji: '🔥' },
+            skin_elite: { name: 'Skin Comandante Élite', emoji: '🛡️' },
+            skin_fantasma: { name: 'Skin Fantasma LATAM', emoji: '👻' },
+            banner_royal: { name: 'Banner Bandera Real', emoji: '🏴' }
+        };
+        let lastMails = [];
+        function updateMailBadge() {
+            const pending = lastMails.filter(m => !m.claimed).length;
+            mailBadge.style.display = pending > 0 ? 'inline-block' : 'none';
+            mailBadge.innerText = pending > 9 ? '9+' : pending;
+        }
+        function fillMailSendSelect() {
+            mailItemSelect.innerHTML = '';
+            const owned = (profile.owns || []).filter(id => MAIL_ITEMS[id]);
+            if (!owned.length) {
+                mailItemSelect.innerHTML = '<option value="">' + shopDict('mailNoItems') + '</option>';
+                mailSendBtn.disabled = true;
+                return;
+            }
+            mailSendBtn.disabled = false;
+            owned.forEach(id => {
+                const opt = document.createElement('option');
+                opt.value = id;
+                opt.textContent = MAIL_ITEMS[id].emoji + ' ' + MAIL_ITEMS[id].name;
+                mailItemSelect.appendChild(opt);
+            });
+        }
+        function renderMailList(mails) {
+            lastMails = mails || [];
+            updateMailBadge();
+            mailList.innerHTML = '';
+            if (!lastMails.length) {
+                mailList.innerHTML = '<div class="mail-empty">' + shopDict('mailEmpty') + '</div>';
+                return;
+            }
+            lastMails.forEach(m => {
+                const it = MAIL_ITEMS[m.itemId] || { name: m.itemId, emoji: '🎁' };
+                const item = document.createElement('div');
+                item.className = 'mail-item' + (m.claimed ? '' : ' unclaimed');
+                item.innerHTML =
+                    '<div class="mail-item-emoji">' + it.emoji + '</div>' +
+                    '<div class="mail-item-info">' +
+                    '<div class="mail-item-name">' + it.name + (m.claimed ? '' : ' <span class="mail-new-tag">· ' + shopDict('mailNew') + '</span>') + '</div>' +
+                    '<div class="mail-item-meta">' + shopDict('mailFrom') + ' ' + m.from + ' · ' + new Date(m.sentAt || Date.now()).toLocaleDateString() + (m.msg ? ' · "' + m.msg + '"' : '') + '</div>' +
+                    '</div>' +
+                    (m.claimed
+                        ? '<div class="mail-done">✓ ' + shopDict('mailClaimed') + '</div>'
+                        : '<button class="btn-main mail-claim-btn" data-mail-id="' + m.id + '">' + shopDict('mailClaim') + '</button>');
+                mailList.appendChild(item);
+            });
+            mailList.querySelectorAll('.mail-claim-btn').forEach(btn => {
+                btn.addEventListener('click', () => socket.emit('claim-mail', { mailId: btn.dataset.mailId }));
+            });
+        }
+        toMailBtn.addEventListener('click', () => {
+            fillMailSendSelect();
+            mailMsgEl.innerText = "";
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            mailDestInput.placeholder = dict.mailDestPh;
+            mailMsgInput.placeholder = dict.mailMsgPh;
+            socket.emit('get-mails');
+            lobbyScreen.style.display = 'none';
+            mailScreen.style.display = 'flex';
+        });
+        mailBackBtn.addEventListener('click', () => {
+            mailScreen.style.display = 'none';
+            lobbyScreen.style.display = 'flex';
+        });
+        mailSendBtn.addEventListener('click', () => {
+            const itemId = mailItemSelect.value;
+            const to = mailDestInput.value.trim();
+            if (!itemId || !to) { mailMsgEl.innerText = shopDict('mailNeedDest'); return; }
+            const msg = mailMsgInput.value.trim();
+            mailMsgEl.innerText = "...";
+            socket.emit('send-mail', { to, itemId, msg });
+        });
+        socket.on('update-mails', (d) => renderMailList(d && d.mails ? d.mails : []));
+        socket.on('mail-result', (r) => {
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            if (!r) return;
+            if (r.ok) {
+                if (r.sent) {
+                    // El artículo salió de tu inventario (regalo enviado)
+                    profile.owns = (profile.owns || []).filter(x => x !== r.itemId);
+                    if (mailMsgEl) mailMsgEl.innerText = dict.mailSentOk;
+                } else if (r.claimed) {
+                    // El regalo entró a tu inventario (reclamado)
+                    if (!(profile.owns || []).includes(r.itemId)) {
+                        profile.owns = profile.owns || [];
+                        profile.owns.push(r.itemId);
+                    }
+                    if (mailMsgEl) mailMsgEl.innerText = dict.mailClaimedOk;
+                }
+                saveProfile();
+                updateLobbyUI();
+                fillMailSendSelect();
+                socket.emit('get-mails');
+            } else {
+                const msg = r.error === 'no-to' ? dict.mailNoTo
+                    : r.error === 'no-own' ? dict.mailNoOwn
+                    : r.error === 'no-items' ? dict.mailNoItems
+                    : r.error === 'self' ? dict.mailSelf
+                    : r.error === 'already' ? dict.mailClaimed2
+                    : dict.mailErr;
+                if (mailMsgEl) mailMsgEl.innerText = msg;
+            }
         });
         async function loadShopCatalog() {
             try {

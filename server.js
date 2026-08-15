@@ -318,6 +318,14 @@ function findAccountByGoogle(sub) {
   }
   return null;
 }
+function findAccountById(id) {
+  const target = String(id || '').trim().toUpperCase();
+  if (!target) return null;
+  for (const [n, a] of Object.entries(accounts)) {
+    if (a && String(a.id || '').toUpperCase() === target) return n;
+  }
+  return null;
+}
 let db = null;
 if (DATABASE_URL) {
   const { Pool } = require('pg');
@@ -356,13 +364,16 @@ async function initAccounts() {
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS dmg INT NOT NULL DEFAULT 0');
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS deaths INT NOT NULL DEFAULT 0');
         await db.query("ALTER TABLE accounts ADD COLUMN IF NOT EXISTS owns TEXT NOT NULL DEFAULT '[]'");
+        await db.query("ALTER TABLE accounts ADD COLUMN IF NOT EXISTS mails TEXT NOT NULL DEFAULT '[]'");
       } catch (e) { /* versión vieja de Postgres u otro problema menor: se ignora */ }
-      const { rows } = await db.query('SELECT name, password, points, level, exp, lastseen, id, google_id, google_email, unnamed, device_token, matches, wins, kills, dmg, deaths, owns FROM accounts');
+      const { rows } = await db.query('SELECT name, password, points, level, exp, lastseen, id, google_id, google_email, unnamed, device_token, matches, wins, kills, dmg, deaths, owns, mails FROM accounts');
       accounts = {};
       for (const r of rows) {
         let owns = [];
         if (r.owns) { try { owns = Array.isArray(JSON.parse(r.owns)) ? JSON.parse(r.owns) : []; } catch (e) { owns = []; } }
-        accounts[r.name] = { id: r.id || genId(), password: r.password, points: Number(r.points), level: Number(r.level), exp: Number(r.exp), lastSeen: Number(r.lastseen) || 0, googleId: r.google_id || '', googleEmail: r.google_email || '', unnamed: !!r.unnamed, deviceToken: r.device_token || '', matches: Number(r.matches) || 0, wins: Number(r.wins) || 0, kills: Number(r.kills) || 0, dmg: Number(r.dmg) || 0, deaths: Number(r.deaths) || 0, owns };
+        let mails = [];
+        if (r.mails) { try { mails = Array.isArray(JSON.parse(r.mails)) ? JSON.parse(r.mails) : []; } catch (e) { mails = []; } }
+        accounts[r.name] = { id: r.id || genId(), password: r.password, points: Number(r.points), level: Number(r.level), exp: Number(r.exp), lastSeen: Number(r.lastseen) || 0, googleId: r.google_id || '', googleEmail: r.google_email || '', unnamed: !!r.unnamed, deviceToken: r.device_token || '', matches: Number(r.matches) || 0, wins: Number(r.wins) || 0, kills: Number(r.kills) || 0, dmg: Number(r.dmg) || 0, deaths: Number(r.deaths) || 0, owns, mails };
       }
       console.log(`[DB] ${rows.length} cuentas cargadas desde PostgreSQL`);
     } catch (e) {
@@ -387,6 +398,7 @@ async function initAccounts() {
       backfilled = true;
     }
     if (a && !Array.isArray(a.owns)) a.owns = [];
+    if (a && !Array.isArray(a.mails)) a.mails = [];
   }
   if (backfilled) saveAccounts();
   accountsReady = true;
@@ -407,8 +419,8 @@ async function dbSaveAll() {
   try {
     await client.query('BEGIN');
     await client.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS owns TEXT NOT NULL DEFAULT \'[]\'');
-    const q = `INSERT INTO accounts (name, id, password, points, level, exp, lastseen, google_id, google_email, unnamed, device_token, matches, wins, kills, dmg, deaths, owns)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+    const q = `INSERT INTO accounts (name, id, password, points, level, exp, lastseen, google_id, google_email, unnamed, device_token, matches, wins, kills, dmg, deaths, owns, mails)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
                ON CONFLICT (name) DO UPDATE SET
                  password = EXCLUDED.password,
                  points = EXCLUDED.points,
@@ -424,9 +436,10 @@ async function dbSaveAll() {
                  kills = EXCLUDED.kills,
                  dmg = EXCLUDED.dmg,
                  deaths = EXCLUDED.deaths,
-                 owns = EXCLUDED.owns`;
+                 owns = EXCLUDED.owns,
+                 mails = EXCLUDED.mails`;
     for (const [name, a] of Object.entries(accounts)) {
-      await client.query(q, [name, a.id || genId(), a.password, Number(a.points) || 0, Number(a.level) || 1, Number(a.exp) || 0, Number(a.lastSeen) || 0, a.googleId || '', a.googleEmail || '', !!a.unnamed, a.deviceToken || '', Number(a.matches) || 0, Number(a.wins) || 0, Number(a.kills) || 0, Number(a.dmg) || 0, Number(a.deaths) || 0, JSON.stringify(a.owns || [])]);
+      await client.query(q, [name, a.id || genId(), a.password, Number(a.points) || 0, Number(a.level) || 1, Number(a.exp) || 0, Number(a.lastSeen) || 0, a.googleId || '', a.googleEmail || '', !!a.unnamed, a.deviceToken || '', Number(a.matches) || 0, Number(a.wins) || 0, Number(a.kills) || 0, Number(a.dmg) || 0, Number(a.deaths) || 0, JSON.stringify(a.owns || []), JSON.stringify(a.mails || [])]);
     }
     await client.query('COMMIT');
   } catch (e) {
@@ -1089,6 +1102,71 @@ socket.emit('account-result', { ok: true, account: { id: accounts[name].id, name
 
   socket.on('get-top100', () => {
     socket.emit('update-top100', getTop100());
+  });
+
+  // ---------- CORREO del juego (estilo Free Fire) ----------
+  // Cada cuenta tiene su buzón (mails[]). Enviar un regalo saca el artículo de
+  // tu inventario YA y crea un sobre en el buzón del destinatario; al reclamarlo,
+  // el artículo entra a SU inventario.
+  function emitMails() {
+    socket.emit('update-mails', { mails: (socket.data.account ? (accounts[socket.data.account] ? accounts[socket.data.account].mails || [] : []) : []).slice().sort((x, y) => (y.sentAt || 0) - (x.sentAt || 0)) });
+  }
+  socket.on('get-mails', async () => {
+    await ensureAccounts();
+    if (!socket.data.account || !accounts[socket.data.account]) return socket.emit('mail-result', { ok: false, error: 'not-found' });
+    emitMails();
+  });
+  // Enviar un artículo (por nombre o ID del soldado destino) como regalo.
+  socket.on('send-mail', async (data = {}) => {
+    await ensureAccounts();
+    if (!socket.data.account || !accounts[socket.data.account]) return socket.emit('mail-result', { ok: false, error: 'not-found' });
+    const itemId = String(data.itemId || '');
+    const item = PREMIUM_ITEMS[itemId];
+    if (!item) return socket.emit('mail-result', { ok: false, error: 'bad-item' });
+    const fromAcc = accounts[socket.data.account];
+    if (!(fromAcc.owns || []).includes(itemId)) return socket.emit('mail-result', { ok: false, error: 'no-own' });
+    const rawTo = String(data.to || '').trim();
+    let toName = null;
+    if (rawTo.includes('@')) {
+      const email = rawTo.toLowerCase();
+      for (const [n, a] of Object.entries(accounts)) {
+        if (a && a.googleEmail && String(a.googleEmail).toLowerCase() === email) { toName = n; break; }
+      }
+    } else {
+      toName = normName(rawTo) || null;
+      if (!toName) toName = findAccountById(rawTo);
+    }
+    const toAcc = toName ? accounts[toName] : null;
+    if (!toAcc) return socket.emit('mail-result', { ok: false, error: 'no-to' });
+    if (toName === socket.data.account) return socket.emit('mail-result', { ok: false, error: 'self' });
+    // El artículo sale de tu inventario en el momento del envío.
+    fromAcc.owns = fromAcc.owns.filter(x => x !== itemId);
+    toAcc.mails = toAcc.mails || [];
+    toAcc.mails.push({
+      id: genId(), from: socket.data.account, to: toName, itemId,
+      msg: String(data.msg || '').slice(0, 80),
+      sentAt: Date.now(), claimed: false
+    });
+    saveAccounts();
+    socket.emit('mail-result', { ok: true, itemId, sent: true });
+    emitMails();
+  });
+  // Reclamar un regalo: el artículo entra a tu inventario.
+  socket.on('claim-mail', async (data = {}) => {
+    await ensureAccounts();
+    if (!socket.data.account || !accounts[socket.data.account]) return socket.emit('mail-result', { ok: false, error: 'not-found' });
+    const acc = accounts[socket.data.account];
+    const mail = (acc.mails || []).find(m => m.id === String(data.mailId || ''));
+    if (!mail || mail.to !== socket.data.account) return socket.emit('mail-result', { ok: false, error: 'bad-mail' });
+    if (mail.claimed) return socket.emit('mail-result', { ok: false, error: 'already' });
+    if (!(acc.owns || []).includes(mail.itemId)) {
+      acc.owns = acc.owns || [];
+      acc.owns.push(mail.itemId);
+    }
+    mail.claimed = true;
+    saveAccounts();
+    socket.emit('mail-result', { ok: true, itemId: mail.itemId, claimed: true });
+    emitMails();
   });
 
   // Eliminar cuenta definitivamente: pide la contraseña (menos las cuentas de
