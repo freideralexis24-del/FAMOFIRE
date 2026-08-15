@@ -507,6 +507,10 @@ function broadcastOnline() {
 
 // ---------- Cola de emparejamiento ----------
 const queue = [];
+// Candado de sesión única: cada cuenta (con contraseña o Google) solo puede
+// estar abierta en UNA pestaña/página a la vez. La segunda se rechaza con
+// 'acct-already-open' hasta que la primera se desconecte.
+const accountLocks = new Map();
 let queueTimer = null;
 let queueDeadline = 0; // ms (Date.now()) en que arranca la partida: COMPARTIDA para toda la cola
 let queueStartAt = 0;  // momento en que entró el primer jugador de la cola (espera solitaria)
@@ -569,7 +573,7 @@ function startMatch() {
 
   taken.forEach((q, i) => {
     players.set(q.socket.id, {
-      id: q.socket.id, name: q.name, color: q.color, points: q.points,
+      id: q.socket.id, name: q.name, color: q.color, skin: q.skin || q.socket.data.skin || '', points: q.points,
       x: spawns[i].x, y: spawns[i].y, angle: 0, alive: true,
       // Estado de combate autoritativo del servidor (anti-trampa):
       // la vida de jugadores reales, el daño aplicado y el escudo viven aquí.
@@ -604,7 +608,7 @@ function startMatch() {
     matchId: roomCode,
     zone,
     you: null,
-    players: [...players.values()].map(p => ({ id: p.id, name: p.name, color: p.color, x: p.x, y: p.y })),
+    players: [...players.values()].map(p => ({ id: p.id, name: p.name, color: p.color, skin: p.skin || '', x: p.x, y: p.y })),
   };
 
   for (const p of players.values()) {
@@ -694,6 +698,7 @@ io.on('connection', (socket) => {
   socket.data.name = 'Jugador';
   socket.data.points = 0;
   socket.data.color = '#ffffff';
+  socket.data.skin = ''; // id del skin premium (ej. skin_fuego) o '' para normal
   socket.data.account = null; // nombre de la cuenta logueada (si hay)
   broadcastOnline();
 
@@ -738,6 +743,12 @@ io.on('connection', (socket) => {
       }
     }
     if (!ok) return socket.emit('account-result', { ok: false, error: 'bad-pass' });
+    // Sesión única: si la cuenta ya está abierta en otra pestaña, se rechaza.
+    const prevLock = accountLocks.get(accountKey);
+    if (prevLock && prevLock !== socket && prevLock.connected) {
+      return socket.emit('account-result', { ok: false, error: 'acct-already-open' });
+    }
+    accountLocks.set(accountKey, socket);
     acc.lastSeen = Date.now();
     saveAccounts();
     socket.data.account = accountKey;
@@ -756,6 +767,7 @@ io.on('connection', (socket) => {
     try { passHash = await bcrypt.hash(String(data.password || ''), 10); } catch (e) { passHash = sha(data.password); }
     accounts[name] = { id: genId(), password: passHash, points: 0, level: 1, exp: 0, lastSeen: Date.now(), matches: 0, wins: 0, kills: 0, dmg: 0, deaths: 0, owns: [] };
     saveAccounts();
+    accountLocks.set(name, socket);
     socket.data.account = name;
     socket.data.name = name;
     socket.data.points = 0;
@@ -804,6 +816,12 @@ socket.emit('account-result', { ok: true, account: { id: accounts[name].id, name
       saveAccounts();
     }
     const acc = accounts[name];
+    // Sesión única: la misma cuenta de Google no puede abrirse dos veces a la vez.
+    const prevLock = accountLocks.get(name);
+    if (prevLock && prevLock !== socket && prevLock.connected) {
+      return socket.emit('account-result', { ok: false, error: 'acct-already-open' });
+    }
+    accountLocks.set(name, socket);
     acc.lastSeen = Date.now();
     if (acc.unnamed) {
       // Cuenta creada pero aún sin terminar: seguimos con contraseña + nombre.
@@ -1061,6 +1079,7 @@ socket.emit('account-result', { ok: true, account: { id: accounts[name].id, name
   socket.on('player-join', (data = {}) => {
     socket.data.name = normName(data.name || socket.data.name);
     socket.data.color = data.color || '#ffffff';
+    socket.data.skin = String(data.skin || '');
     if (socket.data.account) {
       socket.data.points = accounts[socket.data.account] ? accounts[socket.data.account].points : 0;
     } else {
@@ -1109,8 +1128,9 @@ socket.emit('account-result', { ok: true, account: { id: accounts[name].id, name
     socket.data.name = normName(data.name || socket.data.name);
     socket.data.points = Math.max(0, Math.floor(num(data.points, socket.data.points)));
     socket.data.color = data.color || socket.data.color;
+    socket.data.skin = String(data.skin || socket.data.skin || '');
     socket.data.inQueue = true;
-    queue.push({ socket, name: socket.data.name, points: socket.data.points, color: socket.data.color });
+    queue.push({ socket, name: socket.data.name, points: socket.data.points, color: socket.data.color, skin: socket.data.skin });
     socket.emit('mm-status', { inQueue: true, count: queue.length, remaining: Math.max(0, (queueDeadline || Date.now() + QUEUE_TIMEOUT) - Date.now()) });
     if (queue.length >= MATCH_SIZE) {
       startMatch();
@@ -1265,6 +1285,10 @@ socket.emit('account-result', { ok: true, account: { id: accounts[name].id, name
   });
 
   socket.on('disconnect', () => {
+    // Liberar el candado de sesión única si esta pestaña era la dueña de la cuenta.
+    if (socket.data.account && accountLocks.get(socket.data.account) === socket) {
+      accountLocks.delete(socket.data.account);
+    }
     const i = queue.findIndex(q => q.socket.id === socket.id);
     if (i >= 0) {
       queue.splice(i, 1);

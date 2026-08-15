@@ -520,6 +520,23 @@
             width: 100%;
         }
 
+        /* Botón lateral de LUCKY ROYALE: centro-izquierda de la sala de comando */
+        .lucky-btn {
+            position: absolute;
+            left: 5%;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 190px;
+            background: linear-gradient(135deg, #ffb300, #b8860b) !important;
+            color: #1a1200 !important;
+            font-size: 15px;
+            animation: luckyPulse 1.6s ease-in-out infinite;
+        }
+        @keyframes luckyPulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(255, 179, 0, 0.45); }
+            50% { box-shadow: 0 0 26px rgba(255, 179, 0, 0.95); }
+        }
+
         .exp-container {
             width: 280px;
             background: rgba(0, 0, 0, 0.6);
@@ -620,9 +637,29 @@
         .shop-buy { font-size: 14px; padding: 8px 14px; }
         .shop-sub { font-size: 13px; color: #aaa; text-align: center; max-width: 640px; }
         .premium-frame {
+            position: relative;
             border: 3px solid #ffcc00 !important;
             border-radius: 14px;
-            box-shadow: 0 0 16px rgba(255, 204, 0, 0.8);
+            animation: pfBorderGlow 2.2s ease-in-out infinite;
+        }
+        .premium-frame::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 14px;
+            overflow: hidden;
+            pointer-events: none;
+            background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.45) 48%, transparent 62%);
+            transform: translateX(-140%);
+            animation: pfWave 2.4s ease-in-out infinite;
+        }
+        @keyframes pfBorderGlow {
+            0%, 100% { border-color: #ffcc00; box-shadow: 0 0 10px rgba(255, 204, 0, 0.55); }
+            50% { border-color: #ff4488; box-shadow: 0 0 24px rgba(255, 68, 136, 0.9), 0 0 40px rgba(176, 75, 240, 0.5); }
+        }
+        @keyframes pfWave {
+            0% { transform: translateX(-140%); }
+            55%, 100% { transform: translateX(140%); }
         }
         .skin-preview {
             width: 45px;
@@ -1332,9 +1369,21 @@
             <button id="to-battlefield-btn" class="btn-main" data-i18n="battlefieldBtn">CAMPO DE BATALLA</button>
             <button id="to-skills-btn" class="btn-main" style="background-color: #00ffff;" data-i18n="skillsBtn">HABILIDADES</button>
             <button id="to-skins-btn" class="btn-main" data-i18n="skinsBtn">PERSONALIZAR SKIN</button>
-            <button id="to-shop-btn" class="btn-main" style="background-color: #ffcc00;" data-i18n="shopBtn">TIENDA PREMIUM</button>
+            <button id="to-shop-btn" class="btn-main" style="background-color: #ffcc00;" data-i18n="shopBtn">TIENDA</button>
             <button id="to-ranks-btn" class="btn-main" data-i18n="ranksBtn">RANGOS MILITARES</button>
             <button id="to-ranking-btn" class="btn-main" data-i18n="rankingBtn">RANKING GLOBAL</button>
+        </div>
+
+        <!-- LUCKY ROYALE: acceso lateral (centro-izquierda) a un modo especial -->
+        <button id="to-lucky-btn" class="btn-main lucky-btn" data-i18n="luckyBtn">LUCKY ROYALE</button>
+    </div>
+
+    <!-- LUCKY ROYALE: interfaz del modo especial (por ahora en desarrollo) -->
+    <div id="lucky-screen" class="screen" style="display: none;">
+        <h1 data-i18n="luckyTitle">LUCKY ROYALE</h1>
+        <p class="shop-sub" data-i18n="luckySoon">PRÓXIMAMENTE</p>
+        <div class="lobby-menu">
+            <button id="lucky-back-btn" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
         </div>
     </div>
 
@@ -1714,7 +1763,7 @@
 
     <!-- TIENDA PREMIUM: skins y banners de pago (Stripe) -->
     <div id="premium-screen" class="screen" style="display: none;">
-        <h1 data-i18n="shopTitle">TIENDA PREMIUM</h1>
+        <h1 data-i18n="shopTitle">TIENDA</h1>
         <p class="shop-sub" id="shop-sub">Cargando tienda…</p>
         <div class="shop-grid" id="shop-grid"></div>
         <p id="shop-msg" style="font-size: 14px; color: #ffcc00; height: 36px; margin-top: 8px; text-align: center;"></p>
@@ -2158,10 +2207,14 @@ loginSection: "— INICIAR SESIÓN —",
                 battlefieldBtn: "CAMPO DE BATALLA",
                 skillsBtn: "HABILIDADES",
                 skinsBtn: "PERSONALIZAR",
-                shopBtn: "TIENDA PREMIUM",
-                shopTitle: "TIENDA PREMIUM",
+                shopBtn: "TIENDA",
+                shopTitle: "TIENDA",
                 shopOwned: "YA LO TIENES",
                 shopSoon: "PRONTO",
+                luckyBtn: "LUCKY ROYALE",
+                luckyTitle: "LUCKY ROYALE",
+                luckySoon: "PRÓXIMAMENTE",
+                errAlreadyOpen: "Esta cuenta ya está abierta en otra página. Ciérrala allí para poder entrar aquí.",
                 ranksBtn: "RANGOS MILITARES",
                 rankingBtn: "RANGO GLOBAL",
                 configTitle: "CONFIGURACIÓN",
@@ -2356,10 +2409,14 @@ loginSection: "— SIGN IN —",
                 battlefieldBtn: "BATTLEFIELD",
                 skillsBtn: "SKILLS",
                 skinsBtn: "CUSTOMIZE",
-                shopBtn: "PREMIUM SHOP",
-                shopTitle: "PREMIUM SHOP",
+                shopBtn: "SHOP",
+                shopTitle: "SHOP",
                 shopOwned: "OWNED",
                 shopSoon: "SOON",
+                luckyBtn: "LUCKY ROYALE",
+                luckyTitle: "LUCKY ROYALE",
+                luckySoon: "COMING SOON",
+                errAlreadyOpen: "This account is already open in another page. Close it there to log in here.",
                 ranksBtn: "MILITARY RANKS",
                 rankingBtn: "GLOBAL RANKING",
                 configTitle: "SETTINGS",
@@ -2554,10 +2611,14 @@ loginSection: "— 登录 —",
                 battlefieldBtn: "战场",
                 skillsBtn: "技能",
                 skinsBtn: "个性化",
-                shopBtn: "高级商店",
-                shopTitle: "高级商店",
+                shopBtn: "商店",
+                shopTitle: "商店",
                 shopOwned: "已拥有",
                 shopSoon: "即将推出",
+                luckyBtn: "LUCKY ROYALE",
+                luckyTitle: "LUCKY ROYALE",
+                luckySoon: "即将推出",
+                errAlreadyOpen: "⚠️ 此账户已在另一个页面打开。请先在那里关闭，再在此处登录。",
                 ranksBtn: "军衔等级",
                 rankingBtn: "全球排名",
                 configTitle: "设置",
@@ -2752,10 +2813,14 @@ loginSection: "— ENTRAR —",
                 battlefieldBtn: "CAMPO DE BATALHA",
                 skillsBtn: "HABILIDADES",
                 skinsBtn: "PERSONALIZAR",
-                shopBtn: "LOJA PREMIUM",
-                shopTitle: "LOJA PREMIUM",
+                shopBtn: "LOJA",
+                shopTitle: "LOJA",
                 shopOwned: "JÁ POSSUI",
                 shopSoon: "EM BREVE",
+                luckyBtn: "LUCKY ROYALE",
+                luckyTitle: "LUCKY ROYALE",
+                luckySoon: "EM BREVE",
+                errAlreadyOpen: "⚠️ Esta conta já está aberta em outra página. Feche-a lá para entrar aqui.",
                 ranksBtn: "PATENTES MILITARES",
                 rankingBtn: "RANKING GLOBAL",
                 configTitle: "CONFIGURAÇÕES",
@@ -2953,6 +3018,7 @@ skinsTitleHeader: "PERSONALIZAR",
             dmg: parseInt(localStorage.getItem('ff_dmg')) || 0,
             deaths: parseInt(localStorage.getItem('ff_deaths')) || 0,
             color: localStorage.getItem('ff_color') || "#ffffff",
+            skin: localStorage.getItem('ff_skin') || '',
             selectedSkill: localStorage.getItem('ff_skill') || "shield",
             avatar: localStorage.getItem('ff_avatar') || "👤",
             language: localStorage.getItem('ff_lang') || "ESPAÑOL",
@@ -3086,6 +3152,9 @@ skinsTitleHeader: "PERSONALIZAR",
         const shopSub = document.getElementById('shop-sub');
         const toShopBtn = document.getElementById('to-shop-btn');
         const shopBackBtn = document.getElementById('shop-back-btn');
+        const luckyScreen = document.getElementById('lucky-screen');
+        const toLuckyBtn = document.getElementById('to-lucky-btn');
+        const luckyBackBtn = document.getElementById('lucky-back-btn');
         let shopCatalog = [];
         let shopEnabled = false;
         let shopProvider = 'none';
@@ -3314,6 +3383,7 @@ skinsTitleHeader: "PERSONALIZAR",
             localStorage.setItem('ff_dmg', profile.dmg);
             localStorage.setItem('ff_deaths', profile.deaths);
             localStorage.setItem('ff_color', profile.color);
+            localStorage.setItem('ff_skin', profile.skin || '');
             localStorage.setItem('ff_skill', profile.selectedSkill);
             localStorage.setItem('ff_avatar', profile.avatar);
             localStorage.setItem('ff_lang', profile.language);
@@ -3501,7 +3571,9 @@ skinsTitleHeader: "PERSONALIZAR",
                     if(lockBadge) lockBadge.style.display = 'none';
                 }
 
-                if (card.getAttribute('data-color') === profile.color) {
+                const premiumSelected = premiumId && profile.skin === premiumId;
+                const colorSelected = card.getAttribute('data-color') === profile.color && !profile.skin;
+                if (premiumSelected || colorSelected) {
                     card.classList.add('selected');
                 } else {
                     card.classList.remove('selected');
@@ -3552,7 +3624,7 @@ skinsTitleHeader: "PERSONALIZAR",
             }
             saveProfile();
             updateLobbyUI();
-            socket.emit('player-join', { name: profile.name, color: profile.color });
+            socket.emit('player-join', { name: profile.name, color: profile.color, skin: profile.skin || '' });
             loginScreen.style.display = 'none';
             lobbyScreen.style.display = 'flex';
             startLobbyMusic();
@@ -3816,6 +3888,7 @@ skinsTitleHeader: "PERSONALIZAR",
                 else if (res && res.error === 'google-invalid') msg = "No se pudo verificar tu cuenta de Google";
                 else if (res && res.error === 'email-taken') msg = dict.errEmailTaken;
                 else if (res && res.error === 'needs-device') msg = dict.errDeviceOnly;
+                else if (res && res.error === 'acct-already-open') msg = dict.errAlreadyOpen;
                 showLoginMessage(msg);
                 return;
             }
@@ -4024,7 +4097,7 @@ skinsTitleHeader: "PERSONALIZAR",
                 return;
             }
             // Cuenta borrada: salir al login con todos los datos locales limpios
-            ['ff_name','ff_level','ff_exp','ff_points','ff_deaths','ff_username','ff_userpass','ff_matches','ff_wins','ff_kills','ff_dmg','ff_color','ff_skill','ff_avatar','ff_id','ff_google','ff_googlemail','ff_haspw'].forEach(k => localStorage.removeItem(k));
+            ['ff_name','ff_level','ff_exp','ff_points','ff_deaths','ff_username','ff_userpass','ff_matches','ff_wins','ff_kills','ff_dmg','ff_color','ff_skin','ff_skill','ff_avatar','ff_id','ff_google','ff_googlemail','ff_haspw'].forEach(k => localStorage.removeItem(k));
             profile.name = "";
             profile.level = 1;
             profile.exp = 0;
@@ -4262,7 +4335,7 @@ skinsTitleHeader: "PERSONALIZAR",
             matchmakingScreen.style.display = 'flex';
             mmTimer.innerText = '15s';
             mmStatusText.innerText = 'Buscando soldados en servidor LATAM...';
-            socket.emit('join-matchmaking', { name: profile.name, points: profile.points, color: profile.color });
+            socket.emit('join-matchmaking', { name: profile.name, points: profile.points, color: profile.color, skin: profile.skin || '' });
             // La cuenta atrás la manda el servidor (mm-status): es la misma para
             // todos los de la cola, así el que se une tarde ve el tiempo real.
         });
@@ -4306,7 +4379,7 @@ skinsTitleHeader: "PERSONALIZAR",
             if (matchData.players && matchData.players.length) {
                 matchData.players.forEach(p => {
                     if (p.id !== socket.id) {
-                        remotePlayers[p.id] = { id: p.id, name: p.name, color: p.color, x: p.x, y: p.y, angle: 0, hp: 100, radius: 15 };
+                        remotePlayers[p.id] = { id: p.id, name: p.name, color: p.color, skin: p.skin || '', x: p.x, y: p.y, angle: 0, hp: 100, radius: 15 };
                     }
                 });
             }
@@ -4416,7 +4489,7 @@ skinsTitleHeader: "PERSONALIZAR",
         function selectSkinColor(colorHex, isLocked, cardElement) {
             const premiumId = cardElement ? cardElement.getAttribute('data-premium') : null;
             if (premiumId && !(profile.owns || []).includes(premiumId)) {
-                skinLockMsg.innerText = "🔒 Este skin es PREMIUM: consíguelo en la TIENDA PREMIUM de la sala de comando.";
+                skinLockMsg.innerText = "🔒 Este skin es PREMIUM: consíguelo en la TIENDA de la sala de comando.";
                 return;
             }
             let requiredLevel = isLocked ? (parseInt(cardElement.dataset.level) || 5) : 1;
@@ -4426,6 +4499,7 @@ skinsTitleHeader: "PERSONALIZAR",
             }
             skinLockMsg.innerText = "";
             profile.color = colorHex;
+            profile.skin = premiumId || '';
             player.color = colorHex;
             saveProfile();
             updateSkinSelectionUI();
@@ -4519,6 +4593,16 @@ skinsTitleHeader: "PERSONALIZAR",
         });
         shopBackBtn.addEventListener('click', () => {
             premiumScreen.style.display = 'none';
+            lobbyScreen.style.display = 'flex';
+        });
+
+        // ---- LUCKY ROYALE (modo especial, en desarrollo) ----
+        toLuckyBtn.addEventListener('click', () => {
+            lobbyScreen.style.display = 'none';
+            luckyScreen.style.display = 'flex';
+        });
+        luckyBackBtn.addEventListener('click', () => {
+            luckyScreen.style.display = 'none';
             lobbyScreen.style.display = 'flex';
         });
         async function loadShopCatalog() {
@@ -5471,6 +5555,116 @@ skinsTitleHeader: "PERSONALIZAR",
             mCtx.closePath();
         }
 
+        // ---- SKINS PREMIUM ANIMADAS ----
+        // Cada skin premium tiene su propia aura animada, gradiente de cuerpo
+        // y partículas. Se dibujan igual para el jugador y para los demás
+        // soldados remotos en el campo de batalla.
+        const PREMIUM_SKIN_FX = {
+            skin_fuego:    { type: 'fire',  aura: '#ff6a00', glow: '#ffaa00', bodyA: '#fff3b0', bodyB: '#ff6600', bodyC: '#c41e00' },
+            skin_elite:    { type: 'elite', aura: '#b04bf0', glow: '#7b2ff7', bodyA: '#2a0d52', bodyB: '#8f3df5', bodyC: '#d8a1ff' },
+            skin_fantasma: { type: 'ghost', aura: '#19ffc8', glow: '#0fd9b0', bodyA: '#0b3d33', bodyB: '#19ffc8', bodyC: '#7affdf' }
+        };
+        function drawPremiumSkin(fx, ctx, r, t, alpha) {
+            if (fx.type === 'fire') {
+                const pulse = 0.75 + 0.25 * Math.sin(t * 3.1);
+                ctx.beginPath();
+                ctx.arc(0, 0, r * 1.55, 0, Math.PI * 2);
+                ctx.strokeStyle = fx.aura;
+                ctx.globalAlpha = (0.25 + 0.2 * pulse) * alpha;
+                ctx.lineWidth = 3;
+                ctx.shadowBlur = 22;
+                ctx.shadowColor = fx.aura;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+                const grad = ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.15, 0, 0, r);
+                grad.addColorStop(0, fx.bodyA);
+                grad.addColorStop(0.55, fx.bodyB);
+                grad.addColorStop(1, fx.bodyC);
+                ctx.beginPath();
+                ctx.arc(0, 0, r, 0, Math.PI * 2);
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = grad;
+                ctx.fill();
+                for (let i = 0; i < 6; i++) {
+                    const a = t * (1.6 + i * 0.13) + i * Math.PI / 3;
+                    const d = r * (1.2 + 0.25 * Math.sin(t * 2 + i));
+                    const px = Math.cos(a) * d;
+                    const py = Math.sin(a) * d - (t * 12) % (r * 0.8);
+                    ctx.beginPath();
+                    ctx.arc(px, py, 2.2, 0, Math.PI * 2);
+                    ctx.globalAlpha = (0.7 - 0.4 * (i % 3)) * alpha;
+                    ctx.fillStyle = i % 2 === 0 ? '#ffb300' : '#ff4500';
+                    ctx.fill();
+                }
+            } else if (fx.type === 'elite') {
+                ctx.beginPath();
+                ctx.arc(0, 0, r * 1.5, 0, Math.PI * 2);
+                ctx.strokeStyle = fx.aura;
+                ctx.globalAlpha = (0.35 + 0.15 * Math.sin(t * 2.2)) * alpha;
+                ctx.lineWidth = 3;
+                ctx.setLineDash([10, 8]);
+                ctx.lineDashOffset = -t * 26;
+                ctx.shadowBlur = 16;
+                ctx.shadowColor = fx.glow;
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.shadowBlur = 0;
+                ctx.beginPath();
+                ctx.arc(0, 0, r * 1.3, 0, Math.PI * 2);
+                ctx.strokeStyle = fx.glow;
+                ctx.globalAlpha = 0.3 * alpha;
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                const grad = ctx.createLinearGradient(-r, -r, r, r);
+                grad.addColorStop(0, fx.bodyA);
+                grad.addColorStop(0.6, fx.bodyB);
+                grad.addColorStop(1, fx.bodyC);
+                ctx.beginPath();
+                ctx.arc(0, 0, r, 0, Math.PI * 2);
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = grad;
+                ctx.fill();
+                for (let i = 0; i < 4; i++) {
+                    const a = t * 1.8 + i * Math.PI / 2;
+                    ctx.beginPath();
+                    ctx.arc(Math.cos(a) * r * 1.75, Math.sin(a) * r * 1.75, 1.8, 0, Math.PI * 2);
+                    ctx.globalAlpha = (0.5 * (0.5 + 0.5 * Math.sin(t * 3 + i * 2))) * alpha;
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fill();
+                }
+            } else if (fx.type === 'ghost') {
+                const wob = Math.sin(t * 2.4);
+                ctx.beginPath();
+                ctx.arc(0, 0, r * 1.45 + wob * 3, 0, Math.PI * 2);
+                ctx.strokeStyle = fx.aura;
+                ctx.globalAlpha = (0.3 + 0.15 * Math.sin(t * 3.4)) * alpha;
+                ctx.lineWidth = 2.5;
+                ctx.setLineDash([7, 9]);
+                ctx.lineDashOffset = t * 14;
+                ctx.shadowBlur = 18;
+                ctx.shadowColor = fx.aura;
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.shadowBlur = 0;
+                const grad = ctx.createRadialGradient(0, 0, r * 0.1, 0, 0, r);
+                grad.addColorStop(0, fx.bodyC);
+                grad.addColorStop(0.55, fx.bodyB);
+                grad.addColorStop(1, fx.bodyA);
+                ctx.beginPath();
+                ctx.arc(0, 0, r, 0, Math.PI * 2);
+                ctx.globalAlpha = 0.8 * alpha;
+                ctx.fillStyle = grad;
+                ctx.fill();
+                ctx.globalAlpha = (0.18 + 0.1 * Math.sin(t * 2.8)) * alpha;
+                ctx.beginPath();
+                ctx.arc(0, 0, r + 2, 0, Math.PI * 2);
+                ctx.strokeStyle = fx.aura;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+            ctx.globalAlpha = 1;
+        }
+
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -5571,14 +5765,18 @@ skinsTitleHeader: "PERSONALIZAR",
 
                 ctx.save();
                 ctx.translate(rp.x, rp.y);
-                ctx.beginPath();
-                ctx.arc(0, 0, 15, 0, Math.PI * 2);
-                ctx.fillStyle = rp.color || '#ffffff';
-                ctx.fill();
-                ctx.strokeStyle = '#000';
-                ctx.lineWidth = 1.5;
-                ctx.stroke();
-                ctx.closePath();
+                if (rp.skin && PREMIUM_SKIN_FX[rp.skin]) {
+                    drawPremiumSkin(PREMIUM_SKIN_FX[rp.skin], ctx, 15, performance.now() / 1000, 1);
+                } else {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 15, 0, Math.PI * 2);
+                    ctx.fillStyle = rp.color || '#ffffff';
+                    ctx.fill();
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                    ctx.closePath();
+                }
 
                 ctx.rotate(rp.angle || 0);
                 ctx.fillStyle = '#333';
@@ -5638,7 +5836,12 @@ skinsTitleHeader: "PERSONALIZAR",
                 let isGhostActive = (profile.selectedSkill === 'ghost' && skillState.active);
                 ctx.globalAlpha = isGhostActive ? 0.2 : 1.0;
 
-                if (player.color === 'camo' && camoPatternLoaded && camoPatternObj) {
+                if (profile.skin && PREMIUM_SKIN_FX[profile.skin] && (profile.owns || []).includes(profile.skin)) {
+                    // Skin premium animada: aura, gradiente y partículas
+                    ctx.globalAlpha = isGhostActive ? 0.2 : 1.0;
+                    drawPremiumSkin(PREMIUM_SKIN_FX[profile.skin], ctx, player.radius, performance.now() / 1000, isGhostActive ? 0.2 : 1.0);
+                    ctx.beginPath(); // sin borde negro extra sobre efectos
+                } else if (player.color === 'camo' && camoPatternLoaded && camoPatternObj) {
                     ctx.save();
                     ctx.scale(0.35, 0.35);
                     ctx.fillStyle = camoPatternObj;
