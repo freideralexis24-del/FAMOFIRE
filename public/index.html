@@ -877,6 +877,15 @@
             color: #2ede62; font-weight: 800; font-size: 12px; flex: 0 0 auto; letter-spacing: 1px;
         }
         .mail-card-empty { color: #9aa; font-size: 13px; margin-top: 16px; }
+        .copy-id-btn {
+            background: rgba(255, 204, 0, 0.12); color: #ffcc00;
+            border: 1px solid rgba(255, 204, 0, 0.5); border-radius: 10px;
+            font-size: 10px; font-weight: 800; letter-spacing: 1px;
+            padding: 2px 8px; margin-left: 6px; cursor: pointer; vertical-align: 2px;
+            transition: background 0.15s ease;
+        }
+        .copy-id-btn:hover { background: rgba(255, 204, 0, 0.25); }
+        .copy-id-btn:disabled { opacity: 0.75; cursor: default; }
         .premium-frame {
             position: relative;
             border: 3px solid #ffcc00 !important;
@@ -1668,7 +1677,7 @@
                 <div id="profile-head">
                     <h2 id="prof-name">Jugador</h2>
                     <p id="prof-rank">RECLUTA</p>
-                    <p id="prof-id-line">ID: <span id="prof-id">————</span></p>
+                    <p id="prof-id-line">ID: <span id="prof-id">————</span> <button id="copy-id-btn" class="copy-id-btn" onclick="copySoldierId()" data-i18n="copyIdBtn">COPIAR ID</button></p>
                 </div>
             </div>
 
@@ -2523,6 +2532,8 @@ loginSection: "— INICIAR SESIÓN —",
                 timeMin: "min",
                 timeHour: "h",
                 timeDay: "d",
+                copyIdBtn: "COPIAR ID",
+                idCopied: "¡COPIADO!",
                 mailEmpty: "Buzón vacío: aún no tienes mensajes.",
                 mailNew: "NUEVO",
                 mailClaim: "RECLAMAR",
@@ -2764,6 +2775,8 @@ loginSection: "— SIGN IN —",
                 timeMin: "min",
                 timeHour: "h",
                 timeDay: "d",
+                copyIdBtn: "COPY ID",
+                idCopied: "COPIED!",
                 mailEmpty: "Inbox empty: you have no messages yet.",
                 mailNew: "NEW",
                 mailClaim: "CLAIM",
@@ -3005,6 +3018,8 @@ loginSection: "— 登录 —",
                 timeMin: "分钟",
                 timeHour: "小时",
                 timeDay: "天",
+                copyIdBtn: "复制ID",
+                idCopied: "已复制",
                 mailEmpty: "收件箱为空：暂无消息。",
                 mailNew: "新",
                 mailClaim: "领取",
@@ -3246,6 +3261,8 @@ loginSection: "— ENTRAR —",
                 timeMin: "min",
                 timeHour: "h",
                 timeDay: "d",
+                copyIdBtn: "COPIAR ID",
+                idCopied: "COPIADO!",
                 mailEmpty: "Caixa vazia: você ainda não tem mensagens.",
                 mailNew: "NOVO",
                 mailClaim: "RESGATAR",
@@ -5215,6 +5232,37 @@ skinsTitleHeader: "PERSONALIZAR",
                 renderMailList(lastMails);
             });
         });
+        // Copiar tu ID de soldado al portapapeles (Perfil). Con respaldo para
+        // contextos sin API de portapapeles.
+        async function copySoldierId() {
+            const btn = document.getElementById('copy-id-btn');
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            const id = String(profile.id || '');
+            if (!id) return;
+            try {
+                let ok = false;
+                if (navigator.clipboard && window.isSecureContext) {
+                    try { await navigator.clipboard.writeText(id); ok = true; } catch (e) { /* probar respaldo */ }
+                }
+                if (!ok) {
+                    try {
+                        const ta = document.createElement('textarea');
+                        ta.value = id;
+                        ta.style.cssText = 'position:fixed;opacity:0;';
+                        document.body.appendChild(ta);
+                        ta.select();
+                        document.execCommand('copy');
+                        ta.remove();
+                        ok = true;
+                    } catch (e) { /* sin portapapeles disponible */ }
+                }
+                if (ok && btn) {
+                    btn.textContent = dict.idCopied;
+                    btn.disabled = true;
+                    setTimeout(() => { btn.textContent = dict.copyIdBtn; btn.disabled = false; }, 1600);
+                }
+            } catch (e) { /* si falla el portapapeles, el ID sigue visible en pantalla */ }
+        }
         toMailBtn.addEventListener('click', () => {
             fillMailSendSelect();
             mailMsgEl.innerText = "";

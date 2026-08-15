@@ -7,3 +7,6 @@ services:
     healthCheckPath: /health
     autoDeploy: true
     plan: free
+    envVars:
+      - key: ADMIN_KEY
+        value: cbedf0fae5e7eb31444544a99f5277e3

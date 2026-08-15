@@ -217,6 +217,44 @@ app.get('/api/mp-verify', async (req, res) => {
   }
 });
 
+// ADMIN (solo el dueño): entrega artículos premium y/o FamoCoins a cualquier
+// cuenta por nombre o por ID de soldado. Requiere ADMIN_KEY en el entorno.
+app.post('/api/admin-grant', async (req, res) => {
+  try {
+    const ADMIN_KEY = process.env.ADMIN_KEY || '';
+    if (!ADMIN_KEY) return res.status(501).json({ ok: false, error: 'admin-disabled' });
+    const key = String((req.body && req.body.key) || '');
+    if (key !== ADMIN_KEY) return res.status(403).json({ ok: false, error: 'forbidden' });
+    if (!accountsReady) await ensureAccounts();
+    const byName = String(((req.body && req.body.name) || '')).trim().toUpperCase().slice(0, 12);
+    const byId = String(((req.body && req.body.id) || '')).trim().toUpperCase();
+    let acc = null, accountKey = '';
+    if (byName && accounts[byName]) { acc = accounts[byName]; accountKey = byName; }
+    else if (byId) {
+      const found = Object.keys(accounts).find(k => String(accounts[k].id || '').toUpperCase() === byId);
+      if (found) { acc = accounts[found]; accountKey = found; }
+    }
+    if (!acc) return res.status(404).json({ ok: false, error: 'not-found', id: byId, name: byName || undefined });
+    acc = normalizeAcc(acc);
+    const wantAll = !!(req.body && req.body.all);
+    const wantItems = Array.isArray(req.body && req.body.items) ? req.body.items : [];
+    const ids = wantAll ? Object.keys(PREMIUM_ITEMS) : wantItems;
+    const added = [];
+    acc.owns = acc.owns || [];
+    ids.forEach(id => {
+      if (!PREMIUM_ITEMS[id] || acc.owns.includes(id)) return;
+      acc.owns.push(id);
+      added.push(id);
+    });
+    const gems = Number(req.body && req.body.gems);
+    if (gems > 0 && Number.isFinite(gems) && gems <= 1000000) acc.gems = (acc.gems || 0) + gems;
+    saveAccounts();
+    res.json({ ok: true, account: accountKey, id: acc.id, added, ownsCount: acc.owns.length, gems: acc.gems });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: 'admin-error', msg: String(e.message || e).slice(0, 120) });
+  }
+});
+
 // Webhook de MP: recibe avisos de pago y entrega el artículo aunque el jugador
 // no vuelva al juego (el pago ya fue aprobado en el sitio de MP).
 app.post('/api/mp-webhook', async (req, res) => {
