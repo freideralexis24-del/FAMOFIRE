@@ -7,6 +7,10 @@ const http = require('http');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const dns = require('dns');
+// Render no tiene ruta IPv6: Gmail SMTP resuelve a IPv6 y falla con ENETUNREACH.
+// Forzar resolución IPv4 evita que el envío de correos se muera en el intento.
+dns.setDefaultResultOrder('ipv4first');
 const bcrypt = require('bcryptjs');
 const { OAuth2Client } = require('google-auth-library');
 const { Server } = require('socket.io');
