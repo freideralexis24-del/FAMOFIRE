@@ -57,7 +57,7 @@ app.get('/config', (req, res) => res.json({
     currency: {
       name: GEM_NAME,
       emoji: GEM_EMOJI,
-      img: (fs.existsSync(path.join(__dirname, 'public', 'img', 'moneda.png')) ? GEM_IMG : '')
+      img: gemImgUrl()
     },
     packages: Object.entries(GEM_PACKAGES).map(([id, p]) => ({ id, name: p.name, gems: p.gems, priceCOP: p.priceCOP })),
     items: Object.entries(PREMIUM_ITEMS).map(([id, it]) => ({ id, type: it.type, name: it.name, emoji: it.emoji, desc: it.desc, gems: it.gems, color: it.color || '' }))
@@ -296,7 +296,14 @@ const APP_BASE_URL = (process.env.APP_URL || (process.env.RENDER_EXTERNAL_URL ? 
 // los artículos de la tienda. También es la moneda que usará LUCKY ROYALE.
 const GEM_NAME = 'GEMAS';
 const GEM_EMOJI = '💎';
-const GEM_IMG = '/img/moneda.png'; // imagen de la moneda (si el archivo existe)
+// Imagen de la moneda: busca cualquier nombre para que no dependa de uno exacto.
+function gemImgUrl() {
+  const dir = path.join(__dirname, 'public', 'img');
+  for (const f of ['moneda.png', 'gema.png', 'gemas.png', 'coin.png', 'diamante.png']) {
+    if (fs.existsSync(path.join(dir, f))) return '/img/' + f;
+  }
+  return '';
+}
 // Paquetes de gemas que se compran con Mercado Pago (COP). Ajusta precios aquí.
 const GEM_PACKAGES = {
   pack_60:  { name: 'Paquete Soldado',     gems: 60,  priceCOP: 3000 },

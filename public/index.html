@@ -539,37 +539,50 @@
             background: linear-gradient(135deg, #ffd94d, #d4a017) !important;
         }
 
-        /* Píldora de GEMAS en la sala de comando (arriba a la derecha) */
-        .gem-pill {
+        /* Grupo superior derecho de la sala: GEMAS · CORREO · CONFIGURACIÓN */
+        #lobby-actions {
             position: absolute;
             top: 14px;
-            right: 60px;
+            right: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 25;
+        }
+        #lobby-actions #gear-btn {
+            position: static;
+        }
+        /* Botón que muestra cuántas GEMAS tienes (clic: abre la tienda) */
+        .gem-pill {
             display: inline-flex;
             align-items: center;
             gap: 6px;
             background: rgba(0, 0, 0, 0.55);
-            border: 2px solid #00e5ff;
-            border-radius: 999px;
-            padding: 5px 14px;
+            border: 3px solid #00e5ff;
+            border-radius: 12px;
+            padding: 6px 14px;
             font-size: 17px;
-            color: #ffffff;
+            color: #fff;
             font-weight: bold;
+            font-family: 'Impact', sans-serif;
+            cursor: pointer;
+            box-shadow: 4px 4px 0px #000;
+            transition: 0.1s;
             text-shadow: 1px 1px 2px #000;
+        }
+        .gem-pill:hover {
+            background-color: rgba(0, 229, 255, 0.25);
+            transform: scale(1.05);
         }
         .gem-pill img.gem-icon {
             width: 22px;
             height: 22px;
             object-fit: contain;
         }
-
-        /* Lobby dividido: CORREO a la izquierda de CONFIGURACIÓN (nunca encima) */
-        #mail-screen.split {
-            left: 0;
-            width: 44%;
-        }
-        #config-screen.split {
-            left: 44%;
-            width: 56%;
+        #lobby-actions #to-mail-btn {
+            font-size: 14px;
+            padding: 8px 12px;
+            margin: 0;
         }
 
         .exp-container {
@@ -1469,7 +1482,15 @@
     </div>
 
     <div id="lobby-screen" class="screen" style="display: none;">
-        <div id="gear-btn" onclick="openConfigMenu()">⚙️</div>
+        <!-- Grupo superior derecho: GEMAS · CORREO · CONFIGURACIÓN (cada uno abre su propia interfaz) -->
+        <div id="lobby-actions">
+            <button id="gem-pill" class="gem-pill" style="display: none;" title="Tus GEMAS (clic: abrir tienda)">
+                <span id="gem-glyph">💎</span>
+                <span id="lobby-gems">0</span>
+            </button>
+            <button id="to-mail-btn" class="btn-main" style="background-color: #ff8c00; font-size: 14px; padding: 8px 12px; margin: 0;"><span data-i18n="mailBtn">CORREO</span> <span id="mail-badge" class="mail-badge" style="display: none;">0</span></button>
+            <div id="gear-btn" onclick="openConfigMenu()">⚙️</div>
+        </div>
 
         <!-- PERFIL COMPACTO (arriba a la izquierda): nombre y rango arriba, clic para ver el perfil completo -->
         <div id="profile-panel" onclick="openProfile()" title="Ver perfil">
@@ -1480,12 +1501,6 @@
                 <div class="profile-sub"><span data-i18n="levelLabel">NIVEL</span> <span id="lobby-level">1</span> &bull; ID: <span id="lobby-id"></span></div>
             </div>
             <div class="profile-chevron">›</div>
-        </div>
-
-        <!-- PÍLDORA DE GEMAS: la moneda del juego (se compra con Mercado Pago) -->
-        <div id="gem-pill" class="gem-pill" style="display: none;">
-            <span id="gem-glyph">💎</span>
-            <span id="lobby-gems">0</span>
         </div>
 
         <h1 data-i18n="lobbyTitle">SALA DE COMANDO</h1>
@@ -1499,7 +1514,6 @@
             <button id="to-skills-btn" class="btn-main" style="background-color: #00ffff;" data-i18n="skillsBtn">HABILIDADES</button>
             <button id="to-skins-btn" class="btn-main" data-i18n="skinsBtn">PERSONALIZAR SKIN</button>
             <button id="to-shop-btn" class="btn-main" style="background-color: #ffcc00;" data-i18n="shopBtn">TIENDA</button>
-            <button id="to-mail-btn" class="btn-main" style="background-color: #ff8c00;"><span data-i18n="mailBtn">CORREO</span> <span id="mail-badge" class="mail-badge" style="display: none;">0</span></button>
             <button id="to-ranks-btn" class="btn-main" data-i18n="ranksBtn">RANGOS MILITARES</button>
             <button id="to-ranking-btn" class="btn-main" data-i18n="rankingBtn">RANKING GLOBAL</button>
         </div>
@@ -4203,10 +4217,6 @@ skinsTitleHeader: "PERSONALIZAR",
         });
 
         function openConfigMenu() {
-            // Solo configuración (pantalla completa): sin la división del buzón.
-            configScreen.classList.remove('split');
-            mailScreen.classList.remove('split');
-            mailScreen.style.display = 'none';
             lobbyScreen.style.display = 'none';
             configScreen.style.display = 'flex';
             updateAccountUI();
@@ -4232,11 +4242,6 @@ skinsTitleHeader: "PERSONALIZAR",
         cfgTabAccount.addEventListener('click', () => showConfigTab('account'));
 
         backFromConfig.addEventListener('click', () => {
-            // Si el buzón está abierto al lado, REGRESAR cierra los dos paneles juntos.
-            if (mailScreen.classList.contains('split')) {
-                closeMailAndConfig();
-                return;
-            }
             configScreen.style.display = 'none';
             lobbyScreen.style.display = 'flex';
         });
@@ -4879,6 +4884,9 @@ skinsTitleHeader: "PERSONALIZAR",
             lobbyScreen.style.display = 'flex';
         });
 
+        // Botón de GEMAS de la sala: muestra tu saldo y al hacer clic abre la TIENDA.
+        gemPill.addEventListener('click', () => toShopBtn.click());
+
         // ---- LUCKY ROYALE (modo especial, en desarrollo) ----
         toLuckyBtn.addEventListener('click', () => {
             lobbyScreen.style.display = 'none';
@@ -4952,25 +4960,13 @@ skinsTitleHeader: "PERSONALIZAR",
             mailDestInput.placeholder = dict.mailDestPh;
             mailMsgInput.placeholder = dict.mailMsgPh;
             socket.emit('get-mails');
-            // El buzón se muestra a la IZQUIERDA de CONFIGURACIÓN (al lado, nunca encima).
+            // Interfaz independiente a pantalla completa (igual que las demás).
             lobbyScreen.style.display = 'none';
-            mailScreen.classList.add('split');
-            configScreen.classList.add('split');
             mailScreen.style.display = 'flex';
-            configScreen.style.display = 'flex';
-            updateAccountUI();
-            updateGoogleLinkUI();
-            showConfigTab('visual');
         });
-        function closeMailAndConfig() {
-            mailScreen.classList.remove('split');
-            configScreen.classList.remove('split');
-            mailScreen.style.display = 'none';
-            configScreen.style.display = 'none';
-            lobbyScreen.style.display = 'flex';
-        }
         mailBackBtn.addEventListener('click', () => {
-            closeMailAndConfig();
+            mailScreen.style.display = 'none';
+            lobbyScreen.style.display = 'flex';
         });
         mailSendBtn.addEventListener('click', () => {
             const itemId = mailItemSelect.value;
@@ -5012,22 +5008,19 @@ skinsTitleHeader: "PERSONALIZAR",
             }
         });
         // Ícono de la moneda: imagen del juego si el servidor la publica, si no emoji.
+        function gemIconHtml(size) {
+            if (gemCfg.img) {
+                return '<img class="gem-icon" src="' + gemCfg.img + '" alt="' + (gemCfg.name || 'moneda') + '" style="width:' + size + 'px;height:' + size + 'px;object-fit:contain;vertical-align:middle;">';
+            }
+            return (gemCfg.emoji || '💎');
+        }
         function applyGemConfig() {
             const dict = i18n[profile.language] || i18n["ESPAÑOL"];
             const name = (gemCfg && gemCfg.name) ? gemCfg.name : dict.gemName;
             const emoji = (gemCfg && gemCfg.emoji) ? gemCfg.emoji : '💎';
-            if (gemCfg && gemCfg.img) {
-                if (gemGlyph.children.length === 0) {
-                    const img = document.createElement('img');
-                    img.className = 'gem-icon';
-                    img.alt = name;
-                    img.src = gemCfg.img;
-                    img.onerror = () => { gemGlyph.innerHTML = ''; gemGlyph.textContent = emoji; };
-                    gemGlyph.appendChild(img);
-                }
-            } else {
-                gemGlyph.innerHTML = '';
-                gemGlyph.textContent = emoji;
+            if (gemGlyph) {
+                gemGlyph.innerHTML = gemIconHtml(22);
+                if (!gemCfg.img && gemGlyph.textContent === '') gemGlyph.textContent = emoji;
             }
         }
         function updateGemUI() {
@@ -5058,11 +5051,10 @@ skinsTitleHeader: "PERSONALIZAR",
         function renderGemPacks() {
             gemPacks.innerHTML = '';
             const dict = i18n[profile.language] || i18n["ESPAÑOL"];
-            const emoji = gemCfg.emoji || '💎';
             const name = gemCfg.name || dict.gemName;
             const head = document.createElement('div');
             head.className = 'shop-sub';
-            head.innerHTML = dict.shopGemsTitle + ': <b id="shop-gems-val" style="color:#00e5ff;">' + String(profile.gems || 0) + '</b> ' + emoji + ' &nbsp;·&nbsp; ' + dict.buyGemsBtn;
+            head.innerHTML = dict.shopGemsTitle + ': <b id="shop-gems-val" style="color:#00e5ff;">' + String(profile.gems || 0) + '</b> ' + gemIconHtml(18) + ' &nbsp;·&nbsp; ' + dict.buyGemsBtn;
             gemPacks.appendChild(head);
             if (!shopPackages.length || !shopEnabled) return;
             const row = document.createElement('div');
@@ -5071,7 +5063,7 @@ skinsTitleHeader: "PERSONALIZAR",
                 const card = document.createElement('div');
                 card.style.cssText = 'background:rgba(0,0,0,0.5);border:2px solid #ffcc00;border-radius:10px;padding:10px 16px;text-align:center;min-width:150px;';
                 card.innerHTML =
-                    '<div style="font-size:30px;">' + emoji + '</div>' +
+                    '<div style="font-size:30px;line-height:36px;">' + gemIconHtml(30) + '</div>' +
                     '<div style="font-size:18px;color:#ffcc00;font-weight:bold;">+' + p.gems + ' ' + name + '</div>' +
                     '<div style="font-size:13px;color:#bbb;">' + p.name + '</div>' +
                     '<div style="font-size:15px;color:#fff;margin:6px 0;">$' + p.priceCOP.toLocaleString('es-CO') + ' COP</div>' +
@@ -5129,9 +5121,8 @@ skinsTitleHeader: "PERSONALIZAR",
         }
         function gemPriceLabel(item) {
             const dict = i18n[profile.language] || i18n["ESPAÑOL"];
-            const emoji = gemCfg.emoji || '💎';
             const name = gemCfg.name || dict.gemName;
-            return item.gems + ' ' + emoji + ' ' + name;
+            return item.gems + ' ' + gemIconHtml(16) + ' ' + name;
         }
         function buildShopGrid() {
             shopGrid.innerHTML = '';
