@@ -4977,8 +4977,18 @@ skinsTitleHeader: "PERSONALIZAR",
 
         function selectSkinColor(colorHex, isLocked, cardElement) {
             const premiumId = cardElement ? cardElement.getAttribute('data-premium') : null;
-            if (premiumId && !(profile.owns || []).includes(premiumId)) {
-                skinLockMsg.innerText = "🔒 Este skin es PREMIUM: consíguelo en la TIENDA de la sala de comando.";
+            if (premiumId) {
+                if (!(profile.owns || []).includes(premiumId)) {
+                    skinLockMsg.innerText = "🔒 Este skin es PREMIUM: consíguelo en la TIENDA de la sala de comando.";
+                    return;
+                }
+                // Comprado = usable de inmediato, sin requisito de nivel.
+                skinLockMsg.innerText = "";
+                profile.color = colorHex;
+                profile.skin = premiumId || '';
+                player.color = colorHex;
+                saveProfile();
+                updateSkinSelectionUI();
                 return;
             }
             let requiredLevel = isLocked ? (parseInt(cardElement.dataset.level) || 5) : 1;
