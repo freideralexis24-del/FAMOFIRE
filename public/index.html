@@ -924,6 +924,7 @@
             justify-content: center;
             gap: 12px;
             padding: 20px 12px;
+            overflow: hidden;
         }
         .auth-logo {
             display: none;
@@ -931,9 +932,10 @@
             max-height: 150px;
             filter: drop-shadow(0 8px 22px rgba(255, 170, 0, 0.28));
         }
-        .auth-hero {
+.auth-hero {
             display: flex;
             width: min(880px, 96vw);
+            max-height: 92vh;
             background: rgba(10, 18, 8, 0.78);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 20px;
@@ -967,12 +969,20 @@
         }
 .auth-form {
             flex: 1 1 58%;
+            min-height: 0;
             padding: 20px 22px 18px;
             display: flex;
             flex-direction: column;
             gap: 11px;
             box-sizing: border-box;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
         }
+        .auth-form::-webkit-scrollbar { width: 8px; }
+        .auth-form::-webkit-scrollbar-track { background: transparent; }
+        .auth-form::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.22); border-radius: 8px; }
+        .auth-form::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.4); }
         .auth-form-title {
             margin: 0;
             text-align: center;
@@ -1181,7 +1191,7 @@
 <div id="login-screen" class="screen">
         <div class="auth-hero">
             <div class="auth-brand">
-                <img id="company-logo-img" class="auth-logo" src="/img/logo-empresa.jpg" alt="FAMOFIRE" onerror="this.style.display='none';" onload="this.style.display='block';">
+                <img id="game-logo-img" class="auth-logo" src="/img/logo-juego.png" alt="FAMOFIRE" onerror="this.style.display='none';" onload="this.style.display='block';">
                 <h1>FAMOFIRE</h1>
             </div>
             <div class="auth-form">
