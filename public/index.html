@@ -530,11 +530,7 @@
             background: linear-gradient(135deg, #ffb300, #b8860b) !important;
             color: #1a1200 !important;
             font-size: 15px;
-            animation: luckyPulse 1.6s ease-in-out infinite;
-        }
-        @keyframes luckyPulse {
-            0%, 100% { box-shadow: 0 0 10px rgba(255, 179, 0, 0.45); }
-            50% { box-shadow: 0 0 26px rgba(255, 179, 0, 0.95); }
+            box-shadow: 0 0 12px rgba(255, 179, 0, 0.55);
         }
 
         .exp-container {
@@ -636,6 +632,40 @@
         .shop-status.soon { color: #999; }
         .shop-buy { font-size: 14px; padding: 8px 14px; }
         .shop-sub { font-size: 13px; color: #aaa; text-align: center; max-width: 640px; }
+        /* Vistas previas animadas en la tienda: la skin en vivo y el banner real */
+        .shop-skin-pv {
+            width: 92px;
+            height: 92px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.4);
+        }
+        .shop-banner-pv {
+            width: 92px;
+            height: 92px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .shop-banner-pv-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 14px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(0, 0, 0, 0.35));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 34px;
+        }
+        /* Preview en vivo dentro de las tarjetas de personalizar (canvas) */
+        .skin-preview.ff-live-preview {
+            background: rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+        }
+        .skin-preview canvas.ff-skin-preview {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
         .premium-frame {
             position: relative;
             border: 3px solid #ffcc00 !important;
@@ -1732,19 +1762,19 @@
 
                 <div class="skin-option-card premium-card" data-premium="skin_fuego" onclick="selectSkinColor('#ffcc00', true, this)">
                     <div class="lock-badge">🔒</div>
-                    <div class="skin-preview" style="background: #ffcc00;"></div>
+                    <div class="skin-preview ff-live-preview"><canvas class="ff-skin-preview" data-skin="skin_fuego" width="90" height="90"></canvas></div>
                     <span>🔥 Fuego Dorado</span>
                 </div>
 
                 <div class="skin-option-card premium-card" data-premium="skin_elite" onclick="selectSkinColor('#8a2be2', true, this)">
                     <div class="lock-badge">🔒</div>
-                    <div class="skin-preview" style="background: #8a2be2;"></div>
+                    <div class="skin-preview ff-live-preview"><canvas class="ff-skin-preview" data-skin="skin_elite" width="90" height="90"></canvas></div>
                     <span>🛡️ Comandante Élite</span>
                 </div>
 
                 <div class="skin-option-card premium-card" data-premium="skin_fantasma" onclick="selectSkinColor('#19ffc8', true, this)">
                     <div class="lock-badge">🔒</div>
-                    <div class="skin-preview" style="background: #19ffc8;"></div>
+                    <div class="skin-preview ff-live-preview"><canvas class="ff-skin-preview" data-skin="skin_fantasma" width="90" height="90"></canvas></div>
                     <span>👻 Fantasma LATAM</span>
                 </div>
             </div>
@@ -4538,8 +4568,10 @@ skinsTitleHeader: "PERSONALIZAR",
 
         function updateAvatarSelectionUI() {
             if (!profile.avatar) profile.avatar = '👤';
+            const hasBanner = (profile.owns || []).includes('banner_royal');
             avatarGrid.querySelectorAll('.avatar-option').forEach(el => {
                 el.classList.toggle('selected', el.dataset.emoji === profile.avatar);
+                el.classList.toggle('premium-frame', hasBanner && el.dataset.emoji === profile.avatar);
             });
         }
 
@@ -4632,9 +4664,15 @@ skinsTitleHeader: "PERSONALIZAR",
                 const owned = (profile.owns || []).includes(item.id);
                 const div = document.createElement('div');
                 div.className = 'shop-card' + (owned ? ' owned' : '');
+                let previewHtml = '<div class="shop-emoji">' + item.emoji + '</div>';
+                if (item.type === 'skin') {
+                    previewHtml = '<canvas class="shop-skin-pv ff-skin-preview" data-skin="' + item.id + '" width="184" height="184"></canvas>';
+                } else if (item.type === 'banner') {
+                    previewHtml = '<div class="shop-banner-pv"><div class="shop-banner-pv-avatar premium-frame">' + item.emoji + '</div></div>';
+                }
                 div.innerHTML =
-                    '<div class="shop-emoji">' + item.emoji + '</div>' +
-                    (item.color ? '<div class="shop-swatch" style="background:' + item.color + '; box-shadow: 0 0 12px ' + item.color + ';"></div>' : '') +
+                    previewHtml +
+                    (item.color ? '' : '') +
                     '<div class="shop-name">' + item.name + '</div>' +
                     '<div class="shop-desc">' + item.desc + '</div>' +
                     (owned
@@ -5664,6 +5702,34 @@ skinsTitleHeader: "PERSONALIZAR",
             }
             ctx.globalAlpha = 1;
         }
+
+        // Animador de las vistas previas en vivo (canvas.ff-skin-preview):
+        // pinta la skin premium real girando, tanto en PERSONALIZAR como en la
+        // TIENDA, usando el mismo motor que la partida.
+        function bootSkinPreviews() {
+            function tick() {
+                const t = performance.now() / 1000;
+                const nodes = document.querySelectorAll('canvas.ff-skin-preview');
+                for (const c of nodes) {
+                    const ctx = c.getContext('2d');
+                    const fx = PREMIUM_SKIN_FX[c.dataset.skin];
+                    if (!ctx || !fx) continue;
+                    ctx.clearRect(0, 0, c.width, c.height);
+                    ctx.save();
+                    ctx.translate(c.width / 2, c.height / 2);
+                    ctx.scale(c.width / 116, c.height / 116);
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 58, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+                    ctx.fill();
+                    drawPremiumSkin(fx, ctx, 52, t, 1);
+                    ctx.restore();
+                }
+                requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
+        }
+        bootSkinPreviews();
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
