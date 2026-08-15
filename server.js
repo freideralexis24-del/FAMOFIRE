@@ -711,55 +711,63 @@ io.on('connection', (socket) => {
   // en local el enlace se devuelve en la respuesta para probar.
   // Los invitados SIN correo no tienen recuperación: para eso está el vinculo.
   socket.on('request-password-reset', async (data = {}) => {
-    await ensureAccounts();
-    const rawId = String(data.name || '').trim();
-    let accountKey = null;
-    if (rawId && rawId.includes('@')) {
-      for (const [n, a] of Object.entries(accounts)) {
-        if (a && a.googleEmail && String(a.googleEmail).toLowerCase() === rawId.toLowerCase()) { accountKey = n; break; }
+    try {
+      await ensureAccounts();
+      const rawId = String(data.name || '').trim();
+      let accountKey = null;
+      if (rawId && rawId.includes('@')) {
+        for (const [n, a] of Object.entries(accounts)) {
+          if (a && a.googleEmail && String(a.googleEmail).toLowerCase() === rawId.toLowerCase()) { accountKey = n; break; }
+        }
+      } else {
+        accountKey = normName(rawId) || null;
       }
-    } else {
-      accountKey = normName(rawId) || null;
+      const acc = accountKey ? accounts[accountKey] : null;
+      if (!acc) return socket.emit('password-reset-requested', { ok: false, error: 'not-found' });
+      if (!acc.googleId) return socket.emit('password-reset-requested', { ok: false, error: 'no-email' });
+      const token = resetToken(acc.googleId, 'pwreset');
+      const resetUrl = APP_BASE_URL + '/?reset=' + encodeURIComponent(token);
+      let emailed = false, emailStatus = 'off';
+      if (transporter && acc.googleEmail) {
+        try {
+          await transporter.sendMail({
+            from: process.env.SMTP_FROM || process.env.SMTP_USER,
+            to: acc.googleEmail,
+            subject: 'FAMOFIRE - Restablecer contraseña',
+            html: `<h2>Restablecer contraseña</h2><p>Soldado <b>${accountKey}</b>: abre este enlace para elegir una contraseña nueva:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>El enlace expira en <b>${RESET_TTL_MIN} minutos</b>. Si no lo pediste, ignora este correo.</p>`
+          });
+          emailed = true;
+          emailStatus = 'sent';
+        } catch (e) { emailStatus = 'failed'; console.error('[EMAIL] no se pudo enviar:', e.message); }
+      }
+      socket.emit('password-reset-requested', { ok: true, emailed, emailStatus, resetUrl });
+    } catch (e) {
+      // Nunca dejar al jugador con "..." colgado: ante cualquier error se
+      // responde igual para que la pantalla muestre el fallo.
+      console.error('[RESET] error inesperado:', e.message);
+      socket.emit('password-reset-requested', { ok: false, error: 'server-error' });
     }
-    const acc = accountKey ? accounts[accountKey] : null;
-    if (!acc) return socket.emit('password-reset-requested', { ok: false, error: 'not-found' });
-    if (!acc.googleId) return socket.emit('password-reset-requested', { ok: false, error: 'no-email' });
-    const token = resetToken(acc.googleId, 'pwreset');
-    // El enlace SIEMPRE viaja en la respuesta (siempre visible), y además se
-    // envía por correo cuando SMTP está configurado. Así la recuperación nunca
-    // depende de una sola vía: si el correo falla o no hay SMTP, el jugador ve
-    // el enlace en pantalla.
-    const resetUrl = APP_BASE_URL + '/?reset=' + encodeURIComponent(token);
-    let emailed = false, emailStatus = 'off';
-    if (transporter && acc.googleEmail) {
-      try {
-        await transporter.sendMail({
-          from: process.env.SMTP_FROM || process.env.SMTP_USER,
-          to: acc.googleEmail,
-          subject: 'FAMOFIRE - Restablecer contraseña',
-          html: `<h2>Restablecer contraseña</h2><p>Soldado <b>${accountKey}</b>: abre este enlace para elegir una contraseña nueva:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>El enlace expira en <b>${RESET_TTL_MIN} minutos</b>. Si no lo pediste, ignora este correo.</p>`
-        });
-        emailed = true;
-        emailStatus = 'sent';
-      } catch (e) { emailStatus = 'failed'; console.error('[EMAIL] no se pudo enviar:', e.message); }
-    }
-    socket.emit('password-reset-requested', { ok: true, emailed, emailStatus, resetUrl });
   });
 
   // APLICAR la nueva contraseña con el enlace válido (firmado con la cuenta de Google).
   socket.on('password-reset', async (data = {}) => {
-    const parsed = parseResetToken(data.token);
-    if (!parsed || parsed.purpose !== 'pwreset') return socket.emit('password-reset-result', { ok: false, error: 'invalid-token' });
-    if (parsed.expired) return socket.emit('password-reset-result', { ok: false, error: 'expired' });
-    await ensureAccounts();
-    let name = findAccountByGoogle(parsed.googleId);
-    if (!name) return socket.emit('password-reset-result', { ok: false, error: 'invalid-token' });
-    const newPass = String(data.newPassword || '');
-    if (newPass.length < 4) return socket.emit('password-reset-result', { ok: false, error: 'short-pass' });
-    try { accounts[name].password = await bcrypt.hash(newPass, 10); } catch (e) { accounts[name].password = sha(newPass); }
-    accounts[name].lastSeen = Date.now();
-    saveAccounts();
-    socket.emit('password-reset-result', { ok: true });
+    try {
+      const parsed = parseResetToken(data.token);
+      if (!parsed || parsed.purpose !== 'pwreset') return socket.emit('password-reset-result', { ok: false, error: 'invalid-token' });
+      if (parsed.expired) return socket.emit('password-reset-result', { ok: false, error: 'expired' });
+      await ensureAccounts();
+      let name = findAccountByGoogle(parsed.googleId);
+      if (!name) return socket.emit('password-reset-result', { ok: false, error: 'invalid-token' });
+      const newPass = String(data.newPassword || '');
+      if (newPass.length < 4) return socket.emit('password-reset-result', { ok: false, error: 'short-pass' });
+      try { accounts[name].password = await bcrypt.hash(newPass, 10); } catch (e) { accounts[name].password = sha(newPass); }
+      accounts[name].lastSeen = Date.now();
+      saveAccounts();
+      socket.emit('password-reset-result', { ok: true });
+    } catch (e) {
+      console.error('[RESET] error inesperado al aplicar:', e.message);
+      socket.emit('password-reset-result', { ok: false, error: 'server-error' });
+    }
   });
 
   // Renombrado ÚNICO: solo la primera vez y solo para cuentas creadas con Google

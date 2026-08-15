@@ -2045,7 +2045,8 @@
                 linkHint: "Vincula tu soldado a Google para protegerlo y poder recuperar tu contraseña por correo.",
                 linkInUse: "Ese Google ya está vinculado a otra cuenta.",
                 resetSentMsg: "✓ Enlace enviado. Revisa el correo de tu Google vinculado (incluye spam).",
-                resetFailMsg: "No se pudo enviar el correo (revisa la configuración del servidor). Usa este enlace:",                resetLocalMsg: "Correo no configurado (modo local). Enlace de prueba:",
+                resetFailMsg: "No se pudo enviar el correo (revisa la configuración del servidor).",
+                resetNoResponse: "El servidor no respondió. Reintenta; si no responde, espera unos segundos (el plan free duerme) y vuelve a intentarlo.",                resetLocalMsg: "Correo no configurado (modo local).",
                 resetMismatch: "✗ Las contraseñas no coinciden.",
                 resetDone: "✓ Contraseña actualizada. Ahora también puedes entrar con Google.",
                 resetDoneShort: "✓ Contraseña guardada. Inicia sesión con tu contraseña nueva.",
@@ -2235,7 +2236,8 @@
                 linkHint: "Link your soldier to Google to protect it and recover your password by email.",
                 linkInUse: "That Google account is already linked to another account.",
                 resetSentMsg: "✓ Link sent. Check your linked Google email (spam folder too).",
-                resetFailMsg: "Could not send the email (check the server settings). Use this link:",                resetLocalMsg: "Email not configured (local mode). Test link:",
+                resetFailMsg: "Could not send the email (check the server settings).",
+                resetNoResponse: "The server did not respond. Try again; if it still fails, wait a few seconds (free plan services sleep) and retry.",                resetLocalMsg: "Email not configured (local mode).",
                 resetMismatch: "✗ Passwords do not match.",
                 resetDone: "✓ Password updated. You can also log in with Google now.",
                 resetDoneShort: "✓ Password saved. Log in with your new password.",
@@ -2425,7 +2427,8 @@ skinsTitleHeader: "CUSTOMIZE",
                 linkHint: "将您的角色绑定谷歌以获得保护，并可通过邮箱找回密码。",
                 linkInUse: "该谷歌账号已绑定其他账户。",
                 resetSentMsg: "✓ 链接已发送，请检查绑定的谷歌邮箱（含垃圾箱）。",
-                resetFailMsg: "无法发送邮件（请检查服务器设置）。请使用此链接：",                resetLocalMsg: "未配置邮箱（本地模式）。测试链接：",
+                resetFailMsg: "无法发送邮件（请检查服务器设置）。",
+                resetNoResponse: "服务器没有响应。请重试；如果仍然失败，请稍等几秒（免费套餐会休眠）再试。",                resetLocalMsg: "未配置邮箱（本地模式）。",
                 resetMismatch: "✗ 两次密码不一致。",
                 resetDone: "✓ 密码已更新，现在也可以用谷歌登录。",
                 resetDoneShort: "✓ 密码已保存，请用新密码登录。",
@@ -2615,7 +2618,8 @@ skinsTitleHeader: "个性化",
                 linkHint: "Vincule seu soldado ao Google para protegê-lo e recuperar a senha por e-mail.",
                 linkInUse: "Esse Google já está vinculado a outra conta.",
                 resetSentMsg: "✓ Link enviado. Verifique seu e-mail do Google vinculado (inclua spam).",
-                resetFailMsg: "Não foi possível enviar o e-mail (verifique as configurações do servidor). Use este link:",                resetLocalMsg: "E-mail não configurado (modo local). Link de teste:",
+                resetFailMsg: "Não foi possível enviar o e-mail (verifique as configurações do servidor).",
+                resetNoResponse: "O servidor não respondeu. Tente novamente; se continuar, aguarde uns segundos (o plano gratuito dorme) e tente de novo.",                resetLocalMsg: "E-mail não configurado (modo local).",
                 resetMismatch: "✗ As senhas não coincidem.",
                 resetDone: "✓ Senha atualizada. Agora você também pode entrar com o Google.",
                 resetDoneShort: "✓ Senha salva. Entre com sua nova senha.",
@@ -3875,13 +3879,24 @@ skinsTitleHeader: "PERSONALIZAR",
             if (!name) { forgotMsg.innerText = dict.errFillFields; return; }
             forgotMsg.innerText = "...";
             socket.emit('request-password-reset', { name });
+            // Si el servidor no responde en 10 s (en Render el plan free
+            // duerme al estar inactivo y puede tardar en despertar), se avisa
+            // en vez de dejar "..." colgado para siempre.
+            if (forgotTimeout) clearTimeout(forgotTimeout);
+            forgotTimeout = setTimeout(() => {
+                const d2 = i18n[profile.language] || i18n["ESPAÑOL"];
+                forgotMsg.innerText = d2.resetNoResponse;
+            }, 10000);
         });
+        let forgotTimeout = null;
 
         socket.on('password-reset-requested', (res) => {
+            if (forgotTimeout) { clearTimeout(forgotTimeout); forgotTimeout = null; }
             const dict = i18n[profile.language] || i18n["ESPAÑOL"];
             if (!res || !res.ok) {
                 if (res && res.error === 'not-found') forgotMsg.innerText = dict.errNoAccount;
                 else if (res && res.error === 'no-email') forgotMsg.innerText = dict.noEmailMsg;
+                else if (res && res.error === 'server-error') forgotMsg.innerText = dict.resetFailMsg;
                 else forgotMsg.innerText = dict.errGeneric;
                 return;
             }
