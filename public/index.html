@@ -925,15 +925,6 @@
             gap: 12px;
             padding: 20px 12px;
         }
-        .auth-company {
-            display: flex;
-            justify-content: center;
-        }
-        .auth-company img {
-            max-height: 46px;
-            max-width: 200px;
-            filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
-        }
         .auth-logo {
             display: none;
             max-width: 150px;
@@ -967,13 +958,7 @@
             border-right: 1px solid rgba(255, 255, 255, 0.08);
             text-align: center;
         }
-#auth-emblem {
-            display: flex;
-            font-size: 54px;
-            line-height: 1;
-            filter: drop-shadow(0 6px 14px rgba(255, 170, 0, 0.35));
-        }
-        #login-screen h1 {
+#login-screen h1 {
             font-size: clamp(34px, 6vw, 54px);
             letter-spacing: 10px;
             color: #ffcc00;
@@ -987,6 +972,48 @@
             flex-direction: column;
             gap: 11px;
             box-sizing: border-box;
+        }
+        .auth-form-title {
+            margin: 0;
+            text-align: center;
+            color: #ffcc00;
+            font-size: 12.5px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            opacity: 0.95;
+        }
+        .auth-card {
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+            width: 100%;
+            padding: 12px 14px;
+            box-sizing: border-box;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            border-radius: 12px;
+        }
+        .guest-box {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+            padding: 12px 14px;
+            box-sizing: border-box;
+            background: rgba(46, 222, 98, 0.07);
+            border: 1.5px dashed rgba(46, 222, 98, 0.4);
+            border-radius: 12px;
+        }
+        .guest-box-title {
+            margin: 0;
+            color: #2ede62;
+            font-size: 11px;
+            letter-spacing: 3px;
+            text-align: center;
+        }
+        .guest-hint {
+            margin: 0;
+            text-align: center;
         }
         .auth-section {
             display: flex;
@@ -1058,7 +1085,8 @@
             transform: translateY(0);
             box-shadow: 0 3px 10px rgba(0, 120, 255, 0.3);
         }
-        #login-screen #guest-btn {
+#login-screen #guest-btn {
+            width: 100%;
             background: linear-gradient(180deg, #2ede62 0%, #0e9a3c 100%);
             box-shadow: 0 6px 18px rgba(20, 180, 80, 0.3);
         }
@@ -1107,7 +1135,6 @@
             .auth-hero { flex-direction: column; }
             .auth-brand { border-right: none; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding: 22px 20px; }
             .auth-logo { max-width: 110px; max-height: 110px; }
-            .auth-company { display: none; }
             .auth-form { padding: 18px 18px 16px; }
         }
         @media (max-height: 720px) and (min-width: 761px) {
@@ -1115,8 +1142,9 @@
             #login-screen .login-hint { font-size: 11.5px; }
             .auth-brand { gap: 8px; padding: 26px 24px; }
             #login-screen h1 { font-size: clamp(28px, 5vw, 44px); letter-spacing: 8px; }
-            .auth-emblem { font-size: 42px; }
             .auth-logo { max-width: 120px; max-height: 120px; }
+            .auth-card, .guest-box { padding: 10px 12px; gap: 8px; }
+            .guest-hint { display: none; }
         }
         .btn-link {
             background: none;
@@ -1151,15 +1179,14 @@
     <audio id="sfx-shot" preload="auto" src="sounds/shot.wav"></audio>
 
 <div id="login-screen" class="screen">
-        <div class="auth-company"><img id="company-logo-img" src="/img/logo-empresa.png" alt="" onerror="this.style.display='none';"></div>
         <div class="auth-hero">
             <div class="auth-brand">
-                <div id="auth-emblem" class="auth-emblem">🔥</div>
-                <img id="game-logo-img" class="auth-logo" src="/img/logo-juego.png" alt="FAMOFIRE" onerror="this.style.display='none';document.getElementById('auth-emblem').style.display='flex';" onload="this.style.display='block';document.getElementById('auth-emblem').style.display='none';">
+                <img id="company-logo-img" class="auth-logo" src="/img/logo-empresa.jpg" alt="FAMOFIRE" onerror="this.style.display='none';" onload="this.style.display='block';">
                 <h1>FAMOFIRE</h1>
             </div>
             <div class="auth-form">
-                <div class="auth-section">
+                <div class="auth-form-title" data-i18n="loginWelcome">ACCESO AL CAMPO DE BATALLA</div>
+                <div class="auth-card">
                     <div class="login-section-label" data-i18n="loginSection">Iniciar sesión</div>
                     <input type="text" id="username-input" placeholder="Correo o nombre de soldado" maxlength="40" autocomplete="username">
                     <input type="password" id="password-input" placeholder="Contraseña del juego" maxlength="20" autocomplete="current-password">
@@ -1167,14 +1194,17 @@
                     <button id="forgot-pass-link" class="btn-link" data-i18n="forgotPassBtn">¿OLVIDASTE TU CONTRASEÑA?</button>
                     <div id="google-login-wrap" style="display: none;"></div>
                 </div>
-                <div class="login-divider" id="create-google-divider"><span data-i18n="loginOr">O</span></div>
-                <div class="auth-section" id="create-google-section">
+                <div class="login-divider" id="create-google-divider"><span data-i18n="loginOr">o</span></div>
+                <div class="auth-card" id="create-google-section">
                     <div class="login-section-label" data-i18n="createSection">Crear cuenta con Google</div>
-                    <p class="login-hint" data-i18n="createHint">Se abrirá Google para confirmar tu correo; luego eliges tu contraseña y nombre.</p>
                     <div id="google-create-wrap" style="display: none;"></div>
                 </div>
-                <div class="login-divider"><span data-i18n="loginOr">O</span></div>
-                <button id="guest-btn" class="btn-main" data-i18n="guestBtn">JUGAR COMO INVITADO</button>
+                <div class="login-divider"><span data-i18n="loginOr">o</span></div>
+                <div class="guest-box">
+                    <div class="guest-box-title" data-i18n="loginGuestTitle">¿AÚN SIN CUENTA?</div>
+                    <p class="login-hint guest-hint" data-i18n="loginGuestHint">Juega al instante, sin registrarte. Si no pones contraseña, tu progreso queda solo en este dispositivo.</p>
+                    <button id="guest-btn" class="btn-main" data-i18n="guestBtn">JUGAR COMO INVITADO</button>
+                </div>
             </div>
         </div>
         <p id="login-msg"></p>
@@ -1994,11 +2024,10 @@
             "ESPAÑOL": {
                 loginBtn: "CONTINUAR",
                 registerBtn: "CREAR CUENTA",
-                loginSection: "— INICIAR SESIÓN —",
-                loginTagline: "Servidor LATAM · Campo de Batalla",
-                loginFeat1: "⚔️ Batallas de 35 soldados",
-                loginFeat2: "🏆 Ranking Top 100",
-                loginFeat3: "🛡️ Cuenta segura · Correo vinculado",
+loginSection: "— INICIAR SESIÓN —",
+                loginWelcome: "ACCESO AL CAMPO DE BATALLA",
+                loginGuestTitle: "¿AÚN SIN CUENTA?",
+                loginGuestHint: "Juega al instante, sin registrarte. Si no pones contraseña, tu progreso queda solo en este dispositivo.",
                 createSection: "— CREAR CUENTA CON GOOGLE —",
                 guestSection: "— JUGAR SIN CUENTA —",
                 loginOr: "O",
@@ -2189,11 +2218,10 @@
             "ENGLISH": {
                 loginBtn: "CONTINUE",
                 registerBtn: "CREATE ACCOUNT",
-                loginSection: "— SIGN IN —",
-                loginTagline: "LATAM Server · Battlefield",
-                loginFeat1: "⚔️ Battles of 35 soldiers",
-                loginFeat2: "🏆 Top 100 Ranking",
-                loginFeat3: "🛡️ Secure account · Linked email",
+loginSection: "— SIGN IN —",
+                loginWelcome: "BATTLEFIELD ACCESS",
+                loginGuestTitle: "STILL NO ACCOUNT?",
+                loginGuestHint: "Play instantly, no registration needed. Without a password your progress stays only on this device.",
                 createSection: "— CREATE ACCOUNT WITH GOOGLE —",
                 guestSection: "— PLAY WITHOUT ACCOUNT —",
                 loginOr: "OR",
@@ -2384,11 +2412,10 @@ skinsTitleHeader: "CUSTOMIZE",
             "中国人": {
                 loginBtn: "继续",
                 registerBtn: "创建账户",
-                loginSection: "— 登录 —",
-                loginTagline: "拉美服务器 · 战场",
-                loginFeat1: "⚔️ 35人战场",
-                loginFeat2: "🏆 前100排行榜",
-                loginFeat3: "🛡️ 安全账户 · 已绑定邮箱",
+loginSection: "— 登录 —",
+                loginWelcome: "进入战场",
+                loginGuestTitle: "还没有账户？",
+                loginGuestHint: "无需注册，立即开玩。不设密码时，进度仅保存在本设备。",
                 createSection: "— 使用谷歌创建账户 —",
                 guestSection: "— 无账户游玩 —",
                 loginOr: "或",
@@ -2579,11 +2606,10 @@ skinsTitleHeader: "个性化",
             "BRASIL": {
                 loginBtn: "CONTINUAR",
                 registerBtn: "CRIAR CONTA",
-                loginSection: "— ENTRAR —",
-                loginTagline: "Servidor LATAM · Campo de Batalha",
-                loginFeat1: "⚔️ Batalhas de 35 soldados",
-                loginFeat2: "🏆 Ranking Top 100",
-                loginFeat3: "🛡️ Conta segura · E-mail vinculado",
+loginSection: "— ENTRAR —",
+                loginWelcome: "ACESSO AO CAMPO DE BATALHA",
+                loginGuestTitle: "AINDA SEM CONTA?",
+                loginGuestHint: "Jogue na hora, sem se registrar. Sem senha, seu progresso fica só neste dispositivo.",
                 createSection: "— CRIAR CONTA COM GOOGLE —",
                 guestSection: "— JOGAR SEM CONTA —",
                 loginOr: "OU",
