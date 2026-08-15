@@ -919,50 +919,165 @@
             text-align: right;
             color: #ffcc00;
         }
-    .login-panel {
-            width: min(320px, 90vw);
+    /* ============ LOGIN PROFESIONAL ============ */
+        #login-screen {
+            justify-content: center;
+            gap: 10px;
+            padding: 24px 12px;
+        }
+        #login-screen h1 {
+            font-size: 54px;
+            letter-spacing: 10px;
+            margin: 0 0 4px;
+            background: linear-gradient(180deg, #ffe680 0%, #ffcc00 55%, #c8950c 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: authGlow 3.2s ease-in-out infinite;
+        }
+        @keyframes authGlow {
+            0%, 100% { filter: drop-shadow(0 0 6px rgba(255, 210, 0, 0.25)); }
+            50% { filter: drop-shadow(0 0 18px rgba(255, 210, 0, 0.55)); }
+        }
+        .auth-tagline {
+            color: #cfd8c3;
+            font-size: 12px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin: 0 0 16px;
+            opacity: 0.75;
+        }
+        .auth-card {
+            width: min(400px, 92vw);
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            align-items: center;
-            background: rgba(0, 0, 0, 0.35);
-            border: 1px solid rgba(255,255,255,0.12);
-            border-radius: 12px;
-            padding: 12px 14px;
+            background: rgba(10, 18, 8, 0.74);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 18px;
+            padding: 20px 22px;
             box-sizing: border-box;
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(6px);
+            animation: authFadeUp 0.45s ease-out both;
         }
-        .login-section-label {
-            font-size: 13px;
-            color: #00ffff;
-            letter-spacing: 2px;
-            font-weight: bold;
-            margin-bottom: 2px;
+        @keyframes authFadeUp {
+            from { opacity: 0; transform: translateY(14px); }
+            to { opacity: 1; transform: none; }
         }
-        .login-hint {
-            font-size: 12px;
-            color: #aaa;
-            max-width: 280px;
+        .auth-section {
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+            width: 100%;
+        }
+        #login-screen .login-section-label {
+            font-size: 11px;
+            color: #7fd8e8;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            font-weight: 700;
             text-align: center;
             margin: 0;
         }
-        .login-divider {
-            width: min(320px, 90vw);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: #666;
-            font-size: 12px;
-            margin: 2px 0;
-        }
-        .login-divider::before, .login-divider::after {
-            content: "";
-            flex: 1;
-            height: 1px;
-            background: rgba(255,255,255,0.15);
-        }
-        .login-panel .btn-main, .login-panel input {
+        #login-screen .login-divider {
             width: 100%;
+            margin: 12px 0 8px;
+        }
+        #login-screen input[type="text"], #login-screen input[type="password"] {
+            width: 100%;
+            padding: 12px 14px;
+            font-size: 15px;
+            font-family: inherit;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 10px;
+            text-align: left;
+            outline: none;
+            margin: 0;
+            background: rgba(255, 255, 255, 0.06);
+            color: #fff;
+            box-shadow: none;
+            letter-spacing: 0.4px;
             box-sizing: border-box;
+            transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+        }
+        #login-screen input:focus {
+            border-color: rgba(0, 255, 255, 0.7);
+            box-shadow: 0 0 0 3px rgba(0, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.09);
+        }
+        #login-screen input::placeholder {
+            color: rgba(255, 255, 255, 0.45);
+        }
+        #login-screen .btn-main {
+            width: 100%;
+            padding: 12px 14px;
+            font-size: 16px;
+            font-family: inherit;
+            font-weight: 800;
+            letter-spacing: 2px;
+            color: #fff;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+            background: linear-gradient(180deg, #0ac8ff 0%, #0077ff 100%);
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 6px 18px rgba(0, 120, 255, 0.35);
+            transition: transform 0.1s, box-shadow 0.15s, filter 0.15s;
+            margin: 2px 0;
+            box-sizing: border-box;
+        }
+        #login-screen .btn-main:hover {
+            filter: brightness(1.12);
+            transform: translateY(-1px);
+            box-shadow: 0 10px 24px rgba(0, 120, 255, 0.45);
+        }
+        #login-screen .btn-main:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 10px rgba(0, 120, 255, 0.3);
+        }
+        #login-screen #guest-btn {
+            background: linear-gradient(180deg, #2ede62 0%, #0e9a3c 100%);
+            box-shadow: 0 6px 18px rgba(20, 180, 80, 0.3);
+        }
+        #login-screen #guest-btn:hover {
+            box-shadow: 0 10px 24px rgba(20, 180, 80, 0.4);
+        }
+        #login-screen .btn-link {
+            color: #7fd8e8;
+            font-size: 13px;
+            text-decoration: none;
+            padding: 4px;
+            letter-spacing: 0.5px;
+            transition: color 0.15s;
+        }
+        #login-screen .btn-link:hover {
+            color: #fff;
+            text-decoration: underline;
+        }
+        #login-screen .login-hint {
+            font-size: 12.5px;
+            color: #b5b5a8;
+            max-width: none;
+            line-height: 1.5;
+        }
+        #login-screen #google-login-wrap, #login-screen #google-create-wrap {
+            margin-top: 2px;
+        }
+        #login-screen #google-create-wrap {
+            display: flex;
+            justify-content: center;
+        }
+        #login-msg {
+            width: 100%;
+            margin: 12px 0 0;
+            padding: 9px 10px;
+            font-size: 13.5px;
+            text-align: center;
+            color: #ffd966;
+            background: rgba(255, 204, 0, 0.07);
+            border: 1px solid rgba(255, 204, 0, 0.22);
+            border-radius: 10px;
+            box-sizing: border-box;
+            min-height: 40px;
         }
         .btn-link {
             background: none;
@@ -998,26 +1113,28 @@
 
     <div id="login-screen" class="screen">
         <h1>FAMOFIRE</h1>
-        <div class="login-panel">
-            <div class="login-section-label" data-i18n="loginSection">— INICIAR SESIÓN —</div>
-            <input type="text" id="username-input" placeholder="Correo o nombre de soldado" maxlength="40" autocomplete="username">
-            <input type="password" id="password-input" placeholder="Contraseña del juego" maxlength="20" autocomplete="current-password" style="margin-bottom: 8px;">
-            <button id="login-btn" class="btn-main" data-i18n="loginEnter">ENTRAR</button>
-            <button id="forgot-pass-link" class="btn-link" data-i18n="forgotPassBtn">¿OLVIDASTE TU CONTRASEÑA?</button>
-            <div id="google-login-wrap" style="display: none; margin-top: 10px;"></div>
+        <p class="auth-tagline" data-i18n="loginTagline">Servidor LATAM · Campo de Batalla</p>
+        <div class="auth-card">
+            <div class="auth-section">
+                <div class="login-section-label" data-i18n="loginSection">Iniciar sesión</div>
+                <input type="text" id="username-input" placeholder="Correo o nombre de soldado" maxlength="40" autocomplete="username">
+                <input type="password" id="password-input" placeholder="Contraseña del juego" maxlength="20" autocomplete="current-password">
+                <button id="login-btn" class="btn-main" data-i18n="loginEnter">ENTRAR</button>
+                <button id="forgot-pass-link" class="btn-link" data-i18n="forgotPassBtn">¿OLVIDASTE TU CONTRASEÑA?</button>
+                <div id="google-login-wrap" style="display: none;"></div>
+            </div>
+            <div class="login-divider"><span data-i18n="loginOr">O</span></div>
+            <div class="auth-section">
+                <div class="login-section-label" data-i18n="createSection">Crear cuenta con Google</div>
+                <p class="login-hint" data-i18n="createHint">Se abrirá la ventana de Google para confirmar tu correo; luego eliges la contraseña del juego y el nombre de tu soldado.</p>
+                <div id="google-create-wrap" style="display: none;"></div>
+            </div>
+            <div class="login-divider"><span data-i18n="loginOr">O</span></div>
+            <div class="auth-section">
+                <button id="guest-btn" class="btn-main" data-i18n="guestBtn">JUGAR COMO INVITADO</button>
+            </div>
+            <p id="login-msg"></p>
         </div>
-        <div class="login-divider"><span data-i18n="loginOr">O</span></div>
-        <div class="login-panel">
-            <div class="login-section-label" data-i18n="createSection">— CREAR CUENTA CON GOOGLE —</div>
-            <p class="login-hint" data-i18n="createHint">Se abrirá la ventana de Google para confirmar tu correo; luego eliges la contraseña del juego y el nombre de tu soldado.</p>
-            <div id="google-create-wrap" style="display: none; margin-top: 6px;"></div>
-        </div>
-        <div class="login-divider"><span data-i18n="loginOr">O</span></div>
-        <div class="login-panel">
-            <div class="login-section-label" data-i18n="guestSection">— JUGAR SIN CUENTA —</div>
-            <button id="guest-btn" class="btn-main" style="background-color: #00ff00;" data-i18n="guestBtn">JUGAR COMO INVITADO</button>
-        </div>
-        <p id="login-msg" style="font-size: 14px; color: #ffcc00; height: 36px; margin-top: 8px; text-align: center;"></p>
     </div>
 
     <!-- CREAR CUENTA CON GOOGLE: correo verificado + nombre + contraseña del juego -->
@@ -1835,6 +1952,7 @@
                 loginBtn: "CONTINUAR",
                 registerBtn: "CREAR CUENTA",
                 loginSection: "— INICIAR SESIÓN —",
+                loginTagline: "Servidor LATAM · Campo de Batalla",
                 createSection: "— CREAR CUENTA CON GOOGLE —",
                 guestSection: "— JUGAR SIN CUENTA —",
                 loginOr: "O",
@@ -2024,6 +2142,7 @@
                 loginBtn: "CONTINUE",
                 registerBtn: "CREATE ACCOUNT",
                 loginSection: "— SIGN IN —",
+                loginTagline: "LATAM Server · Battlefield",
                 createSection: "— CREATE ACCOUNT WITH GOOGLE —",
                 guestSection: "— PLAY WITHOUT ACCOUNT —",
                 loginOr: "OR",
@@ -2213,6 +2332,7 @@ skinsTitleHeader: "CUSTOMIZE",
                 loginBtn: "继续",
                 registerBtn: "创建账户",
                 loginSection: "— 登录 —",
+                loginTagline: "拉美服务器 · 战场",
                 createSection: "— 使用谷歌创建账户 —",
                 guestSection: "— 无账户游玩 —",
                 loginOr: "或",
@@ -2402,6 +2522,7 @@ skinsTitleHeader: "个性化",
                 loginBtn: "CONTINUAR",
                 registerBtn: "CRIAR CONTA",
                 loginSection: "— ENTRAR —",
+                loginTagline: "Servidor LATAM · Campo de Batalha",
                 createSection: "— CRIAR CONTA COM GOOGLE —",
                 guestSection: "— JOGAR SEM CONTA —",
                 loginOr: "OU",
