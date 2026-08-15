@@ -929,11 +929,17 @@
             font-size: 54px;
             letter-spacing: 10px;
             margin: 0 0 4px;
-            background: linear-gradient(180deg, #ffe680 0%, #ffcc00 55%, #c8950c 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
+            color: #ffcc00;
+            text-shadow: 0 0 18px rgba(255, 210, 0, 0.45);
             animation: authGlow 3.2s ease-in-out infinite;
+        }
+        @supports ((-webkit-background-clip: text) or (background-clip: text)) {
+            #login-screen h1 {
+                background: linear-gradient(180deg, #ffe680 0%, #ffcc00 55%, #c8950c 100%);
+                -webkit-background-clip: text;
+                background-clip: text;
+                color: transparent;
+            }
         }
         @keyframes authGlow {
             0%, 100% { filter: drop-shadow(0 0 6px rgba(255, 210, 0, 0.25)); }
@@ -1089,10 +1095,15 @@
             font-size: 32px;
             letter-spacing: 4px;
             margin: 0 0 4px;
-            background: linear-gradient(180deg, #ffe680 0%, #ffcc00 55%, #c8950c 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
+            color: #ffcc00;
+        }
+        @supports ((-webkit-background-clip: text) or (background-clip: text)) {
+            #create-screen h1, #guest-screen h1, #setpass-screen h1, #forgot-screen h1, #reset-screen h1, #delete-screen h1 {
+                background: linear-gradient(180deg, #ffe680 0%, #ffcc00 55%, #c8950c 100%);
+                -webkit-background-clip: text;
+                background-clip: text;
+                color: transparent;
+            }
         }
         #create-screen input, #guest-screen input, #setpass-screen input, #forgot-screen input, #reset-screen input, #delete-screen input {
             width: min(360px, 92vw);
@@ -1212,8 +1223,8 @@
                 <button id="forgot-pass-link" class="btn-link" data-i18n="forgotPassBtn">¿OLVIDASTE TU CONTRASEÑA?</button>
                 <div id="google-login-wrap" style="display: none;"></div>
             </div>
-            <div class="login-divider"><span data-i18n="loginOr">O</span></div>
-            <div class="auth-section">
+            <div class="login-divider" id="create-google-divider"><span data-i18n="loginOr">O</span></div>
+            <div class="auth-section" id="create-google-section">
                 <div class="login-section-label" data-i18n="createSection">Crear cuenta con Google</div>
                 <p class="login-hint" data-i18n="createHint">Se abrirá la ventana de Google para confirmar tu correo; luego eliges la contraseña del juego y el nombre de tu soldado.</p>
                 <div id="google-create-wrap" style="display: none;"></div>
@@ -3588,8 +3599,16 @@ skinsTitleHeader: "PERSONALIZAR",
         const googleLinkWrap = document.getElementById('google-link-wrap');
         let authStep = 'none';
         (function initGoogleSignIn() {
+            const createSec = document.getElementById('create-google-section');
+            const createDiv = document.getElementById('create-google-divider');
             fetch('/config').then(r => r.json()).then(cfg => {
-                if (!cfg.googleClientId) return;
+                if (!cfg.googleClientId) {
+                    // Sin GOOGLE_CLIENT_ID no hay botones de Google: se esconde
+                    // la sección completa para que el login NO se vea roto/vacío.
+                    if (createSec) createSec.style.display = 'none';
+                    if (createDiv) createDiv.style.display = 'none';
+                    return;
+                }
                 googleLoginWrap.style.display = 'block';
                 googleCreateWrap.style.display = 'block';
                 const gs = document.createElement('script');
