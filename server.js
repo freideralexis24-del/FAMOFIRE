@@ -45,6 +45,31 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.get('/health', (req, res) => res.send('ok'));
 // Config pública para el cliente: script de login con Google (vacío = desactivado).
 app.get('/config', (req, res) => res.json({ googleClientId: process.env.GOOGLE_CLIENT_ID || '' }));
+// Diagnóstico PÚBLICO (sin secretos): ayuda a resolver instalaciones remotas.
+// Solo muestra si las piezas están configuradas, nunca contraseñas ni tokens.
+app.get('/diag', async (req, res) => {
+  try {
+    if (!accountsReady) await ensureAccounts();
+    const names = Object.keys(accounts);
+    let alexisCount = 0, alexisEmail = 0;
+    for (const n of names) {
+      if (String(n).toLowerCase().indexOf('alexis') === 0) {
+        alexisCount++;
+        if (accounts[n].googleEmail) alexisEmail++;
+      }
+    }
+    res.json({
+      db: { configured: !!process.env.DATABASE_URL, connected: !!db, accounts: names.length },
+      alexis: { cuentas: alexisCount, conEmail: alexisEmail, nombres: names.filter(n => String(n).toLowerCase().indexOf('alexis') === 0) },
+      smtp: { configured: !!(process.env.SMTP_HOST && process.env.SMTP_USER), host: process.env.SMTP_HOST || '', user: process.env.SMTP_USER || '', port: Number(process.env.SMTP_PORT) || 587 },
+      appUrl: APP_BASE_URL,
+      google: { clientId: !!process.env.GOOGLE_CLIENT_ID },
+      resetTtlMin: RESET_TTL_MIN
+    });
+  } catch (e) {
+    res.json({ error: 'diag-fail', msg: String(e.message || e).slice(0, 120) });
+  }
+});
 
 // ---------- Cuentas de jugador (cada persona tiene la suya) ----------
 // En la web (Render) las cuentas se guardan en PostgreSQL gratuito (variable
