@@ -52,8 +52,9 @@ app.get('/health', (req, res) => res.send('ok'));
 app.get('/config', (req, res) => res.json({
   googleClientId: process.env.GOOGLE_CLIENT_ID || '',
   shop: {
-    enabled: !!stripe,
-    items: Object.entries(PREMIUM_ITEMS).map(([id, it]) => ({ id, type: it.type, name: it.name, emoji: it.emoji, desc: it.desc, priceCents: it.priceCents, color: it.color || '' }))
+    enabled: !!(stripe || mpEnabled),
+    provider: (mpEnabled ? 'mp' : (stripe ? 'stripe' : 'none')),
+    items: Object.entries(PREMIUM_ITEMS).map(([id, it]) => ({ id, type: it.type, name: it.name, emoji: it.emoji, desc: it.desc, priceCents: it.priceCents, priceCOP: it.priceCOP, color: it.color || '' }))
   }
 }));
 
@@ -66,7 +67,7 @@ app.post('/api/stripe-checkout', async (req, res) => {
   try {
     if (!stripe) return res.status(501).json({ ok: false, error: 'stripe-disabled' });
     if (!accountsReady) await ensureAccounts();
-    const name = normName(req.body && req.body.name);
+    const name = String(((req.body && req.body.name) || '')).trim().toUpperCase().slice(0, 12);
     const itemId = String((req.body && req.body.itemId) || '');
     const acc = name ? accounts[name] : null;
     if (!acc) return res.json({ ok: false, error: 'not-found' });
@@ -118,6 +119,79 @@ app.get('/api/stripe-verify', async (req, res) => {
     res.status(500).json({ ok: false, error: 'stripe-error', msg: String(e.message || e).slice(0, 120) });
   }
 });
+// ---------- Tienda premium (pagos con Mercado Pago, Colombia) ----------
+// Flujo: el jugador pide el artículo -> se crea una preferencia -> MP muestra
+// su página de pago (tarjeta, PSE, Nequi...) -> redirige a /?mp_ok=1&payment_id=...
+// -> el servidor verifica el pago (api/mp-verify) y entrega el artículo.
+// Se activa solo si MP_ACCESS_TOKEN existe (TEST- para pruebas, APP_USR- real).
+app.post('/api/mp-checkout', async (req, res) => {
+  try {
+    if (!mpEnabled) return res.status(501).json({ ok: false, error: 'mp-disabled' });
+    if (!accountsReady) await ensureAccounts();
+    const name = String(((req.body && req.body.name) || '')).trim().toUpperCase().slice(0, 12);
+    const itemId = String((req.body && req.body.itemId) || '');
+    const acc = name ? accounts[name] : null;
+    if (!acc) return res.json({ ok: false, error: 'not-found' });
+    const item = PREMIUM_ITEMS[itemId];
+    if (!item) return res.json({ ok: false, error: 'bad-item' });
+    if ((acc.owns || []).includes(itemId)) return res.json({ ok: false, error: 'already-owned' });
+    const url = await mpCreatePreference(item, name);
+    res.json({ ok: true, url });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: 'mp-error', msg: String(e.message || e).slice(0, 120) });
+  }
+});
+
+// Entrega el artículo a la cuenta si el pago de MP fue aprobado.
+async function grantMPPayment(payment) {
+  if (!payment || payment.status !== 'approved') return { ok: false, error: 'not-paid', status: payment && payment.status };
+  const ref = String(payment.external_reference || '');
+  const sep = ref.indexOf(':');
+  const itemId = (sep > 0 ? ref.slice(0, sep) : '');
+  const accountName = (sep > 0 ? ref.slice(sep + 1) : '');
+  const item = PREMIUM_ITEMS[itemId];
+  if (!item || !accounts[accountName]) return { ok: false, error: 'bad-metadata' };
+  const acc = accounts[accountName];
+  const already = (acc.owns || []).includes(itemId);
+  if (!already) {
+    acc.owns = acc.owns || [];
+    acc.owns.push(itemId);
+    saveAccounts();
+  }
+  return { ok: true, already, itemId, name: accountName };
+}
+
+// Verificar que el pago fue aprobado por MP y entregar el artículo al comprador.
+app.get('/api/mp-verify', async (req, res) => {
+  try {
+    if (!mpEnabled) return res.status(501).json({ ok: false, error: 'mp-disabled' });
+    const paymentId = String(req.query.payment_id || '');
+    if (!paymentId) return res.json({ ok: false, error: 'bad-payment' });
+    const payment = await mpVerifyPayment(paymentId);
+    res.json(await grantMPPayment(payment));
+  } catch (e) {
+    res.status(500).json({ ok: false, error: 'mp-error', msg: String(e.message || e).slice(0, 120) });
+  }
+});
+
+// Webhook de MP: recibe avisos de pago y entrega el artículo aunque el jugador
+// no vuelva al juego (el pago ya fue aprobado en el sitio de MP).
+app.post('/api/mp-webhook', async (req, res) => {
+  try {
+    if (!mpEnabled) return res.sendStatus(200);
+    const body = req.body || {};
+    const pid = String((body.id) || (body.data && body.data.id) || '');
+    if (pid && /^\d+$/.test(pid)) {
+      const payment = await mpVerifyPayment(pid);
+      await grantMPPayment(payment);
+    }
+    res.sendStatus(200);
+  } catch (e) {
+    console.error('mp-webhook:', e.message || e);
+    res.sendStatus(200);
+  }
+});
+
 // Diagnóstico PÚBLICO (sin secretos): ayuda a resolver instalaciones remotas.
 // Solo muestra si las piezas están configuradas, nunca contraseñas ni tokens.
 app.get('/diag', async (req, res) => {
@@ -176,10 +250,10 @@ const APP_BASE_URL = (process.env.APP_URL || (process.env.RENDER_EXTERNAL_URL ? 
 
 // ---- Tienda premium: artículos de pago (skins y banner) ----
 const PREMIUM_ITEMS = {
-  skin_fuego:    { type: 'skin',   name: 'Skin Fuego Dorado',      emoji: '🔥', color: '#ffcc00', priceCents: 199, desc: 'Uniforme dorado de batalla' },
-  skin_elite:    { type: 'skin',   name: 'Skin Comandante Élite',  emoji: '🛡️', color: '#8a2be2', priceCents: 199, desc: 'Uniforme violeta de mando' },
-  skin_fantasma: { type: 'skin',   name: 'Skin Fantasma LATAM',    emoji: '👻', color: '#19ffc8', priceCents: 199, desc: 'Uniforme esmeralda camuflado' },
-  banner_royal:  { type: 'banner', name: 'Banner Bandera Real',    emoji: '🏴', priceCents: 299, desc: 'Marco dorado en tu perfil' }
+  skin_fuego:    { type: 'skin',   name: 'Skin Fuego Dorado',      emoji: '🔥', color: '#ffcc00', priceCents: 199, priceCOP: 8000,  desc: 'Uniforme dorado de batalla' },
+  skin_elite:    { type: 'skin',   name: 'Skin Comandante Élite',  emoji: '🛡️', color: '#8a2be2', priceCents: 199, priceCOP: 8000,  desc: 'Uniforme violeta de mando' },
+  skin_fantasma: { type: 'skin',   name: 'Skin Fantasma LATAM',    emoji: '👻', color: '#19ffc8', priceCents: 199, priceCOP: 8000,  desc: 'Uniforme esmeralda camuflado' },
+  banner_royal:  { type: 'banner', name: 'Banner Bandera Real',    emoji: '🏴', priceCents: 299, priceCOP: 12000, desc: 'Marco dorado en tu perfil' }
 };
 // Stripe solo se activa con STRIPE_SECRET_KEY en el entorno (Render). Sin la
 // llave el juego funciona igual: la tienda avisa "pronto" y no se cobra nada.
@@ -187,6 +261,39 @@ const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
 let stripe = null;
 if (STRIPE_SECRET_KEY) {
   try { stripe = require('stripe')(STRIPE_SECRET_KEY); } catch (e) { stripe = null; }
+}
+// Mercado Pago (Colombia): funciona con Access Token de prueba (TEST-) o de
+// producción (APP_USR-) vía su API pública REST (sin SDK).
+const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN || '';
+const mpEnabled = MP_ACCESS_TOKEN.startsWith('TEST-') || MP_ACCESS_TOKEN.startsWith('APP_USR-');
+async function mpCreatePreference(item, accountName) {
+  const r = await fetch('https://api.mercadopago.com/checkout/preferences', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + MP_ACCESS_TOKEN, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      items: [{ title: 'FAMOFIRE: ' + item.name, quantity: 1, unit_price: item.priceCOP, currency_id: 'COP' }],
+      back_urls: {
+        success: APP_BASE_URL + '/?mp_ok=1',
+        pending: APP_BASE_URL + '/?mp_pending=1',
+        failure: APP_BASE_URL + '/?mp_cancel=1'
+      },
+      notification_url: APP_BASE_URL + '/api/mp-webhook',
+      // auto_return solo con credenciales de prueba (en producción MP exige https)
+      ...(MP_ACCESS_TOKEN.startsWith('TEST-') ? { auto_return: 'approved' } : {}),
+      external_reference: item.id + ':' + accountName
+    })
+  });
+  const data = await r.json();
+  if (!r.ok || !data.init_point) throw new Error('MP ' + r.status + ' ' + String(data.message || 'no init_point').slice(0, 80));
+  return data.init_point;
+}
+async function mpVerifyPayment(paymentId) {
+  const r = await fetch('https://api.mercadopago.com/v1/payments/' + encodeURIComponent(paymentId), {
+    headers: { 'Authorization': 'Bearer ' + MP_ACCESS_TOKEN }
+  });
+  const data = await r.json();
+  if (!r.ok || !data || !data.status) throw new Error('MP verify ' + r.status);
+  return data;
 }
 function resetToken(googleId, purpose) {
   return sha(googleId + '|' + purpose + '|' + RESET_SECRET) + '.' + googleId + '.' + purpose + '.' + (Date.now() + RESET_TTL_MIN * 60000);

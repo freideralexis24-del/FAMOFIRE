@@ -3088,6 +3088,7 @@ skinsTitleHeader: "PERSONALIZAR",
         const shopBackBtn = document.getElementById('shop-back-btn');
         let shopCatalog = [];
         let shopEnabled = false;
+        let shopProvider = 'none';
         const ranksScreen = document.getElementById('ranks-screen');
         const rankingScreen = document.getElementById('ranking-screen');
         const statsScreen = document.getElementById('stats-screen');
@@ -4525,13 +4526,21 @@ skinsTitleHeader: "PERSONALIZAR",
                 const cfg = await fetch('/config').then(r => r.json());
                 shopCatalog = (cfg.shop && cfg.shop.items) || [];
                 shopEnabled = !!(cfg.shop && cfg.shop.enabled);
-                shopSub.innerText = shopEnabled ? "Pagos 100% seguros con Stripe (tarjeta). El artículo se entrega automáticamente." : "Los pagos aún no están activados: pronto podrás comprar skins y banners exclusivos.";
+                shopProvider = (cfg.shop && cfg.shop.provider) || 'none';
+                shopSub.innerText = shopProvider === 'mp'
+                    ? "Pagos 100% seguros con Mercado Pago (tarjeta, Nequi, PSE, etc.). El artículo se entrega automáticamente."
+                    : (shopEnabled
+                        ? "Pagos 100% seguros por tarjeta (Stripe). El artículo se entrega automáticamente."
+                        : "Los pagos aún no están activados: pronto podrás comprar skins y banners exclusivos.");
                 buildShopGrid();
             } catch (e) { shopSub.innerText = "No se pudo cargar la tienda."; }
         }
         function shopDict(key) {
             const d = i18n[profile.language] || i18n["ESPAÑOL"];
             return d[key] || key;
+        }
+        function shopPrice(item) {
+            return shopProvider === 'mp' ? '$' + item.priceCOP.toLocaleString('es-CO') + ' COP' : '$' + (item.priceCents / 100).toFixed(2) + ' USD';
         }
         function buildShopGrid() {
             shopGrid.innerHTML = '';
@@ -4547,33 +4556,48 @@ skinsTitleHeader: "PERSONALIZAR",
                     (owned
                         ? '<div class="shop-status owned">✓ ' + shopDict('shopOwned') + '</div>'
                         : (shopEnabled
-                            ? '<button class="btn-main shop-buy" onclick="buyItem(\'' + item.id + '\')">COMPRAR · $' + (item.priceCents / 100).toFixed(2) + '</button>'
+                            ? '<button class="btn-main shop-buy" onclick="buyItem(\'' + item.id + '\')">COMPRAR · ' + shopPrice(item) + '</button>'
                             : '<div class="shop-status soon">' + shopDict('shopSoon') + '</div>'));
                 shopGrid.appendChild(div);
             });
         }
         async function buyItem(itemId) {
             shopMsg.innerText = "...";
+            if (!profile.name) { shopMsg.innerText = "Conecta tu cuenta para comprar (iniciaste sesión como invitado sin conectar)."; return; }
             try {
-                const r = await fetch('/api/stripe-checkout', {
+                const endpoint = shopProvider === 'mp' ? '/api/mp-checkout' : '/api/stripe-checkout';
+                const r = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name: profile.name, itemId })
                 }).then(r => r.json());
                 if (r.ok && r.url) { window.location.href = r.url; return; }
                 if (r.error === 'already-owned') { shopMsg.innerText = "Ya tienes este artículo."; buildShopGrid(); }
-                else if (r.error === 'stripe-disabled') shopMsg.innerText = "Los pagos aún no están activados (falta la llave de Stripe en el servidor).";
+                else if (r.error === 'stripe-disabled') shopMsg.innerText = "Los pagos aún no están activados (falta la llave en el servidor).";
+                else if (r.error === 'mp-disabled') shopMsg.innerText = "Los pagos aún no están activados (falta la llave de Mercado Pago en el servidor).";
                 else if (r.error === 'not-found') shopMsg.innerText = "Conecta tu cuenta para comprar (iniciaste sesión como invitado sin conectar).";
                 else shopMsg.innerText = "No se pudo iniciar el pago. Intenta de nuevo.";
             } catch (e) { shopMsg.innerText = "Error de conexión. Intenta de nuevo."; }
         }
 
-        // Si volvimos de Stripe tras pagar: verificar y entregar el artículo.
+        // Si volvimos del pago: verificar y entregar el artículo.
         // (IIFE que corre al cargar la página)
         (function checkPurchaseReturn() {
             const q = new URLSearchParams(location.search);
             if (q.get('purchase_ok') === '1' && q.get('session_id')) {
                 fetch('/api/stripe-verify?session_id=' + encodeURIComponent(q.get('session_id')))
+                    .then(r => r.json())
+                    .then(v => {
+                        try { history.replaceState(null, '', location.pathname); } catch (e) { }
+                        if (v && v.ok && v.itemId && !(profile.owns || []).includes(v.itemId)) {
+                            profile.owns = profile.owns || [];
+                            profile.owns.push(v.itemId);
+                            saveProfile();
+                        }
+                    })
+                    .catch(() => { });
+            } else if (q.get('mp_ok') === '1' && q.get('payment_id')) {
+                fetch('/api/mp-verify?payment_id=' + encodeURIComponent(q.get('payment_id')))
                     .then(r => r.json())
                     .then(v => {
                         try { history.replaceState(null, '', location.pathname); } catch (e) { }
