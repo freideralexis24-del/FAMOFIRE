@@ -727,8 +727,14 @@ io.on('connection', (socket) => {
       if (!acc.googleId) return socket.emit('password-reset-requested', { ok: false, error: 'no-email' });
       const token = resetToken(acc.googleId, 'pwreset');
       const resetUrl = APP_BASE_URL + '/?reset=' + encodeURIComponent(token);
-      let emailed = false, emailStatus = 'off';
-      if (transporter && acc.googleEmail) {
+      let emailed = false, emailStatus = 'off', emailError = '';
+      if (!acc.googleEmail) {
+        // Hay SMTP, pero esta cuenta no tiene correo vinculado: el jugador
+        // debe entrar con Google para vincularlo (mensaje claro, no "modo local").
+        emailStatus = 'no-target';
+      } else if (!transporter) {
+        emailStatus = 'off';
+      } else {
         try {
           await transporter.sendMail({
             from: process.env.SMTP_FROM || process.env.SMTP_USER,
@@ -738,9 +744,13 @@ io.on('connection', (socket) => {
           });
           emailed = true;
           emailStatus = 'sent';
-        } catch (e) { emailStatus = 'failed'; console.error('[EMAIL] no se pudo enviar:', e.message); }
+        } catch (e) {
+          emailStatus = 'failed';
+          emailError = String((e && e.message) || e || '').replace(/</g, '&lt;').slice(0, 200);
+          console.error('[EMAIL] no se pudo enviar:', e.message);
+        }
       }
-      socket.emit('password-reset-requested', { ok: true, emailed, emailStatus, resetUrl });
+      socket.emit('password-reset-requested', { ok: true, emailed, emailStatus, emailError, resetUrl });
     } catch (e) {
       // Nunca dejar al jugador con "..." colgado: ante cualquier error se
       // responde igual para que la pantalla muestre el fallo.
