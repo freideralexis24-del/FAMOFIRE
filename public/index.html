@@ -578,6 +578,52 @@
             border: 4px solid #ffcc00;
             box-shadow: 0px 0px 15px #ffcc00;
         }
+        .skin-option-card.locked {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .skin-option-card.premium-card {
+            border-color: #ffcc00;
+            background: linear-gradient(180deg, rgba(255, 204, 0, 0.18), rgba(0, 0, 0, 0.5));
+        }
+        .skin-option-card.premium-card .skin-preview { border-color: #ffcc00; }
+        .skin-option-card.premium-card.unlocked-premium { opacity: 1; }
+
+        .shop-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            max-width: 780px;
+            margin: 10px 0;
+        }
+        .shop-card {
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.14);
+            border-radius: 14px;
+            padding: 14px;
+            width: 200px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+        .shop-card.owned { border-color: rgba(46, 222, 98, 0.7); }
+        .shop-emoji { font-size: 42px; line-height: 1; }
+        .shop-swatch { width: 46px; height: 46px; border-radius: 50%; border: 3px solid #fff; }
+        .shop-name { font-size: 15px; font-weight: bold; color: #ffcc00; }
+        .shop-desc { font-size: 12px; color: #bbb; }
+        .shop-status { font-size: 13px; }
+        .shop-status.owned { color: #2ede62; }
+        .shop-status.soon { color: #999; }
+        .shop-buy { font-size: 14px; padding: 8px 14px; }
+        .shop-sub { font-size: 13px; color: #aaa; text-align: center; max-width: 640px; }
+        .premium-frame {
+            border: 3px solid #ffcc00 !important;
+            border-radius: 14px;
+            box-shadow: 0 0 16px rgba(255, 204, 0, 0.8);
+        }
         .skin-preview {
             width: 45px;
             height: 45px;
@@ -1286,6 +1332,7 @@
             <button id="to-battlefield-btn" class="btn-main" data-i18n="battlefieldBtn">CAMPO DE BATALLA</button>
             <button id="to-skills-btn" class="btn-main" style="background-color: #00ffff;" data-i18n="skillsBtn">HABILIDADES</button>
             <button id="to-skins-btn" class="btn-main" data-i18n="skinsBtn">PERSONALIZAR SKIN</button>
+            <button id="to-shop-btn" class="btn-main" style="background-color: #ffcc00;" data-i18n="shopBtn">TIENDA PREMIUM</button>
             <button id="to-ranks-btn" class="btn-main" data-i18n="ranksBtn">RANGOS MILITARES</button>
             <button id="to-ranking-btn" class="btn-main" data-i18n="rankingBtn">RANKING GLOBAL</button>
         </div>
@@ -1633,6 +1680,24 @@
                     <div class="skin-preview" id="camo-card-preview"></div>
                     <span data-i18n="skinCamo">Camu. Urbano</span>
                 </div>
+
+                <div class="skin-option-card premium-card" data-premium="skin_fuego" onclick="selectSkinColor('#ffcc00', true, this)">
+                    <div class="lock-badge">🔒</div>
+                    <div class="skin-preview" style="background: #ffcc00;"></div>
+                    <span>🔥 Fuego Dorado</span>
+                </div>
+
+                <div class="skin-option-card premium-card" data-premium="skin_elite" onclick="selectSkinColor('#8a2be2', true, this)">
+                    <div class="lock-badge">🔒</div>
+                    <div class="skin-preview" style="background: #8a2be2;"></div>
+                    <span>🛡️ Comandante Élite</span>
+                </div>
+
+                <div class="skin-option-card premium-card" data-premium="skin_fantasma" onclick="selectSkinColor('#19ffc8', true, this)">
+                    <div class="lock-badge">🔒</div>
+                    <div class="skin-preview" style="background: #19ffc8;"></div>
+                    <span>👻 Fantasma LATAM</span>
+                </div>
             </div>
 
             <p id="skin-lock-msg" style="font-size: 14px; color: #ff3333; margin-top: 5px; height: 18px;"></p>
@@ -1645,6 +1710,17 @@
         </div>
 
         <button id="back-from-skins" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
+    </div>
+
+    <!-- TIENDA PREMIUM: skins y banners de pago (Stripe) -->
+    <div id="premium-screen" class="screen" style="display: none;">
+        <h1 data-i18n="shopTitle">TIENDA PREMIUM</h1>
+        <p class="shop-sub" id="shop-sub">Cargando tienda…</p>
+        <div class="shop-grid" id="shop-grid"></div>
+        <p id="shop-msg" style="font-size: 14px; color: #ffcc00; height: 36px; margin-top: 8px; text-align: center;"></p>
+        <div class="lobby-menu">
+            <button id="shop-back-btn" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
+        </div>
     </div>
 
     <div id="ranks-screen" class="screen" style="display: none;">
@@ -2082,6 +2158,10 @@ loginSection: "— INICIAR SESIÓN —",
                 battlefieldBtn: "CAMPO DE BATALLA",
                 skillsBtn: "HABILIDADES",
                 skinsBtn: "PERSONALIZAR",
+                shopBtn: "TIENDA PREMIUM",
+                shopTitle: "TIENDA PREMIUM",
+                shopOwned: "YA LO TIENES",
+                shopSoon: "PRONTO",
                 ranksBtn: "RANGOS MILITARES",
                 rankingBtn: "RANGO GLOBAL",
                 configTitle: "CONFIGURACIÓN",
@@ -2276,6 +2356,10 @@ loginSection: "— SIGN IN —",
                 battlefieldBtn: "BATTLEFIELD",
                 skillsBtn: "SKILLS",
                 skinsBtn: "CUSTOMIZE",
+                shopBtn: "PREMIUM SHOP",
+                shopTitle: "PREMIUM SHOP",
+                shopOwned: "OWNED",
+                shopSoon: "SOON",
                 ranksBtn: "MILITARY RANKS",
                 rankingBtn: "GLOBAL RANKING",
                 configTitle: "SETTINGS",
@@ -2470,6 +2554,10 @@ loginSection: "— 登录 —",
                 battlefieldBtn: "战场",
                 skillsBtn: "技能",
                 skinsBtn: "个性化",
+                shopBtn: "高级商店",
+                shopTitle: "高级商店",
+                shopOwned: "已拥有",
+                shopSoon: "即将推出",
                 ranksBtn: "军衔等级",
                 rankingBtn: "全球排名",
                 configTitle: "设置",
@@ -2664,6 +2752,10 @@ loginSection: "— ENTRAR —",
                 battlefieldBtn: "CAMPO DE BATALHA",
                 skillsBtn: "HABILIDADES",
                 skinsBtn: "PERSONALIZAR",
+                shopBtn: "LOJA PREMIUM",
+                shopTitle: "LOJA PREMIUM",
+                shopOwned: "JÁ POSSUI",
+                shopSoon: "EM BREVE",
                 ranksBtn: "PATENTES MILITARES",
                 rankingBtn: "RANKING GLOBAL",
                 configTitle: "CONFIGURAÇÕES",
@@ -2988,6 +3080,14 @@ skinsTitleHeader: "PERSONALIZAR",
         const battlefieldScreen = document.getElementById('battlefield-screen');
         const skillsScreen = document.getElementById('skills-screen');
         const skinsScreen = document.getElementById('skins-screen');
+        const premiumScreen = document.getElementById('premium-screen');
+        const shopGrid = document.getElementById('shop-grid');
+        const shopMsg = document.getElementById('shop-msg');
+        const shopSub = document.getElementById('shop-sub');
+        const toShopBtn = document.getElementById('to-shop-btn');
+        const shopBackBtn = document.getElementById('shop-back-btn');
+        let shopCatalog = [];
+        let shopEnabled = false;
         const ranksScreen = document.getElementById('ranks-screen');
         const rankingScreen = document.getElementById('ranking-screen');
         const statsScreen = document.getElementById('stats-screen');
@@ -3239,6 +3339,10 @@ skinsTitleHeader: "PERSONALIZAR",
             }
             if (profileAvatar) profileAvatar.innerText = profile.avatar || '👤';
             if (profileAvatarBig) profileAvatarBig.innerText = profile.avatar || '👤';
+            // Banner premium: marco dorado en el avatar del perfil
+            const hasBanner = (profile.owns || []).includes('banner_royal');
+            if (profileAvatarBig) profileAvatarBig.classList.toggle('premium-frame', hasBanner);
+            if (profileAvatar) profileAvatar.classList.toggle('premium-frame', hasBanner);
 
             // Pantalla de perfil completo
             profName.innerText = profile.name;
@@ -3381,8 +3485,14 @@ skinsTitleHeader: "PERSONALIZAR",
             cards.forEach(card => {
                 let requiredLevel = parseInt(card.getAttribute('data-level')) || 1;
                 let lockBadge = card.querySelector('.lock-badge');
+                const premiumId = card.getAttribute('data-premium');
 
-                if (profile.level < requiredLevel) {
+                if (premiumId) {
+                    const owned = (profile.owns || []).includes(premiumId);
+                    card.classList.toggle('locked', !owned);
+                    card.classList.toggle('unlocked-premium', owned);
+                    if (lockBadge) lockBadge.style.display = owned ? 'none' : 'flex';
+                } else if (profile.level < requiredLevel) {
                     card.classList.add('locked');
                     if(lockBadge) lockBadge.style.display = 'flex';
                 } else {
@@ -3431,6 +3541,7 @@ skinsTitleHeader: "PERSONALIZAR",
             profile.points = account.points;
             profile.level = account.level;
             profile.exp = account.exp;
+            profile.owns = account.owns || [];
             if (account.matches !== undefined) {
                 profile.matches = account.matches;
                 profile.wins = account.wins;
@@ -4302,6 +4413,11 @@ skinsTitleHeader: "PERSONALIZAR",
         });
 
         function selectSkinColor(colorHex, isLocked, cardElement) {
+            const premiumId = cardElement ? cardElement.getAttribute('data-premium') : null;
+            if (premiumId && !(profile.owns || []).includes(premiumId)) {
+                skinLockMsg.innerText = "🔒 Este skin es PREMIUM: consíguelo en la TIENDA PREMIUM de la sala de comando.";
+                return;
+            }
             let requiredLevel = isLocked ? (parseInt(cardElement.dataset.level) || 5) : 1;
             if (profile.level < requiredLevel) {
                 skinLockMsg.innerText = `⚠️ Requiere Nivel ${requiredLevel} para desbloquear esta skin.`;
@@ -4392,6 +4508,84 @@ skinsTitleHeader: "PERSONALIZAR",
             lobbyScreen.style.display = 'flex';
             startLobbyMusic();
         });
+
+        // ---- TIENDA PREMIUM (pagos con Stripe) ----
+        toShopBtn.addEventListener('click', () => {
+            lobbyScreen.style.display = 'none';
+            shopMsg.innerText = "";
+            premiumScreen.style.display = 'flex';
+            loadShopCatalog();
+        });
+        shopBackBtn.addEventListener('click', () => {
+            premiumScreen.style.display = 'none';
+            lobbyScreen.style.display = 'flex';
+        });
+        async function loadShopCatalog() {
+            try {
+                const cfg = await fetch('/config').then(r => r.json());
+                shopCatalog = (cfg.shop && cfg.shop.items) || [];
+                shopEnabled = !!(cfg.shop && cfg.shop.enabled);
+                shopSub.innerText = shopEnabled ? "Pagos 100% seguros con Stripe (tarjeta). El artículo se entrega automáticamente." : "Los pagos aún no están activados: pronto podrás comprar skins y banners exclusivos.";
+                buildShopGrid();
+            } catch (e) { shopSub.innerText = "No se pudo cargar la tienda."; }
+        }
+        function shopDict(key) {
+            const d = i18n[profile.language] || i18n["ESPAÑOL"];
+            return d[key] || key;
+        }
+        function buildShopGrid() {
+            shopGrid.innerHTML = '';
+            shopCatalog.forEach(item => {
+                const owned = (profile.owns || []).includes(item.id);
+                const div = document.createElement('div');
+                div.className = 'shop-card' + (owned ? ' owned' : '');
+                div.innerHTML =
+                    '<div class="shop-emoji">' + item.emoji + '</div>' +
+                    (item.color ? '<div class="shop-swatch" style="background:' + item.color + '; box-shadow: 0 0 12px ' + item.color + ';"></div>' : '') +
+                    '<div class="shop-name">' + item.name + '</div>' +
+                    '<div class="shop-desc">' + item.desc + '</div>' +
+                    (owned
+                        ? '<div class="shop-status owned">✓ ' + shopDict('shopOwned') + '</div>'
+                        : (shopEnabled
+                            ? '<button class="btn-main shop-buy" onclick="buyItem(\'' + item.id + '\')">COMPRAR · $' + (item.priceCents / 100).toFixed(2) + '</button>'
+                            : '<div class="shop-status soon">' + shopDict('shopSoon') + '</div>'));
+                shopGrid.appendChild(div);
+            });
+        }
+        async function buyItem(itemId) {
+            shopMsg.innerText = "...";
+            try {
+                const r = await fetch('/api/stripe-checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: profile.name, itemId })
+                }).then(r => r.json());
+                if (r.ok && r.url) { window.location.href = r.url; return; }
+                if (r.error === 'already-owned') { shopMsg.innerText = "Ya tienes este artículo."; buildShopGrid(); }
+                else if (r.error === 'stripe-disabled') shopMsg.innerText = "Los pagos aún no están activados (falta la llave de Stripe en el servidor).";
+                else if (r.error === 'not-found') shopMsg.innerText = "Conecta tu cuenta para comprar (iniciaste sesión como invitado sin conectar).";
+                else shopMsg.innerText = "No se pudo iniciar el pago. Intenta de nuevo.";
+            } catch (e) { shopMsg.innerText = "Error de conexión. Intenta de nuevo."; }
+        }
+
+        // Si volvimos de Stripe tras pagar: verificar y entregar el artículo.
+        // (IIFE que corre al cargar la página)
+        (function checkPurchaseReturn() {
+            const q = new URLSearchParams(location.search);
+            if (q.get('purchase_ok') === '1' && q.get('session_id')) {
+                fetch('/api/stripe-verify?session_id=' + encodeURIComponent(q.get('session_id')))
+                    .then(r => r.json())
+                    .then(v => {
+                        try { history.replaceState(null, '', location.pathname); } catch (e) { }
+                        if (v && v.ok && v.itemId && !(profile.owns || []).includes(v.itemId)) {
+                            profile.owns = profile.owns || [];
+                            profile.owns.push(v.itemId);
+                            saveProfile();
+                        }
+                    })
+                    .catch(() => { });
+            }
+        })();
 
         retryTrainingBtn.addEventListener('click', () => {
             startTrainingMatch();

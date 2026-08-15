@@ -46,9 +46,78 @@ const io = new Server(server, {
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.json());
 app.get('/health', (req, res) => res.send('ok'));
-// Config pública para el cliente: script de login con Google (vacío = desactivado).
-app.get('/config', (req, res) => res.json({ googleClientId: process.env.GOOGLE_CLIENT_ID || '' }));
+// Config pública para el cliente: login con Google y tienda premium.
+app.get('/config', (req, res) => res.json({
+  googleClientId: process.env.GOOGLE_CLIENT_ID || '',
+  shop: {
+    enabled: !!stripe,
+    items: Object.entries(PREMIUM_ITEMS).map(([id, it]) => ({ id, type: it.type, name: it.name, emoji: it.emoji, desc: it.desc, priceCents: it.priceCents, color: it.color || '' }))
+  }
+}));
+
+// ---------- Tienda premium (pagos con Stripe Checkout) ----------
+// Flujo: el jugador pide el artículo -> se crea una sesión de pago -> Stripe
+// cobra en su página -> redirige a /?purchase_ok=1&session_id=... -> el servidor
+// verifica el pago (api/stripe-verify) y entrega el artículo a la cuenta.
+// Solo se activa si STRIPE_SECRET_KEY existe en el entorno (modo prueba o real).
+app.post('/api/stripe-checkout', async (req, res) => {
+  try {
+    if (!stripe) return res.status(501).json({ ok: false, error: 'stripe-disabled' });
+    if (!accountsReady) await ensureAccounts();
+    const name = normName(req.body && req.body.name);
+    const itemId = String((req.body && req.body.itemId) || '');
+    const acc = name ? accounts[name] : null;
+    if (!acc) return res.json({ ok: false, error: 'not-found' });
+    const item = PREMIUM_ITEMS[itemId];
+    if (!item) return res.json({ ok: false, error: 'bad-item' });
+    if ((acc.owns || []).includes(itemId)) return res.json({ ok: false, error: 'already-owned' });
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      payment_method_types: ['card'],
+      line_items: [{
+        price_data: {
+          currency: 'usd',
+          product_data: { name: 'FAMOFIRE: ' + item.name },
+          unit_amount: item.priceCents
+        },
+        quantity: 1
+      }],
+      metadata: { itemId, account: name },
+      success_url: APP_BASE_URL + '/?purchase_ok=1&session_id={CHECKOUT_SESSION_ID}',
+      cancel_url: APP_BASE_URL + '/?purchase_cancel=1'
+    });
+    res.json({ ok: true, url: session.url });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: 'stripe-error', msg: String(e.message || e).slice(0, 120) });
+  }
+});
+
+// Verificar que el pago fue completado y entregar el artículo al comprador.
+app.get('/api/stripe-verify', async (req, res) => {
+  try {
+    if (!stripe) return res.status(501).json({ ok: false, error: 'stripe-disabled' });
+    const sessionId = String(req.query.session_id || '');
+    if (!sessionId) return res.json({ ok: false, error: 'bad-session' });
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    if (!session || session.payment_status !== 'paid') return res.json({ ok: false, error: 'not-paid' });
+    const itemId = session.metadata && session.metadata.itemId;
+    const accountName = session.metadata && session.metadata.account;
+    const item = PREMIUM_ITEMS[itemId];
+    if (!item || !accounts[accountName]) return res.json({ ok: false, error: 'bad-metadata' });
+    const acc = accounts[accountName];
+    const already = (acc.owns || []).includes(itemId);
+    if (!already) {
+      acc.owns = acc.owns || [];
+      acc.owns.push(itemId);
+      saveAccounts();
+    }
+    res.json({ ok: true, already, itemId, name: accountName });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: 'stripe-error', msg: String(e.message || e).slice(0, 120) });
+  }
+});
 // Diagnóstico PÚBLICO (sin secretos): ayuda a resolver instalaciones remotas.
 // Solo muestra si las piezas están configuradas, nunca contraseñas ni tokens.
 app.get('/diag', async (req, res) => {
@@ -104,6 +173,21 @@ try {
 const RESET_SECRET = process.env.RESET_SECRET || 'famofire-local-reset-secret';
 const RESET_TTL_MIN = Math.max(1, parseInt(process.env.RESET_TTL_MINUTES || '30', 10) || 30); // minutos de validez del enlace
 const APP_BASE_URL = (process.env.APP_URL || (process.env.RENDER_EXTERNAL_URL ? 'https://' + process.env.RENDER_EXTERNAL_URL : 'http://localhost:3000')).replace(/\/+$/, '');
+
+// ---- Tienda premium: artículos de pago (skins y banner) ----
+const PREMIUM_ITEMS = {
+  skin_fuego:    { type: 'skin',   name: 'Skin Fuego Dorado',      emoji: '🔥', color: '#ffcc00', priceCents: 199, desc: 'Uniforme dorado de batalla' },
+  skin_elite:    { type: 'skin',   name: 'Skin Comandante Élite',  emoji: '🛡️', color: '#8a2be2', priceCents: 199, desc: 'Uniforme violeta de mando' },
+  skin_fantasma: { type: 'skin',   name: 'Skin Fantasma LATAM',    emoji: '👻', color: '#19ffc8', priceCents: 199, desc: 'Uniforme esmeralda camuflado' },
+  banner_royal:  { type: 'banner', name: 'Banner Bandera Real',    emoji: '🏴', priceCents: 299, desc: 'Marco dorado en tu perfil' }
+};
+// Stripe solo se activa con STRIPE_SECRET_KEY en el entorno (Render). Sin la
+// llave el juego funciona igual: la tienda avisa "pronto" y no se cobra nada.
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
+let stripe = null;
+if (STRIPE_SECRET_KEY) {
+  try { stripe = require('stripe')(STRIPE_SECRET_KEY); } catch (e) { stripe = null; }
+}
 function resetToken(googleId, purpose) {
   return sha(googleId + '|' + purpose + '|' + RESET_SECRET) + '.' + googleId + '.' + purpose + '.' + (Date.now() + RESET_TTL_MIN * 60000);
 }
@@ -164,11 +248,14 @@ async function initAccounts() {
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS kills INT NOT NULL DEFAULT 0');
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS dmg INT NOT NULL DEFAULT 0');
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS deaths INT NOT NULL DEFAULT 0');
+        await db.query("ALTER TABLE accounts ADD COLUMN IF NOT EXISTS owns TEXT NOT NULL DEFAULT '[]'");
       } catch (e) { /* versión vieja de Postgres u otro problema menor: se ignora */ }
-      const { rows } = await db.query('SELECT name, password, points, level, exp, lastseen, id, google_id, google_email, unnamed, device_token, matches, wins, kills, dmg, deaths FROM accounts');
+      const { rows } = await db.query('SELECT name, password, points, level, exp, lastseen, id, google_id, google_email, unnamed, device_token, matches, wins, kills, dmg, deaths, owns FROM accounts');
       accounts = {};
       for (const r of rows) {
-        accounts[r.name] = { id: r.id || genId(), password: r.password, points: Number(r.points), level: Number(r.level), exp: Number(r.exp), lastSeen: Number(r.lastseen) || 0, googleId: r.google_id || '', googleEmail: r.google_email || '', unnamed: !!r.unnamed, deviceToken: r.device_token || '', matches: Number(r.matches) || 0, wins: Number(r.wins) || 0, kills: Number(r.kills) || 0, dmg: Number(r.dmg) || 0, deaths: Number(r.deaths) || 0 };
+        let owns = [];
+        if (r.owns) { try { owns = Array.isArray(JSON.parse(r.owns)) ? JSON.parse(r.owns) : []; } catch (e) { owns = []; } }
+        accounts[r.name] = { id: r.id || genId(), password: r.password, points: Number(r.points), level: Number(r.level), exp: Number(r.exp), lastSeen: Number(r.lastseen) || 0, googleId: r.google_id || '', googleEmail: r.google_email || '', unnamed: !!r.unnamed, deviceToken: r.device_token || '', matches: Number(r.matches) || 0, wins: Number(r.wins) || 0, kills: Number(r.kills) || 0, dmg: Number(r.dmg) || 0, deaths: Number(r.deaths) || 0, owns };
       }
       console.log(`[DB] ${rows.length} cuentas cargadas desde PostgreSQL`);
     } catch (e) {
@@ -192,6 +279,7 @@ async function initAccounts() {
       a.id = genId();
       backfilled = true;
     }
+    if (a && !Array.isArray(a.owns)) a.owns = [];
   }
   if (backfilled) saveAccounts();
   accountsReady = true;
@@ -211,8 +299,9 @@ async function dbSaveAll() {
   const client = await db.connect();
   try {
     await client.query('BEGIN');
-    const q = `INSERT INTO accounts (name, id, password, points, level, exp, lastseen, google_id, google_email, unnamed, device_token, matches, wins, kills, dmg, deaths)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+    await client.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS owns TEXT NOT NULL DEFAULT \'[]\'');
+    const q = `INSERT INTO accounts (name, id, password, points, level, exp, lastseen, google_id, google_email, unnamed, device_token, matches, wins, kills, dmg, deaths, owns)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
                ON CONFLICT (name) DO UPDATE SET
                  password = EXCLUDED.password,
                  points = EXCLUDED.points,
@@ -227,9 +316,10 @@ async function dbSaveAll() {
                  wins = EXCLUDED.wins,
                  kills = EXCLUDED.kills,
                  dmg = EXCLUDED.dmg,
-                 deaths = EXCLUDED.deaths`;
+                 deaths = EXCLUDED.deaths,
+                 owns = EXCLUDED.owns`;
     for (const [name, a] of Object.entries(accounts)) {
-      await client.query(q, [name, a.id || genId(), a.password, Number(a.points) || 0, Number(a.level) || 1, Number(a.exp) || 0, Number(a.lastSeen) || 0, a.googleId || '', a.googleEmail || '', !!a.unnamed, a.deviceToken || '', Number(a.matches) || 0, Number(a.wins) || 0, Number(a.kills) || 0, Number(a.dmg) || 0, Number(a.deaths) || 0]);
+      await client.query(q, [name, a.id || genId(), a.password, Number(a.points) || 0, Number(a.level) || 1, Number(a.exp) || 0, Number(a.lastSeen) || 0, a.googleId || '', a.googleEmail || '', !!a.unnamed, a.deviceToken || '', Number(a.matches) || 0, Number(a.wins) || 0, Number(a.kills) || 0, Number(a.dmg) || 0, Number(a.deaths) || 0, JSON.stringify(a.owns || [])]);
     }
     await client.query('COMMIT');
   } catch (e) {
@@ -546,7 +636,7 @@ io.on('connection', (socket) => {
     socket.data.account = accountKey;
     socket.data.name = accountKey;
     socket.data.points = acc.points;
-    socket.emit('account-result', { ok: true, google: !!acc.googleId, hasPassword: !!(acc.password && !String(acc.password).includes('\\google')), account: { id: acc.id, name: accountKey, googleEmail: acc.googleEmail || '', points: acc.points, level: acc.level, exp: acc.exp, matches: acc.matches || 0, wins: acc.wins || 0, kills: acc.kills || 0, dmg: acc.dmg || 0, deaths: acc.deaths || 0 } });
+    socket.emit('account-result', { ok: true, google: !!acc.googleId, hasPassword: !!(acc.password && !String(acc.password).includes('\\google')), account: { id: acc.id, name: accountKey, googleEmail: acc.googleEmail || '', points: acc.points, level: acc.level, exp: acc.exp, matches: acc.matches || 0, wins: acc.wins || 0, kills: acc.kills || 0, dmg: acc.dmg || 0, deaths: acc.deaths || 0, owns: acc.owns || [] } });
   });
 
   socket.on('account-register', async (data = {}) => {
@@ -557,13 +647,13 @@ io.on('connection', (socket) => {
     if (String(data.password || '').length < 4) return socket.emit('account-result', { ok: false, error: 'short-pass' });
     let passHash;
     try { passHash = await bcrypt.hash(String(data.password || ''), 10); } catch (e) { passHash = sha(data.password); }
-    accounts[name] = { id: genId(), password: passHash, points: 0, level: 1, exp: 0, lastSeen: Date.now(), matches: 0, wins: 0, kills: 0, dmg: 0, deaths: 0 };
+    accounts[name] = { id: genId(), password: passHash, points: 0, level: 1, exp: 0, lastSeen: Date.now(), matches: 0, wins: 0, kills: 0, dmg: 0, deaths: 0, owns: [] };
     saveAccounts();
     socket.data.account = name;
     socket.data.name = name;
     socket.data.points = 0;
-    socket.emit('account-result', { ok: true, account: { id: accounts[name].id, name, points: 0, level: 1, exp: 0, matches: 0, wins: 0, kills: 0, dmg: 0, deaths: 0 } });
-  });
+socket.emit('account-result', { ok: true, account: { id: accounts[name].id, name, points: 0, level: 1, exp: 0, matches: 0, wins: 0, kills: 0, dmg: 0, deaths: 0, owns: [] } });
+    });
 
   // ---- CREAR CUENTA / ENTRAR con Google Sign-In ----
   // Las cuentas se crean SI O SI con Google: el correo queda verificado por la
@@ -601,7 +691,7 @@ io.on('connection', (socket) => {
       // (el nombre de la cuenta aún no se muestra en ranking ni en partidas).
       let base = 'J' + sub.slice(0, 7).toUpperCase();
       for (let i = 0; i < 100 && accounts[base]; i++) base = 'J' + sub.slice(0, 6).toUpperCase() + i;
-      accounts[base] = { id: genId(), googleId: sub, googleEmail: email, password: sha(crypto.randomBytes(16).toString('hex')) + '\\google', unnamed: true, points: 0, level: 1, exp: 0, lastSeen: Date.now(), matches: 0, wins: 0, kills: 0, dmg: 0, deaths: 0 };
+      accounts[base] = { id: genId(), googleId: sub, googleEmail: email, password: sha(crypto.randomBytes(16).toString('hex')) + '\\google', unnamed: true, points: 0, level: 1, exp: 0, lastSeen: Date.now(), matches: 0, wins: 0, kills: 0, dmg: 0, deaths: 0, owns: [] };
       name = base;
       isNew = true;
       saveAccounts();
@@ -614,13 +704,13 @@ io.on('connection', (socket) => {
       socket.data.name = name;
       socket.data.points = 0;
       saveAccounts();
-      return socket.emit('account-result', { ok: true, google: true, needsName: true, firstTime: isNew, account: { id: acc.id, googleEmail: acc.googleEmail || '' } });
+      return socket.emit('account-result', { ok: true, google: true, needsName: true, firstTime: isNew, account: { id: acc.id, googleEmail: acc.googleEmail || '' , owns: acc.owns || [] } });
     }
     saveAccounts();
     socket.data.account = name;
     socket.data.name = name;
     socket.data.points = acc.points;
-    socket.emit('account-result', { ok: true, google: true, firstTime: isNew, hasPassword: !!(acc.password && !String(acc.password).includes('\\google')), account: { id: acc.id, name, googleEmail: acc.googleEmail || '', points: acc.points, level: acc.level, exp: acc.exp, matches: acc.matches || 0, wins: acc.wins || 0, kills: acc.kills || 0, dmg: acc.dmg || 0, deaths: acc.deaths || 0 } });
+    socket.emit('account-result', { ok: true, google: true, firstTime: isNew, hasPassword: !!(acc.password && !String(acc.password).includes('\\google')), account: { id: acc.id, name, googleEmail: acc.googleEmail || '', points: acc.points, level: acc.level, exp: acc.exp, matches: acc.matches || 0, wins: acc.wins || 0, kills: acc.kills || 0, dmg: acc.dmg || 0, deaths: acc.deaths || 0, owns: acc.owns || [] } });
   });
 
   // Poner la CONTRASEÑA DEL JUEGO a una cuenta de Google recién creada
@@ -635,8 +725,8 @@ io.on('connection', (socket) => {
     if (p.length < 4) return socket.emit('account-result', { ok: false, error: 'short-pass' });
     try { acc.password = await bcrypt.hash(p, 10); } catch (e) { acc.password = sha(p); }
     saveAccounts();
-    if (acc.unnamed) return socket.emit('account-result', { ok: true, google: true, needsName: true, account: { id: acc.id, googleEmail: acc.googleEmail || '' } });
-    socket.emit('account-result', { ok: true, google: true, hasPassword: true, account: { id: acc.id, name: socket.data.account, googleEmail: acc.googleEmail || '' } });
+    if (acc.unnamed) return socket.emit('account-result', { ok: true, google: true, needsName: true, account: { id: acc.id, googleEmail: acc.googleEmail || '' , owns: acc.owns || [] } });
+    socket.emit('account-result', { ok: true, google: true, hasPassword: true, account: { id: acc.id, name: socket.data.account, googleEmail: acc.googleEmail || '' , owns: acc.owns || [] } });
   });
 
   // ---- JUGAR COMO INVITADO: cuenta sin correo ni Google ----
@@ -654,12 +744,12 @@ io.on('connection', (socket) => {
     let passHash = '';
     if (p) { try { passHash = await bcrypt.hash(p, 10); } catch (e) { passHash = sha(p); } }
     const tok = String(data.deviceToken || '').slice(0, 64);
-    accounts[name] = { id: genId(), password: passHash, deviceToken: tok ? sha('dlv:' + tok) : '', points: 0, level: 1, exp: 0, lastSeen: Date.now(), matches: 0, wins: 0, kills: 0, dmg: 0, deaths: 0 };
+    accounts[name] = { id: genId(), password: passHash, deviceToken: tok ? sha('dlv:' + tok) : '', points: 0, level: 1, exp: 0, lastSeen: Date.now(), matches: 0, wins: 0, kills: 0, dmg: 0, deaths: 0, owns: [] };
     saveAccounts();
     socket.data.account = name;
     socket.data.name = name;
     socket.data.points = 0;
-    socket.emit('account-result', { ok: true, guest: true, hasPassword: !!passHash, account: { id: accounts[name].id, name, points: 0, level: 1, exp: 0, matches: 0, wins: 0, kills: 0, dmg: 0, deaths: 0 } });
+    socket.emit('account-result', { ok: true, guest: true, hasPassword: !!passHash, account: { id: accounts[name].id, name, points: 0, level: 1, exp: 0, matches: 0, wins: 0, kills: 0, dmg: 0, deaths: 0, owns: [] } });
   });
 
   // Reentrada del invitado SIN contraseña: exige el token del mismo dispositivo.
@@ -676,7 +766,7 @@ io.on('connection', (socket) => {
     socket.data.account = name;
     socket.data.name = name;
     socket.data.points = acc.points;
-    socket.emit('account-result', { ok: true, guest: true, hasPassword: false, account: { id: acc.id, name, points: acc.points, level: acc.level, exp: acc.exp, matches: acc.matches || 0, wins: acc.wins || 0, kills: acc.kills || 0, dmg: acc.dmg || 0, deaths: acc.deaths || 0 } });
+    socket.emit('account-result', { ok: true, guest: true, hasPassword: false, account: { id: acc.id, name, points: acc.points, level: acc.level, exp: acc.exp, matches: acc.matches || 0, wins: acc.wins || 0, kills: acc.kills || 0, dmg: acc.dmg || 0, deaths: acc.deaths || 0, owns: acc.owns || [] } });
   });
 
   // Poner/cambiar la CONTRASEÑA DEL JUEGO desde Configuración. Si la cuenta ya

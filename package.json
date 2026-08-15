@@ -16,9 +16,11 @@
     "google-auth-library": "^9.15.1",
     "nodemailer": "^9.0.5",
     "pg": "^8.23.0",
-    "socket.io": "^4.8.1"
+    "socket.io": "^4.8.1",
+    "stripe": "^22.5.0"
   },
   "devDependencies": {
+    "puppeteer-core": "^25.7.0",
     "socket.io-client": "^4.8.1"
   }
 }
