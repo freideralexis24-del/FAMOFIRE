@@ -532,6 +532,45 @@
             font-size: 15px;
             box-shadow: 0 0 12px rgba(255, 179, 0, 0.55);
         }
+        /* Sin este fix el hover (.btn-main:hover) reemplaza el transform del botón:
+           pierde el centrado vertical, salta arriba y oscila hasta "asentarse". */
+        .lucky-btn:hover {
+            transform: translateY(-50%) scale(1.05);
+            background: linear-gradient(135deg, #ffd94d, #d4a017) !important;
+        }
+
+        /* Píldora de GEMAS en la sala de comando (arriba a la derecha) */
+        .gem-pill {
+            position: absolute;
+            top: 14px;
+            right: 60px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0, 0, 0, 0.55);
+            border: 2px solid #00e5ff;
+            border-radius: 999px;
+            padding: 5px 14px;
+            font-size: 17px;
+            color: #ffffff;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px #000;
+        }
+        .gem-pill img.gem-icon {
+            width: 22px;
+            height: 22px;
+            object-fit: contain;
+        }
+
+        /* Lobby dividido: CORREO a la izquierda de CONFIGURACIÓN (nunca encima) */
+        #mail-screen.split {
+            left: 0;
+            width: 44%;
+        }
+        #config-screen.split {
+            left: 44%;
+            width: 56%;
+        }
 
         .exp-container {
             width: 280px;
@@ -1443,6 +1482,12 @@
             <div class="profile-chevron">›</div>
         </div>
 
+        <!-- PÍLDORA DE GEMAS: la moneda del juego (se compra con Mercado Pago) -->
+        <div id="gem-pill" class="gem-pill" style="display: none;">
+            <span id="gem-glyph">💎</span>
+            <span id="lobby-gems">0</span>
+        </div>
+
         <h1 data-i18n="lobbyTitle">SALA DE COMANDO</h1>
 
         <!-- INDICADOR DE JUGADORES ONLINE (solo visible en la sala de comando) -->
@@ -1863,10 +1908,11 @@
         <button id="back-from-skins" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
     </div>
 
-    <!-- TIENDA PREMIUM: skins y banners de pago (Stripe) -->
+    <!-- TIENDA PREMIUM: compra GEMAS con Mercado Pago y artículos con GEMAS -->
     <div id="premium-screen" class="screen" style="display: none;">
         <h1 data-i18n="shopTitle">TIENDA</h1>
         <p class="shop-sub" id="shop-sub">Cargando tienda…</p>
+        <div class="gem-packs" id="gem-packs"></div>
         <div class="shop-grid" id="shop-grid"></div>
         <p id="shop-msg" style="font-size: 14px; color: #ffcc00; height: 36px; margin-top: 8px; text-align: center;"></p>
         <div class="lobby-menu">
@@ -2317,6 +2363,12 @@ loginSection: "— INICIAR SESIÓN —",
                 luckyTitle: "LUCKY ROYALE",
                 luckySoon: "PRÓXIMAMENTE",
                 errAlreadyOpen: "Esta cuenta ya está abierta en otra página. Ciérrala allí para poder entrar aquí.",
+                gemName: "GEMAS",
+                shopGemsTitle: "TUS GEMAS",
+                buyGemsBtn: "COMPRAR GEMAS",
+                packBuy: "COMPRAR",
+                shopNeedGems: "Te faltan GEMAS para este artículo. Compra un paquete arriba.",
+                shopBoughtOk: "¡Artículo comprado con GEMAS! Ya está en tu inventario.",
                 mailBtn: "CORREO",
                 mailTitle: "CORREO",
                 mailEmpty: "Buzón vacío: aún no tienes mensajes.",
@@ -2539,6 +2591,12 @@ loginSection: "— SIGN IN —",
                 luckyTitle: "LUCKY ROYALE",
                 luckySoon: "COMING SOON",
                 errAlreadyOpen: "This account is already open in another page. Close it there to log in here.",
+                gemName: "GEMS",
+                shopGemsTitle: "YOUR GEMS",
+                buyGemsBtn: "BUY GEMS",
+                packBuy: "BUY",
+                shopNeedGems: "You need more GEMS for this item. Buy a pack above.",
+                shopBoughtOk: "Item purchased with GEMS! It's in your inventory now.",
                 mailBtn: "MAIL",
                 mailTitle: "MAIL",
                 mailEmpty: "Inbox empty: you have no messages yet.",
@@ -2761,6 +2819,12 @@ loginSection: "— 登录 —",
                 luckyTitle: "LUCKY ROYALE",
                 luckySoon: "即将推出",
                 errAlreadyOpen: "⚠️ 此账户已在另一个页面打开。请先在那里关闭，再在此处登录。",
+                gemName: "宝石",
+                shopGemsTitle: "你的宝石",
+                buyGemsBtn: "购买宝石",
+                packBuy: "购买",
+                shopNeedGems: "宝石不足，请先在上方购买宝石包。",
+                shopBoughtOk: "已用宝石购买！物品已放入你的仓库。",
                 mailBtn: "邮件",
                 mailTitle: "邮件",
                 mailEmpty: "收件箱为空：暂无消息。",
@@ -2983,6 +3047,12 @@ loginSection: "— ENTRAR —",
                 luckyTitle: "LUCKY ROYALE",
                 luckySoon: "EM BREVE",
                 errAlreadyOpen: "⚠️ Esta conta já está aberta em outra página. Feche-a lá para entrar aqui.",
+                gemName: "GEMAS",
+                shopGemsTitle: "SUAS GEMAS",
+                buyGemsBtn: "COMPRAR GEMAS",
+                packBuy: "COMPRAR",
+                shopNeedGems: "Faltam GEMAS para este item. Compre um pacote acima.",
+                shopBoughtOk: "Item comprado com GEMAS! Já está no seu inventário.",
                 mailBtn: "CORREIO",
                 mailTitle: "CORREIO",
                 mailEmpty: "Caixa vazia: você ainda não tem mensagens.",
@@ -3350,6 +3420,12 @@ skinsTitleHeader: "PERSONALIZAR",
         let shopCatalog = [];
         let shopEnabled = false;
         let shopProvider = 'none';
+        let shopPackages = [];
+        let gemCfg = { name: 'GEMAS', emoji: '💎', img: '' };
+        const gemPacks = document.getElementById('gem-packs');
+        const gemPill = document.getElementById('gem-pill');
+        const gemGlyph = document.getElementById('gem-glyph');
+        const lobbyGemsEl = document.getElementById('lobby-gems');
         const ranksScreen = document.getElementById('ranks-screen');
         const rankingScreen = document.getElementById('ranking-screen');
         const statsScreen = document.getElementById('stats-screen');
@@ -3807,6 +3883,7 @@ skinsTitleHeader: "PERSONALIZAR",
             profile.level = account.level;
             profile.exp = account.exp;
             profile.owns = account.owns || [];
+            profile.gems = typeof account.gems === 'number' ? account.gems : (profile.gems || 0);
             if (account.matches !== undefined) {
                 profile.matches = account.matches;
                 profile.wins = account.wins;
@@ -3816,6 +3893,8 @@ skinsTitleHeader: "PERSONALIZAR",
             }
             saveProfile();
             updateLobbyUI();
+            applyGemConfig();
+            updateGemUI();
             socket.emit('player-join', { name: profile.name, color: profile.color, skin: profile.skin || '' });
             socket.emit('get-mails'); // badge del buzón al entrar
             loginScreen.style.display = 'none';
@@ -4124,6 +4203,10 @@ skinsTitleHeader: "PERSONALIZAR",
         });
 
         function openConfigMenu() {
+            // Solo configuración (pantalla completa): sin la división del buzón.
+            configScreen.classList.remove('split');
+            mailScreen.classList.remove('split');
+            mailScreen.style.display = 'none';
             lobbyScreen.style.display = 'none';
             configScreen.style.display = 'flex';
             updateAccountUI();
@@ -4149,6 +4232,11 @@ skinsTitleHeader: "PERSONALIZAR",
         cfgTabAccount.addEventListener('click', () => showConfigTab('account'));
 
         backFromConfig.addEventListener('click', () => {
+            // Si el buzón está abierto al lado, REGRESAR cierra los dos paneles juntos.
+            if (mailScreen.classList.contains('split')) {
+                closeMailAndConfig();
+                return;
+            }
             configScreen.style.display = 'none';
             lobbyScreen.style.display = 'flex';
         });
@@ -4864,12 +4952,25 @@ skinsTitleHeader: "PERSONALIZAR",
             mailDestInput.placeholder = dict.mailDestPh;
             mailMsgInput.placeholder = dict.mailMsgPh;
             socket.emit('get-mails');
+            // El buzón se muestra a la IZQUIERDA de CONFIGURACIÓN (al lado, nunca encima).
             lobbyScreen.style.display = 'none';
+            mailScreen.classList.add('split');
+            configScreen.classList.add('split');
             mailScreen.style.display = 'flex';
+            configScreen.style.display = 'flex';
+            updateAccountUI();
+            updateGoogleLinkUI();
+            showConfigTab('visual');
         });
-        mailBackBtn.addEventListener('click', () => {
+        function closeMailAndConfig() {
+            mailScreen.classList.remove('split');
+            configScreen.classList.remove('split');
             mailScreen.style.display = 'none';
+            configScreen.style.display = 'none';
             lobbyScreen.style.display = 'flex';
+        }
+        mailBackBtn.addEventListener('click', () => {
+            closeMailAndConfig();
         });
         mailSendBtn.addEventListener('click', () => {
             const itemId = mailItemSelect.value;
@@ -4910,31 +5011,133 @@ skinsTitleHeader: "PERSONALIZAR",
                 if (mailMsgEl) mailMsgEl.innerText = msg;
             }
         });
+        // Ícono de la moneda: imagen del juego si el servidor la publica, si no emoji.
+        function applyGemConfig() {
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            const name = (gemCfg && gemCfg.name) ? gemCfg.name : dict.gemName;
+            const emoji = (gemCfg && gemCfg.emoji) ? gemCfg.emoji : '💎';
+            if (gemCfg && gemCfg.img) {
+                if (gemGlyph.children.length === 0) {
+                    const img = document.createElement('img');
+                    img.className = 'gem-icon';
+                    img.alt = name;
+                    img.src = gemCfg.img;
+                    img.onerror = () => { gemGlyph.innerHTML = ''; gemGlyph.textContent = emoji; };
+                    gemGlyph.appendChild(img);
+                }
+            } else {
+                gemGlyph.innerHTML = '';
+                gemGlyph.textContent = emoji;
+            }
+        }
+        function updateGemUI() {
+            if (lobbyGemsEl) lobbyGemsEl.innerText = String(profile.gems || 0);
+            if (gemPill) gemPill.style.display = profile.name ? 'inline-flex' : 'none';
+            const shopGemsVal = document.getElementById('shop-gems-val');
+            if (shopGemsVal) shopGemsVal.innerText = String(profile.gems || 0);
+        }
         async function loadShopCatalog() {
             try {
                 const cfg = await fetch('/config').then(r => r.json());
                 shopCatalog = (cfg.shop && cfg.shop.items) || [];
+                shopPackages = (cfg.shop && cfg.shop.packages) || [];
                 shopEnabled = !!(cfg.shop && cfg.shop.enabled);
                 shopProvider = (cfg.shop && cfg.shop.provider) || 'none';
+                if (cfg.shop && cfg.shop.currency) gemCfg = cfg.shop.currency;
+                applyGemConfig();
+                updateGemUI();
                 shopSub.innerText = shopProvider === 'mp'
-                    ? "Pagos 100% seguros con Mercado Pago (tarjeta, Nequi, PSE, etc.). El artículo se entrega automáticamente."
+                    ? "Compra GEMAS con Mercado Pago (tarjeta, Nequi, PSE...). Con tus GEMAS desbloqueas las skins y el banner."
                     : (shopEnabled
-                        ? "Pagos 100% seguros por tarjeta (Stripe). El artículo se entrega automáticamente."
-                        : "Los pagos aún no están activados: pronto podrás comprar skins y banners exclusivos.");
+                        ? "Compra GEMAS con tu tarjeta (Stripe). Con tus GEMAS desbloqueas las skins y el banner."
+                        : "Los pagos aún no están activados: pronto podrás comprar GEMAS y artículos exclusivos.");
+                renderGemPacks();
                 buildShopGrid();
             } catch (e) { shopSub.innerText = "No se pudo cargar la tienda."; }
+        }
+        function renderGemPacks() {
+            gemPacks.innerHTML = '';
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            const emoji = gemCfg.emoji || '💎';
+            const name = gemCfg.name || dict.gemName;
+            const head = document.createElement('div');
+            head.className = 'shop-sub';
+            head.innerHTML = dict.shopGemsTitle + ': <b id="shop-gems-val" style="color:#00e5ff;">' + String(profile.gems || 0) + '</b> ' + emoji + ' &nbsp;·&nbsp; ' + dict.buyGemsBtn;
+            gemPacks.appendChild(head);
+            if (!shopPackages.length || !shopEnabled) return;
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:14px;';
+            shopPackages.forEach(p => {
+                const card = document.createElement('div');
+                card.style.cssText = 'background:rgba(0,0,0,0.5);border:2px solid #ffcc00;border-radius:10px;padding:10px 16px;text-align:center;min-width:150px;';
+                card.innerHTML =
+                    '<div style="font-size:30px;">' + emoji + '</div>' +
+                    '<div style="font-size:18px;color:#ffcc00;font-weight:bold;">+' + p.gems + ' ' + name + '</div>' +
+                    '<div style="font-size:13px;color:#bbb;">' + p.name + '</div>' +
+                    '<div style="font-size:15px;color:#fff;margin:6px 0;">$' + p.priceCOP.toLocaleString('es-CO') + ' COP</div>' +
+                    '<button class="btn-main" style="font-size:14px;padding:6px 14px;" data-pack="' + p.id + '">' + dict.packBuy + '</button>';
+                card.querySelector('button').addEventListener('click', () => buyPack(p.id));
+                row.appendChild(card);
+            });
+            gemPacks.appendChild(row);
+        }
+        async function buyPack(packId) {
+            shopMsg.innerText = "...";
+            if (!profile.name) { shopMsg.innerText = "Conecta tu cuenta para comprar (iniciaste sesión como invitado sin conectar)."; return; }
+            try {
+                if (shopProvider !== 'mp') { shopMsg.innerText = "Los pagos con Mercado Pago aún no están activados."; return; }
+                const r = await fetch('/api/mp-checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: profile.name, packId })
+                }).then(r => r.json());
+                if (r.ok && r.url) { window.location.href = r.url; return; }
+                shopMsg.innerText = r.error === 'not-found'
+                    ? "Conecta tu cuenta para comprar (iniciaste sesión como invitado sin conectar)."
+                    : (r.error === 'mp-disabled' ? "Los pagos aún no están activados (falta la llave de Mercado Pago en el servidor)." : "No se pudo iniciar el pago. Intenta de nuevo.");
+            } catch (e) { shopMsg.innerText = "Error de conexión. Intenta de nuevo."; }
+        }
+        // Comprar un artículo gastando GEMAS de tu cuenta (lo verifica el servidor).
+        async function buyWithGems(itemId) {
+            shopMsg.innerText = "...";
+            if (!profile.name) { shopMsg.innerText = "Conecta tu cuenta para comprar (iniciaste sesión como invitado sin conectar)."; return; }
+            try {
+                const r = await fetch('/api/buy-item', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: profile.name, itemId })
+                }).then(r => r.json());
+                if (r.ok) {
+                    profile.gems = typeof r.gems === 'number' ? r.gems : (profile.gems || 0);
+                    profile.owns = profile.owns || [];
+                    profile.owns.push(r.itemId);
+                    saveProfile();
+                    updateGemUI();
+                    shopMsg.innerText = shopDict('shopBoughtOk');
+                    buildShopGrid();
+                    renderGemPacks();
+                    return;
+                }
+                shopMsg.innerText = r.error === 'need-gems'
+                    ? shopDict('shopNeedGems')
+                    : (r.error === 'already-owned' ? "Ya tienes este artículo." : "No se pudo completar la compra. Intenta de nuevo.");
+            } catch (e) { shopMsg.innerText = "Error de conexión. Intenta de nuevo."; }
         }
         function shopDict(key) {
             const d = i18n[profile.language] || i18n["ESPAÑOL"];
             return d[key] || key;
         }
-        function shopPrice(item) {
-            return shopProvider === 'mp' ? '$' + item.priceCOP.toLocaleString('es-CO') + ' COP' : '$' + (item.priceCents / 100).toFixed(2) + ' USD';
+        function gemPriceLabel(item) {
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            const emoji = gemCfg.emoji || '💎';
+            const name = gemCfg.name || dict.gemName;
+            return item.gems + ' ' + emoji + ' ' + name;
         }
         function buildShopGrid() {
             shopGrid.innerHTML = '';
             shopCatalog.forEach(item => {
                 const owned = (profile.owns || []).includes(item.id);
+                const enough = (profile.gems || 0) >= item.gems;
                 const div = document.createElement('div');
                 div.className = 'shop-card' + (owned ? ' owned' : '');
                 let previewHtml = '<div class="shop-emoji">' + item.emoji + '</div>';
@@ -4945,34 +5148,15 @@ skinsTitleHeader: "PERSONALIZAR",
                 }
                 div.innerHTML =
                     previewHtml +
-                    (item.color ? '' : '') +
                     '<div class="shop-name">' + item.name + '</div>' +
                     '<div class="shop-desc">' + item.desc + '</div>' +
                     (owned
                         ? '<div class="shop-status owned">✓ ' + shopDict('shopOwned') + '</div>'
                         : (shopEnabled
-                            ? '<button class="btn-main shop-buy" onclick="buyItem(\'' + item.id + '\')">COMPRAR · ' + shopPrice(item) + '</button>'
+                            ? '<button class="btn-main shop-buy" ' + (enough ? '' : 'disabled style="opacity:0.55;cursor:not-allowed;"') + ' onclick="buyWithGems(\'' + item.id + '\')">' + gemPriceLabel(item) + '</button>'
                             : '<div class="shop-status soon">' + shopDict('shopSoon') + '</div>'));
                 shopGrid.appendChild(div);
             });
-        }
-        async function buyItem(itemId) {
-            shopMsg.innerText = "...";
-            if (!profile.name) { shopMsg.innerText = "Conecta tu cuenta para comprar (iniciaste sesión como invitado sin conectar)."; return; }
-            try {
-                const endpoint = shopProvider === 'mp' ? '/api/mp-checkout' : '/api/stripe-checkout';
-                const r = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: profile.name, itemId })
-                }).then(r => r.json());
-                if (r.ok && r.url) { window.location.href = r.url; return; }
-                if (r.error === 'already-owned') { shopMsg.innerText = "Ya tienes este artículo."; buildShopGrid(); }
-                else if (r.error === 'stripe-disabled') shopMsg.innerText = "Los pagos aún no están activados (falta la llave en el servidor).";
-                else if (r.error === 'mp-disabled') shopMsg.innerText = "Los pagos aún no están activados (falta la llave de Mercado Pago en el servidor).";
-                else if (r.error === 'not-found') shopMsg.innerText = "Conecta tu cuenta para comprar (iniciaste sesión como invitado sin conectar).";
-                else shopMsg.innerText = "No se pudo iniciar el pago. Intenta de nuevo.";
-            } catch (e) { shopMsg.innerText = "Error de conexión. Intenta de nuevo."; }
         }
 
         // Si volvimos del pago: verificar y entregar el artículo.
@@ -4996,10 +5180,16 @@ skinsTitleHeader: "PERSONALIZAR",
                     .then(r => r.json())
                     .then(v => {
                         try { history.replaceState(null, '', location.pathname); } catch (e) { }
-                        if (v && v.ok && v.itemId && !(profile.owns || []).includes(v.itemId)) {
-                            profile.owns = profile.owns || [];
-                            profile.owns.push(v.itemId);
-                            saveProfile();
+                        if (v && v.ok) {
+                            if (v.gems) {
+                                profile.gems = (profile.gems || 0) + v.gems;
+                                saveProfile();
+                                updateGemUI();
+                            } else if (v.itemId && !(profile.owns || []).includes(v.itemId)) {
+                                profile.owns = profile.owns || [];
+                                profile.owns.push(v.itemId);
+                                saveProfile();
+                            }
                         }
                     })
                     .catch(() => { });
