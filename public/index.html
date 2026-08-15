@@ -226,6 +226,45 @@
             box-shadow: 0px 0px 10px #ffcc00;
             background: rgba(255, 204, 0, 0.15);
         }
+        /* Avatar premium comprado: marco dorado; bloqueado: oscuro con candado */
+        .avatar-option.premium-bought {
+            border-color: #ffcc00;
+            box-shadow: 0 0 8px rgba(255, 204, 0, 0.6);
+        }
+        .avatar-option.locked {
+            position: relative;
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+        .avatar-option.locked::after {
+            content: "🔒";
+            position: absolute;
+            right: 2px;
+            bottom: 2px;
+            font-size: 12px;
+        }
+        /* Pestañas de la TIENDA: SKINS / AVATARES */
+        .shop-tabs {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 8px 0 4px 0;
+        }
+        .shop-tab {
+            padding: 8px 26px;
+            font-size: 17px;
+            font-family: 'Impact', sans-serif;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            border: 3px solid #000;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 3px 3px 0px #000;
+        }
+        .shop-tab.active {
+            background-color: #ffcc00;
+            color: #000;
+        }
         .config-tabs {
             display: flex;
             gap: 8px;
@@ -676,6 +715,14 @@
         }
         .shop-card.owned { border-color: rgba(46, 222, 98, 0.7); }
         .shop-emoji { font-size: 42px; line-height: 1; }
+        .shop-avatar-pv {
+            font-size: 64px;
+            line-height: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 84px;
+        }
         .shop-swatch { width: 46px; height: 46px; border-radius: 50%; border: 3px solid #fff; }
         .shop-name { font-size: 15px; font-weight: bold; color: #ffcc00; }
         .shop-desc { font-size: 12px; color: #bbb; }
@@ -1922,11 +1969,26 @@
         <button id="back-from-skins" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
     </div>
 
-    <!-- TIENDA PREMIUM: compra GEMAS con Mercado Pago y artículos con GEMAS -->
+    <!-- PANTALLA FAMOCOINS: se compra la moneda del juego con Mercado Pago -->
+    <div id="coins-screen" class="screen" style="display: none;">
+        <h1 id="coins-title">FAMOCOINS</h1>
+        <p class="shop-sub" id="coins-sub">Compra FamoCoins con Mercado Pago (tarjeta, Nequi, PSE...).</p>
+        <div class="gem-packs" id="gem-packs"></div>
+        <p id="coins-msg" style="font-size: 14px; color: #ffcc00; height: 36px; margin-top: 8px; text-align: center;"></p>
+        <div class="lobby-menu">
+            <button id="coins-back-btn" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
+        </div>
+    </div>
+
+    <!-- TIENDA PREMIUM: skins y avatares, compra con FamoCoins -->
     <div id="premium-screen" class="screen" style="display: none;">
         <h1 data-i18n="shopTitle">TIENDA</h1>
         <p class="shop-sub" id="shop-sub">Cargando tienda…</p>
-        <div class="gem-packs" id="gem-packs"></div>
+        <div class="shop-tabs">
+            <button id="shop-tab-skins" class="shop-tab active" onclick="setShopTab('skins')"><span data-i18n="shopTabSkins">SKINS</span></button>
+            <button id="shop-tab-avatars" class="shop-tab" onclick="setShopTab('avatars')"><span data-i18n="shopTabAvatars">AVATARES</span></button>
+        </div>
+        <div class="shop-sub" id="shop-balance-line"></div>
         <div class="shop-grid" id="shop-grid"></div>
         <p id="shop-msg" style="font-size: 14px; color: #ffcc00; height: 36px; margin-top: 8px; text-align: center;"></p>
         <div class="lobby-menu">
@@ -2378,11 +2440,15 @@ loginSection: "— INICIAR SESIÓN —",
                 luckySoon: "PRÓXIMAMENTE",
                 errAlreadyOpen: "Esta cuenta ya está abierta en otra página. Ciérrala allí para poder entrar aquí.",
                 gemName: "GEMAS",
-                shopGemsTitle: "TUS GEMAS",
-                buyGemsBtn: "COMPRAR GEMAS",
+                shopGemsTitle: "TU SALDO DE FAMOCOINS",
+                buyGemsBtn: "COMPRAR FAMOCOINS",
                 packBuy: "COMPRAR",
-                shopNeedGems: "Te faltan GEMAS para este artículo. Compra un paquete arriba.",
+                shopNeedGems: "Te faltan FamoCoins para este artículo. Toca el botón FamoCoins de la sala para comprar.",
                 shopBoughtOk: "¡Artículo comprado con GEMAS! Ya está en tu inventario.",
+                shopTabSkins: "SKINS",
+                shopTabAvatars: "AVATARES",
+                avatarLocked: "Este avatar se compra en la TIENDA con FamoCoins.",
+                needMoreCoins: "Te faltan FamoCoins",
                 mailBtn: "CORREO",
                 mailTitle: "CORREO",
                 mailEmpty: "Buzón vacío: aún no tienes mensajes.",
@@ -2606,11 +2672,15 @@ loginSection: "— SIGN IN —",
                 luckySoon: "COMING SOON",
                 errAlreadyOpen: "This account is already open in another page. Close it there to log in here.",
                 gemName: "GEMS",
-                shopGemsTitle: "YOUR GEMS",
-                buyGemsBtn: "BUY GEMS",
+                shopGemsTitle: "YOUR FAMOCOINS BALANCE",
+                buyGemsBtn: "BUY FAMOCOINS",
                 packBuy: "BUY",
-                shopNeedGems: "You need more GEMS for this item. Buy a pack above.",
+                shopNeedGems: "You need more FamoCoins for this item. Tap the FamoCoins button in the lobby to buy.",
                 shopBoughtOk: "Item purchased with GEMS! It's in your inventory now.",
+                shopTabSkins: "SKINS",
+                shopTabAvatars: "AVATARS",
+                avatarLocked: "This avatar can be bought in the SHOP with FamoCoins.",
+                needMoreCoins: "Need FamoCoins",
                 mailBtn: "MAIL",
                 mailTitle: "MAIL",
                 mailEmpty: "Inbox empty: you have no messages yet.",
@@ -2834,11 +2904,15 @@ loginSection: "— 登录 —",
                 luckySoon: "即将推出",
                 errAlreadyOpen: "⚠️ 此账户已在另一个页面打开。请先在那里关闭，再在此处登录。",
                 gemName: "宝石",
-                shopGemsTitle: "你的宝石",
-                buyGemsBtn: "购买宝石",
+                shopGemsTitle: "你的 FamoCoins 余额",
+                buyGemsBtn: "购买 FamoCoins",
                 packBuy: "购买",
-                shopNeedGems: "宝石不足，请先在上方购买宝石包。",
+                shopNeedGems: "FamoCoins 不足，请在房间点击 FamoCoins 按钮购买。",
                 shopBoughtOk: "已用宝石购买！物品已放入你的仓库。",
+                shopTabSkins: "服装",
+                shopTabAvatars: "头像",
+                avatarLocked: "此头像可在商店中用 FamoCoins 购买。",
+                needMoreCoins: "FamoCoins 不足",
                 mailBtn: "邮件",
                 mailTitle: "邮件",
                 mailEmpty: "收件箱为空：暂无消息。",
@@ -3062,11 +3136,15 @@ loginSection: "— ENTRAR —",
                 luckySoon: "EM BREVE",
                 errAlreadyOpen: "⚠️ Esta conta já está aberta em outra página. Feche-a lá para entrar aqui.",
                 gemName: "GEMAS",
-                shopGemsTitle: "SUAS GEMAS",
-                buyGemsBtn: "COMPRAR GEMAS",
+                shopGemsTitle: "SEU SALDO DE FAMOCOINS",
+                buyGemsBtn: "COMPRAR FAMOCOINS",
                 packBuy: "COMPRAR",
-                shopNeedGems: "Faltam GEMAS para este item. Compre um pacote acima.",
+                shopNeedGems: "Faltam FamoCoins para este item. Toque no botão FamoCoins na sala para comprar.",
                 shopBoughtOk: "Item comprado com GEMAS! Já está no seu inventário.",
+                shopTabSkins: "SKINS",
+                shopTabAvatars: "AVATARES",
+                avatarLocked: "Este avatar pode ser comprado na LOJA com FamoCoins.",
+                needMoreCoins: "Faltam FamoCoins",
                 mailBtn: "CORREIO",
                 mailTitle: "CORREIO",
                 mailEmpty: "Caixa vazia: você ainda não tem mensagens.",
@@ -3440,6 +3518,14 @@ skinsTitleHeader: "PERSONALIZAR",
         const gemPill = document.getElementById('gem-pill');
         const gemGlyph = document.getElementById('gem-glyph');
         const lobbyGemsEl = document.getElementById('lobby-gems');
+        const coinsScreen = document.getElementById('coins-screen');
+        const coinsTitle = document.getElementById('coins-title');
+        const coinsMsg = document.getElementById('coins-msg');
+        const coinsBackBtn = document.getElementById('coins-back-btn');
+        const shopTabSkins = document.getElementById('shop-tab-skins');
+        const shopTabAvatars = document.getElementById('shop-tab-avatars');
+        const shopBalanceLine = document.getElementById('shop-balance-line');
+        let shopTab = 'skins';
         const ranksScreen = document.getElementById('ranks-screen');
         const rankingScreen = document.getElementById('ranking-screen');
         const statsScreen = document.getElementById('stats-screen');
@@ -3909,6 +3995,7 @@ skinsTitleHeader: "PERSONALIZAR",
             updateLobbyUI();
             applyGemConfig();
             updateGemUI();
+            refreshGemCfg();
             socket.emit('player-join', { name: profile.name, color: profile.color, skin: profile.skin || '' });
             socket.emit('get-mails'); // badge del buzón al entrar
             loginScreen.style.display = 'none';
@@ -4810,7 +4897,15 @@ skinsTitleHeader: "PERSONALIZAR",
 
         // ---- AVATARES DE PERFIL (solo visual, sin efectos en partida) ----
         const avatarOptions = ['👤','🦸','🥷','🧙','👮','🧑‍🚒','🐲','🦅','🐺','🦖','🦁','🐯','🤖','👽','💀','🎃'];
-        function buildAvatarGrid() {
+        async function buildAvatarGrid() {
+            // Los avatares premium llegaron del catálogo de la TIENDA.
+            if (!shopCatalog.length) {
+                try {
+                    const cfg = await fetch('/config').then(r => r.json());
+                    shopCatalog = (cfg.shop && cfg.shop.items) || [];
+                } catch (e) { }
+            }
+            const premiumAvatars = shopCatalog.filter(it => it.type === 'avatar');
             avatarGrid.innerHTML = '';
             avatarOptions.forEach(emoji => {
                 let div = document.createElement('div');
@@ -4820,6 +4915,24 @@ skinsTitleHeader: "PERSONALIZAR",
                 div.addEventListener('click', () => selectAvatar(emoji, div));
                 avatarGrid.appendChild(div);
             });
+            premiumAvatars.forEach(it => {
+                const owned = (profile.owns || []).includes(it.id);
+                let div = document.createElement('div');
+                div.className = 'avatar-option' + (owned ? ' premium-bought' : ' locked');
+                div.dataset.emoji = it.emoji;
+                div.dataset.itemId = it.id;
+                div.textContent = it.emoji;
+                if (owned) {
+                    div.addEventListener('click', () => selectAvatar(it.emoji, div));
+                } else {
+                    div.addEventListener('click', () => {
+                        avatarLockMsg.innerText = shopDict('avatarLocked');
+                    });
+                }
+                avatarGrid.appendChild(div);
+            });
+            updateAvatarSelectionUI();
+            avatarLockMsg.innerText = "";
         }
 
         function updateAvatarSelectionUI() {
@@ -4884,8 +4997,32 @@ skinsTitleHeader: "PERSONALIZAR",
             lobbyScreen.style.display = 'flex';
         });
 
-        // Botón de GEMAS de la sala: muestra tu saldo y al hacer clic abre la TIENDA.
-        gemPill.addEventListener('click', () => toShopBtn.click());
+        // ---- FAMOCOINS: donde se compra la moneda del juego (6 paquetes) ----
+        async function openCoinsScreen() {
+            if (!shopPackages.length) await loadShopCatalog();
+            if (coinsTitle) coinsTitle.textContent = gemCfg.name || 'FAMOCOINS';
+            coinsMsg.innerText = "";
+            renderGemPacks();
+            updateGemUI();
+            lobbyScreen.style.display = 'none';
+            premiumScreen.style.display = 'none';
+            coinsScreen.style.display = 'flex';
+        }
+        coinsBackBtn.addEventListener('click', () => {
+            coinsScreen.style.display = 'none';
+            lobbyScreen.style.display = 'flex';
+        });
+
+        // Botón de FamoCoins de la sala: abre la pantalla de compra de moneda.
+        gemPill.addEventListener('click', () => openCoinsScreen());
+
+        // ---- Pestañas de la TIENDA: SKINS / AVATARES ----
+        function setShopTab(tab) {
+            shopTab = tab;
+            shopTabSkins.classList.toggle('active', tab === 'skins');
+            shopTabAvatars.classList.toggle('active', tab === 'avatars');
+            buildShopGrid();
+        }
 
         // ---- LUCKY ROYALE (modo especial, en desarrollo) ----
         toLuckyBtn.addEventListener('click', () => {
@@ -4902,7 +5039,11 @@ skinsTitleHeader: "PERSONALIZAR",
             skin_fuego: { name: 'Skin Fuego Dorado', emoji: '🔥' },
             skin_elite: { name: 'Skin Comandante Élite', emoji: '🛡️' },
             skin_fantasma: { name: 'Skin Fantasma LATAM', emoji: '👻' },
-            banner_royal: { name: 'Banner Bandera Real', emoji: '🏴' }
+            banner_royal: { name: 'Banner Bandera Real', emoji: '🏴' },
+            avatar_king: { name: 'Avatar Rey', emoji: '👑' },
+            avatar_genie: { name: 'Avatar Genio', emoji: '🧞' },
+            avatar_guard: { name: 'Avatar Guardia Real', emoji: '💂' },
+            avatar_scorp: { name: 'Avatar Escorpión', emoji: '🦂' }
         };
         let lastMails = [];
         function updateMailBadge() {
@@ -5028,6 +5169,19 @@ skinsTitleHeader: "PERSONALIZAR",
             if (gemPill) gemPill.style.display = profile.name ? 'inline-flex' : 'none';
             const shopGemsVal = document.getElementById('shop-gems-val');
             if (shopGemsVal) shopGemsVal.innerText = String(profile.gems || 0);
+            if (shopBalanceLine) shopBalanceLine.innerText = '';
+            if (shopBalanceLine && gemCfg.name) {
+                shopBalanceLine.innerHTML = shopDict('shopGemsTitle') + ': <b style="color:#00e5ff;">' + String(profile.gems || 0) + '</b> ' + gemIconHtml(16);
+            }
+        }
+        // Carga la info de la moneda (nombre + imagen) apenas entras al lobby.
+        async function refreshGemCfg() {
+            try {
+                const cfg = await fetch('/config').then(r => r.json());
+                if (cfg.shop && cfg.shop.currency) gemCfg = cfg.shop.currency;
+                applyGemConfig();
+                updateGemUI();
+            } catch (e) { }
         }
         async function loadShopCatalog() {
             try {
@@ -5040,10 +5194,10 @@ skinsTitleHeader: "PERSONALIZAR",
                 applyGemConfig();
                 updateGemUI();
                 shopSub.innerText = shopProvider === 'mp'
-                    ? "Compra GEMAS con Mercado Pago (tarjeta, Nequi, PSE...). Con tus GEMAS desbloqueas las skins y el banner."
+                    ? "Skins, banner y avatares se desbloquean con tus FamoCoins. ¿Sin saldo? Toca el botón FamoCoins de la sala para comprar."
                     : (shopEnabled
-                        ? "Compra GEMAS con tu tarjeta (Stripe). Con tus GEMAS desbloqueas las skins y el banner."
-                        : "Los pagos aún no están activados: pronto podrás comprar GEMAS y artículos exclusivos.");
+                        ? "Skins, banner y avatares se desbloquean con tus FamoCoins."
+                        : "Los pagos aún no están activados: pronto podrás comprar FamoCoins y artículos exclusivos.");
                 renderGemPacks();
                 buildShopGrid();
             } catch (e) { shopSub.innerText = "No se pudo cargar la tienda."; }
@@ -5074,20 +5228,20 @@ skinsTitleHeader: "PERSONALIZAR",
             gemPacks.appendChild(row);
         }
         async function buyPack(packId) {
-            shopMsg.innerText = "...";
-            if (!profile.name) { shopMsg.innerText = "Conecta tu cuenta para comprar (iniciaste sesión como invitado sin conectar)."; return; }
+            coinsMsg.innerText = "...";
+            if (!profile.name) { coinsMsg.innerText = "Conecta tu cuenta para comprar (iniciaste sesión como invitado sin conectar)."; return; }
             try {
-                if (shopProvider !== 'mp') { shopMsg.innerText = "Los pagos con Mercado Pago aún no están activados."; return; }
+                if (shopProvider !== 'mp') { coinsMsg.innerText = "Los pagos con Mercado Pago aún no están activados."; return; }
                 const r = await fetch('/api/mp-checkout', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name: profile.name, packId })
                 }).then(r => r.json());
                 if (r.ok && r.url) { window.location.href = r.url; return; }
-                shopMsg.innerText = r.error === 'not-found'
+                coinsMsg.innerText = r.error === 'not-found'
                     ? "Conecta tu cuenta para comprar (iniciaste sesión como invitado sin conectar)."
                     : (r.error === 'mp-disabled' ? "Los pagos aún no están activados (falta la llave de Mercado Pago en el servidor)." : "No se pudo iniciar el pago. Intenta de nuevo.");
-            } catch (e) { shopMsg.innerText = "Error de conexión. Intenta de nuevo."; }
+            } catch (e) { coinsMsg.innerText = "Error de conexión. Intenta de nuevo."; }
         }
         // Comprar un artículo gastando GEMAS de tu cuenta (lo verifica el servidor).
         async function buyWithGems(itemId) {
@@ -5113,6 +5267,10 @@ skinsTitleHeader: "PERSONALIZAR",
                 shopMsg.innerText = r.error === 'need-gems'
                     ? shopDict('shopNeedGems')
                     : (r.error === 'already-owned' ? "Ya tienes este artículo." : "No se pudo completar la compra. Intenta de nuevo.");
+                // Sin saldo: lo dirigimos a la pantalla de FAMOCOINS para comprar moneda.
+                if (r.error === 'need-gems') {
+                    setTimeout(() => { openCoinsScreen(); }, 1100);
+                }
             } catch (e) { shopMsg.innerText = "Error de conexión. Intenta de nuevo."; }
         }
         function shopDict(key) {
@@ -5126,7 +5284,8 @@ skinsTitleHeader: "PERSONALIZAR",
         }
         function buildShopGrid() {
             shopGrid.innerHTML = '';
-            shopCatalog.forEach(item => {
+            const visible = shopCatalog.filter(it => shopTab === 'avatars' ? it.type === 'avatar' : (it.type === 'skin' || it.type === 'banner'));
+            visible.forEach(item => {
                 const owned = (profile.owns || []).includes(item.id);
                 const enough = (profile.gems || 0) >= item.gems;
                 const div = document.createElement('div');
@@ -5136,6 +5295,8 @@ skinsTitleHeader: "PERSONALIZAR",
                     previewHtml = '<canvas class="shop-skin-pv ff-skin-preview" data-skin="' + item.id + '" width="184" height="184"></canvas>';
                 } else if (item.type === 'banner') {
                     previewHtml = '<div class="shop-banner-pv"><div class="shop-banner-pv-avatar premium-frame">' + item.emoji + '</div></div>';
+                } else if (item.type === 'avatar') {
+                    previewHtml = '<div class="shop-avatar-pv">' + item.emoji + '</div>';
                 }
                 div.innerHTML =
                     previewHtml +
@@ -5144,7 +5305,7 @@ skinsTitleHeader: "PERSONALIZAR",
                     (owned
                         ? '<div class="shop-status owned">✓ ' + shopDict('shopOwned') + '</div>'
                         : (shopEnabled
-                            ? '<button class="btn-main shop-buy" ' + (enough ? '' : 'disabled style="opacity:0.55;cursor:not-allowed;"') + ' onclick="buyWithGems(\'' + item.id + '\')">' + gemPriceLabel(item) + '</button>'
+                            ? '<button class="btn-main shop-buy" onclick="buyWithGems(\'' + item.id + '\')">' + gemPriceLabel(item) + (enough ? '' : ' · <span style="opacity:0.8;">' + shopDict('needMoreCoins') + '</span>') + '</button>'
                             : '<div class="shop-status soon">' + shopDict('shopSoon') + '</div>'));
                 shopGrid.appendChild(div);
             });

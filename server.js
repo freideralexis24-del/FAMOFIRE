@@ -291,31 +291,38 @@ const RESET_SECRET = process.env.RESET_SECRET || 'famofire-local-reset-secret';
 const RESET_TTL_MIN = Math.max(1, parseInt(process.env.RESET_TTL_MINUTES || '30', 10) || 30); // minutos de validez del enlace
 const APP_BASE_URL = (process.env.APP_URL || (process.env.RENDER_EXTERNAL_URL ? 'https://' + process.env.RENDER_EXTERNAL_URL : 'http://localhost:3000')).replace(/\/+$/, '');
 
-// ---- Moneda del juego: GEMAS (estilo diamantes de Free Fire) ----
-// El jugador compra GEMAS con dinero real (Mercado Pago) y con ellas compra
+// ---- Moneda del juego: FAMOCOINS (estilo diamantes de Free Fire) ----
+// El jugador compra FamoCoins con dinero real (Mercado Pago) y con ellas compra
 // los artículos de la tienda. También es la moneda que usará LUCKY ROYALE.
-const GEM_NAME = 'GEMAS';
-const GEM_EMOJI = '💎';
+const GEM_NAME = 'FamoCoins';
+const GEM_EMOJI = '🪙';
 // Imagen de la moneda: busca cualquier nombre para que no dependa de uno exacto.
 function gemImgUrl() {
   const dir = path.join(__dirname, 'public', 'img');
-  for (const f of ['moneda.png', 'gema.png', 'gemas.png', 'coin.png', 'diamante.png']) {
+  for (const f of ['coin.png', 'moneda.png', 'gema.png', 'gemas.png', 'diamante.png']) {
     if (fs.existsSync(path.join(dir, f))) return '/img/' + f;
   }
   return '';
 }
-// Paquetes de gemas que se compran con Mercado Pago (COP). Ajusta precios aquí.
+// Paquetes de FamoCoins que se compran con Mercado Pago (COP). Ajusta precios aquí.
 const GEM_PACKAGES = {
-  pack_60:  { name: 'Paquete Soldado',     gems: 60,  priceCOP: 3000 },
-  pack_200: { name: 'Paquete Comandante',  gems: 200, priceCOP: 9000 },
-  pack_520: { name: 'Paquete Leyenda',     gems: 520, priceCOP: 21000 }
+  pack_40:   { name: 'Iniciado',   gems: 40,   priceCOP: 2000 },
+  pack_110:  { name: 'Soldado',    gems: 110,  priceCOP: 5000 },
+  pack_250:  { name: 'Comandante', gems: 250,  priceCOP: 10000 },
+  pack_600:  { name: 'Élite',      gems: 600,  priceCOP: 22000 },
+  pack_1300: { name: 'Leyenda',    gems: 1300, priceCOP: 45000 },
+  pack_3000: { name: 'Supremo',    gems: 3000, priceCOP: 95000 }
 };
-// ---- Tienda premium: artículos que se compran con GEMAS ----
+// ---- Tienda premium: artículos que se compran con FamoCoins ----
 const PREMIUM_ITEMS = {
   skin_fuego:    { type: 'skin',   name: 'Skin Fuego Dorado',      emoji: '🔥', color: '#ffcc00', gems: 110, desc: 'Uniforme dorado de batalla' },
   skin_elite:    { type: 'skin',   name: 'Skin Comandante Élite',  emoji: '🛡️', color: '#8a2be2', gems: 110, desc: 'Uniforme violeta de mando' },
   skin_fantasma: { type: 'skin',   name: 'Skin Fantasma LATAM',    emoji: '👻', color: '#19ffc8', gems: 110, desc: 'Uniforme esmeralda camuflado' },
-  banner_royal:  { type: 'banner', name: 'Banner Bandera Real',    emoji: '🏴', gems: 180, desc: 'Marco dorado en tu perfil' }
+  banner_royal:  { type: 'banner', name: 'Banner Bandera Real',    emoji: '🏴', gems: 180, desc: 'Marco dorado en tu perfil' },
+  avatar_king:   { type: 'avatar', name: 'Avatar Rey',             emoji: '👑', gems: 80,  desc: 'Corona dorada del rey' },
+  avatar_genie:  { type: 'avatar', name: 'Avatar Genio',           emoji: '🧞', gems: 80,  desc: 'Genio que concede deseos' },
+  avatar_guard:  { type: 'avatar', name: 'Avatar Guardia Real',    emoji: '💂', gems: 80,  desc: 'Guardia de honor del comando' },
+  avatar_scorp:  { type: 'avatar', name: 'Avatar Escorpión',       emoji: '🦂', gems: 80,  desc: 'Picadura letal del desierto' }
 };
 // Cuentas viejas no tienen gemas: se normalizan al cargar y antes de responder.
 function normalizeAcc(acc) {
