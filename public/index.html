@@ -2121,7 +2121,7 @@ loginSection: "— INICIAR SESIÓN —",
                 linkInUse: "Ese Google ya está vinculado a otra cuenta.",
                 resetSentMsg: "✓ Enlace enviado. Revisa el correo de tu Google vinculado (incluye spam).",
                 resetFailMsg: "No se pudo enviar el correo (revisa la configuración del servidor).",
-                resetNoResponse: "El servidor se está despertando (plan free: puede tardar más de un minuto). Si no te llega el correo en 2 minutos, vuelve a intentarlo.",
+                resetNoResponse: "El servidor se está despertando (plan free: puede tardar más de un minuto). Se reintentará automáticamente: no cierres la pestaña.",
                 resetNoTarget: "Tu cuenta no tiene un correo vinculado. Entra con Google en Configuración → Cuenta y Seguridad y vincúla, y luego podrás recuperarla por correo.",                resetLocalMsg: "Correo no configurado (modo local).",
                 resetMismatch: "✗ Las contraseñas no coinciden.",
                 resetDone: "✓ Contraseña actualizada. Ahora también puedes entrar con Google.",
@@ -2315,7 +2315,7 @@ loginSection: "— SIGN IN —",
                 linkInUse: "That Google account is already linked to another account.",
                 resetSentMsg: "✓ Link sent. Check your linked Google email (spam folder too).",
                 resetFailMsg: "Could not send the email (check the server settings).",
-                resetNoResponse: "The server is waking up (free plan: it can take over a minute). If you do not get the email within 2 minutes, try again.",
+                resetNoResponse: "The server is waking up (free plan: it can take over a minute). It will retry automatically: do not close this tab.",
                 resetNoTarget: "Your account has no linked email. Sign in with Google in Settings → Account and Security to link one, then you can recover it by email.",                resetLocalMsg: "Email not configured (local mode).",
                 resetMismatch: "✗ Passwords do not match.",
                 resetDone: "✓ Password updated. You can also log in with Google now.",
@@ -2509,7 +2509,7 @@ loginSection: "— 登录 —",
                 linkInUse: "该谷歌账号已绑定其他账户。",
                 resetSentMsg: "✓ 链接已发送，请检查绑定的谷歌邮箱（含垃圾箱）。",
                 resetFailMsg: "无法发送邮件（请检查服务器设置）。",
-                resetNoResponse: "服务器正在唤醒（免费套餐可能需要一分多钟）。如果两分钟内未收到邮件，请重试。",
+                resetNoResponse: "服务器正在唤醒（免费套餐可能需要一分多钟）。将自动重试：请勿关闭此标签页。",
                 resetNoTarget: "您的账户未绑定邮箱。请在设置 → 账户与安全中通过谷歌登录绑定，之后即可通过邮箱找回。",                resetLocalMsg: "未配置邮箱（本地模式）。",
                 resetMismatch: "✗ 两次密码不一致。",
                 resetDone: "✓ 密码已更新，现在也可以用谷歌登录。",
@@ -2703,7 +2703,7 @@ loginSection: "— ENTRAR —",
                 linkInUse: "Esse Google já está vinculado a outra conta.",
                 resetSentMsg: "✓ Link enviado. Verifique seu e-mail do Google vinculado (inclua spam).",
                 resetFailMsg: "Não foi possível enviar o e-mail (verifique as configurações do servidor).",
-                resetNoResponse: "O servidor está acordando (o plano gratuito pode demorar mais de um minuto). Se o e-mail não chegar em 2 minutos, tente novamente.",
+                resetNoResponse: "O servidor está acordando (o plano gratuito pode demorar mais de um minuto). Será reintentado automaticamente: não feche esta aba.",
                 resetNoTarget: "Sua conta não tem e-mail vinculado. Entre com o Google em Configurações → Conta e Segurança para vincular e então poderá recuperá-la por e-mail.",                resetLocalMsg: "E-mail não configurado (modo local).",
                 resetMismatch: "✗ As senhas não coincidem.",
                 resetDone: "✓ Senha atualizada. Agora você também pode entrar com o Google.",
@@ -3971,16 +3971,32 @@ skinsTitleHeader: "PERSONALIZAR",
             const name = forgotNameInput.value.trim();
             if (!name) { forgotMsg.innerText = dict.errFillFields; return; }
             forgotMsg.innerText = "...";
+            requestResetWithRetry(name, 1);
+        });
+        // Reintentos automáticos: Render free duerme con la inactividad y suele
+        // tardar ~50s en despertar; si el primer envío no responde, se reenvía
+        // solo cada 30s (hasta 5 veces) para que el correo salga sin que el
+        // jugador tenga que pulsar nada más.
+        function requestResetWithRetry(name, attempt) {
             socket.emit('request-password-reset', { name });
-            // Si el servidor no responde en 90 s avisamos (Render free duerme
-            // con la inactividad y puede tardar más de 50 s en despertar).
             if (forgotTimeout) clearTimeout(forgotTimeout);
             forgotTimeout = setTimeout(() => {
+                if (forgotRetrying) return;
                 const d2 = i18n[profile.language] || i18n["ESPAÑOL"];
-                forgotMsg.innerText = d2.resetNoResponse;
-            }, 90000);
-        });
+                if (attempt < 5) {
+                    forgotRetrying = true;
+                    forgotMsg.innerText = d2.resetNoResponse + ' — Reintentando (' + attempt + '/5)…';
+                    setTimeout(() => {
+                        forgotRetrying = false;
+                        requestResetWithRetry(name, attempt + 1);
+                    }, 5000);
+                } else {
+                    forgotMsg.innerText = d2.resetNoResponse;
+                }
+            }, 30000);
+        }
         let forgotTimeout = null;
+        let forgotRetrying = false;
 
         socket.on('password-reset-requested', (res) => {
             if (forgotTimeout) { clearTimeout(forgotTimeout); forgotTimeout = null; }
