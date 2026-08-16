@@ -95,6 +95,18 @@
             margin-top: 15px;
         }
 
+        /* REGRESAR de TIENDA y CONFIGURACIÓN: fijo arriba a la izquierda,
+           y se queda pegado en su sitio aunque hagas scroll en la pantalla. */
+        .screen-back-btn {
+            position: sticky;
+            top: 12px;
+            left: 12px;
+            align-self: flex-start;
+            z-index: 30;
+            margin-top: 12px !important;
+            box-shadow: 4px 4px 0px #000;
+        }
+
         #gear-btn {
             position: absolute;
             top: 20px;
@@ -559,10 +571,11 @@
             width: 100%;
         }
 
-        /* Botón lateral de LUCKY ROYALE: centro-izquierda de la sala de comando */
+        /* Botón lateral de LUCKY ROYALE: pegado al borde izquierdo de la
+           sala de comando (con un pequeño margen para que no toque el borde) */
         .lucky-btn {
             position: absolute;
-            left: 5%;
+            left: 1.5%;
             top: 50%;
             transform: translateY(-50%);
             width: 190px;
@@ -591,6 +604,18 @@
         #lobby-actions #gear-btn {
             position: static;
         }
+        /* LOGO de FamoCoins sobre el título de la sala (imagen real de la moneda) */
+        #lobby-coin-logo {
+            margin-top: 12px;
+            filter: drop-shadow(0 0 14px rgba(255, 204, 0, 0.5));
+        }
+        #lobby-coin-logo img.gem-icon {
+            width: 54px;
+            height: 54px;
+            object-fit: contain;
+            display: block;
+        }
+
         /* Botón que muestra cuántas GEMAS tienes (clic: abre la tienda) */
         .gem-pill {
             display: inline-flex;
@@ -618,10 +643,42 @@
             height: 22px;
             object-fit: contain;
         }
+        /* Botón de CORREO: icono del sobre, con el MISMO radio y tamaño que el de configuración */
         #lobby-actions #to-mail-btn {
-            font-size: 14px;
-            padding: 8px 12px;
+            position: relative;
+            width: 50px;
+            height: 50px;
             margin: 0;
+            padding: 0;
+            background-color: #ff8c00;
+            color: #000;
+            border: 4px solid #000;
+            border-radius: 12px;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 4px 4px 0px #000;
+            transition: 0.1s;
+        }
+        #lobby-actions #to-mail-btn:hover {
+            background-color: #ffb347;
+            transform: scale(1.1);
+        }
+        #lobby-actions #to-mail-btn:active {
+            transform: scale(1);
+            box-shadow: 0px 0px 0px #000;
+        }
+        #lobby-actions #to-mail-btn .mail-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            margin-left: 0;
+            min-width: 20px;
+            height: 20px;
+            line-height: 20px;
+            border: 2px solid #000;
         }
 
         .exp-container {
@@ -801,16 +858,22 @@
             margin-top: 4px;
         }
         .mail-send-box select,
-        .mail-send-box input[type="text"] {
+        .mail-send-box input[type="text"],
+        .mail-send-box textarea {
             width: 100%; box-sizing: border-box;
             background: rgba(255, 255, 255, 0.07);
             border: 1px solid rgba(255, 255, 255, 0.16);
             border-radius: 9px; color: #fff;
             padding: 9px 11px; font-size: 13px; outline: none;
             transition: border-color 0.15s ease;
+            font-family: 'Impact', sans-serif;
+            text-align: left;
+            resize: vertical;
         }
+        .mail-send-box textarea { min-height: 62px; }
         .mail-send-box select:focus,
-        .mail-send-box input[type="text"]:focus { border-color: #ffcc00; }
+        .mail-send-box input[type="text"]:focus,
+        .mail-send-box textarea:focus { border-color: #ffcc00; }
         .mail-send-box select option { background: #161a26; color: #fff; }
         .mail-send-go {
             width: 100%; margin-top: 8px;
@@ -869,7 +932,7 @@
             border-radius: 12px;
             padding: 10px 12px;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 12px;
         }
         .mail-card.unclaimed {
@@ -877,22 +940,33 @@
             box-shadow: 0 0 12px rgba(255, 204, 0, 0.22);
         }
         .mail-card-icon {
-            width: 46px; height: 46px; flex: 0 0 46px;
-            border-radius: 12px;
+            width: 60px; height: 60px; flex: 0 0 60px;
+            border-radius: 14px;
             background: linear-gradient(160deg, rgba(255, 204, 0, 0.22), rgba(255, 204, 0, 0.05));
             border: 1px solid rgba(255, 204, 0, 0.35);
             display: flex; align-items: center; justify-content: center;
-            font-size: 24px;
+            font-size: 32px;
         }
         .mail-card-info { flex: 1; min-width: 0; text-align: left; }
-        .mail-card-title { font-weight: bold; color: #fff; font-size: 14px; line-height: 1.25; }
+        .mail-card-title { font-weight: bold; color: #fff; font-size: 15px; line-height: 1.3; }
         .mail-card-title .mail-new-pill {
             display: inline-block; margin-left: 6px; vertical-align: 2px;
             background: #ffcc00; color: #1a1a1a; border-radius: 8px;
             font-size: 9px; font-weight: 800; letter-spacing: 1px; padding: 2px 6px;
         }
         .mail-card-meta { color: #9aa; font-size: 11px; margin-top: 3px; }
-        .mail-card-msg { color: #cbcbd8; font-size: 12px; margin-top: 2px; font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        /* El mensaje del regalo puede ser LARGO: se muestra completo, envuelto y
+           en su propia línea, nunca cortado con puntos suspensivos. */
+        .mail-card-msg {
+            color: #cbcbd8; font-size: 13px; margin-top: 6px; font-style: italic;
+            line-height: 1.45;
+            overflow: visible;
+            text-overflow: clip;
+            white-space: normal;
+            word-break: break-word;
+            padding-top: 6px;
+            border-top: 1px dashed rgba(255, 204, 0, 0.25);
+        }
         .mail-card-btn {
             background: linear-gradient(180deg, #ffb300, #ff8c00); color: #1a1a1a;
             border: none; border-radius: 18px; font-weight: 800; font-size: 12px;
@@ -1689,14 +1763,22 @@
     </div>
 
     <div id="lobby-screen" class="screen" style="display: none;">
-        <!-- Grupo superior derecho: GEMAS · CORREO · CONFIGURACIÓN (cada uno abre su propia interfaz) -->
+        <!-- Grupo superior derecho: FAMOCOINS · CORREO · CONFIGURACIÓN (cada uno abre su propia interfaz) -->
         <div id="lobby-actions">
             <button id="gem-pill" class="gem-pill" style="display: none;" title="Tus FamoCoins (clic: abrir tienda)">
                 <span id="gem-glyph">💎</span>
                 <span id="lobby-gems">0</span>
             </button>
-            <button id="to-mail-btn" class="btn-main" style="background-color: #ff8c00; font-size: 14px; padding: 8px 12px; margin: 0;"><span data-i18n="mailBtn">CORREO</span> <span id="mail-badge" class="mail-badge" style="display: none;">0</span></button>
+            <button id="to-mail-btn" class="btn-main" title="Correo: regalos y premios">
+                <span id="mail-icon">📨</span>
+                <span id="mail-badge" class="mail-badge" style="display: none;">0</span>
+            </button>
             <div id="gear-btn" onclick="openConfigMenu()">⚙️</div>
+        </div>
+
+        <!-- LOGO de FamoCoins sobre el título de la sala de comando -->
+        <div id="lobby-coin-logo" style="display: none;">
+            <img class="gem-icon" alt="FamoCoins" title="FamoCoins">
         </div>
 
         <!-- PERFIL COMPACTO (arriba a la izquierda): nombre y rango arriba, clic para ver el perfil completo -->
@@ -1748,7 +1830,7 @@
             <label class="mail-field-label" data-i18n="mailLblTo">PARA (NOMBRE O ID)</label>
             <input type="text" id="mail-dest-input" placeholder="Nombre o ID del soldado" maxlength="40" autocomplete="off">
             <label class="mail-field-label" data-i18n="mailLblMsg">MENSAJE (OPCIONAL)</label>
-            <input type="text" id="mail-msg-input" placeholder="Mensaje (opcional)" maxlength="60" autocomplete="off">
+            <textarea id="mail-msg-input" placeholder="Mensaje (opcional)" maxlength="500" rows="3" autocomplete="off"></textarea>
             <button id="mail-send-btn" class="btn-main mail-send-go" data-i18n="mailSend">ENVIAR</button>
         </div>
         <p id="mail-msg" style="font-size: 14px; color: #ffcc00; height: 20px; margin-top: 6px; text-align: center;"></p>
@@ -1812,6 +1894,7 @@
     </div>
 
     <div id="config-screen" class="screen" style="display: none;">
+        <button id="back-from-config" class="btn-main btn-back screen-back-btn" data-i18n="backBtn">REGRESAR</button>
         <h1 data-i18n="configTitle">CONFIGURACIÓN</h1>
         <p class="config-subtitle" data-i18n="configSubtitle">Ajustes del sistema</p>
 
@@ -1909,10 +1992,6 @@
                     </div>
                 </div>
             </div>
-        </div>
-
-        <div class="config-footer">
-            <button id="back-from-config" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
         </div>
     </div>
 
@@ -2162,6 +2241,7 @@
 
     <!-- TIENDA PREMIUM: skins y avatares, compra con FamoCoins -->
     <div id="premium-screen" class="screen" style="display: none;">
+        <button id="shop-back-btn" class="btn-main btn-back screen-back-btn" data-i18n="backBtn">REGRESAR</button>
         <h1 data-i18n="shopTitle">TIENDA</h1>
         <p class="shop-sub" id="shop-sub">Cargando tienda…</p>
         <div class="shop-tabs">
@@ -2171,9 +2251,6 @@
         </div>
         <div class="shop-grid" id="shop-grid"></div>
         <p id="shop-msg" style="font-size: 14px; color: #ffcc00; height: 36px; margin-top: 8px; text-align: center;"></p>
-        <div class="lobby-menu">
-            <button id="shop-back-btn" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
-        </div>
     </div>
 
     <div id="ranks-screen" class="screen" style="display: none;">
@@ -2635,6 +2712,7 @@ loginSection: "— INICIAR SESIÓN —",
                 needMoreCoins: "Te faltan FamoCoins",
                 mailBtn: "CORREO",
                 mailTitle: "CORREO",
+                mailBroadcast: "COMUNICADO",
                 mailInbox: "BUZÓN",
                 mailTabAll: "TODO",
                 mailTabPending: "POR RECIBIR",
@@ -2889,6 +2967,7 @@ loginSection: "— SIGN IN —",
                 needMoreCoins: "Need FamoCoins",
                 mailBtn: "MAIL",
                 mailTitle: "MAIL",
+                mailBroadcast: "ANNOUNCEMENT",
                 mailInbox: "INBOX",
                 mailTabAll: "ALL",
                 mailTabPending: "TO CLAIM",
@@ -3143,6 +3222,7 @@ loginSection: "— 登录 —",
                 needMoreCoins: "FamoCoins 不足",
                 mailBtn: "邮件",
                 mailTitle: "邮件",
+                mailBroadcast: "官方公告",
                 mailInbox: "收件箱",
                 mailTabAll: "全部",
                 mailTabPending: "待领取",
@@ -3397,6 +3477,7 @@ loginSection: "— ENTRAR —",
                 needMoreCoins: "Faltam FamoCoins",
                 mailBtn: "CORREIO",
                 mailTitle: "CORREIO",
+                mailBroadcast: "COMUNICADO",
                 mailInbox: "CAIXA",
                 mailTabAll: "TODOS",
                 mailTabPending: "PEGAR",
@@ -5437,16 +5518,22 @@ skinsTitleHeader: "PERSONALIZAR",
                 return;
             }
             filtered.forEach(m => {
-                const it = MAIL_ITEMS[m.itemId] || { name: m.itemId, emoji: '🎁' };
+                // Un correo sin artículo es un COMUNICADO del equipo (solo texto largo)
+                const it = m.itemId
+                    ? (MAIL_ITEMS[m.itemId] || { name: m.itemId, emoji: '🎁' })
+                    : { name: shopDict('mailBroadcast'), emoji: '📢' };
                 const card = document.createElement('div');
                 card.className = 'mail-card' + (m.claimed ? '' : ' unclaimed');
                 const meta = shopDict('mailFrom') + ' ' + m.from + ' · ' + timeAgo(m.sentAt || Date.now(), dict);
+                const msgHtml = m.msg
+                    ? '<div class="mail-card-msg">' + m.msg.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>'
+                    : '';
                 card.innerHTML =
                     '<div class="mail-card-icon">' + it.emoji + '</div>' +
                     '<div class="mail-card-info">' +
                     '<div class="mail-card-title">' + it.name + (m.claimed ? '' : ' <span class="mail-new-pill">' + shopDict('mailNew') + '</span>') + '</div>' +
                     '<div class="mail-card-meta">' + meta + '</div>' +
-                    (m.msg ? '<div class="mail-card-msg">"' + m.msg + '"</div>' : '') +
+                    msgHtml +
                     '</div>' +
                     (m.claimed
                         ? '<div class="mail-card-done">✓ ' + shopDict('mailClaimed') + '</div>'
@@ -5520,6 +5607,10 @@ skinsTitleHeader: "PERSONALIZAR",
             socket.emit('send-mail', { to, itemId, msg });
         });
         socket.on('update-mails', (d) => renderMailList(d && d.mails ? d.mails : []));
+        // LLegó un correo NUEVO (regalo o comunicado): refresca el buzón al instante
+        socket.on('new-mail', () => {
+            if (profile.name) socket.emit('get-mails');
+        });
         socket.on('mail-result', (r) => {
             const dict = i18n[profile.language] || i18n["ESPAÑOL"];
             if (!r) return;
@@ -5564,6 +5655,15 @@ skinsTitleHeader: "PERSONALIZAR",
             if (gemGlyph) {
                 gemGlyph.innerHTML = gemIconHtml(22);
                 if (!gemCfg.img && gemGlyph.textContent === '') gemGlyph.textContent = emoji;
+            }
+            // LOGO de FamoCoins del lobby: usa la imagen recortada de la moneda
+            const coinLogo = document.getElementById('lobby-coin-logo');
+            if (coinLogo) {
+                const logoImg = coinLogo.querySelector('img');
+                if (gemCfg && gemCfg.img && logoImg) {
+                    logoImg.src = gemCfg.img;
+                    coinLogo.style.display = 'block';
+                }
             }
         }
         function updateGemUI() {

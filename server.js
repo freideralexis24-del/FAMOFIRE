@@ -293,6 +293,48 @@ app.post('/api/admin-set', async (req, res) => {
   }
 });
 
+// ADMIN (solo el dueño): regala a un jugador o a TODOS los jugadores un artículo
+// (o un simple comunicado sin artículo) por el BUZÓN, con texto largo. Requiere
+// ADMIN_KEY. Sin "name" va para todas las cuentas del juego.
+app.post('/api/admin-mail', async (req, res) => {
+  try {
+    const ADMIN_KEY = process.env.ADMIN_KEY || '';
+    if (!ADMIN_KEY) return res.status(501).json({ ok: false, error: 'admin-disabled' });
+    const key = String((req.body && req.body.key) || '');
+    if (key !== ADMIN_KEY) return res.status(403).json({ ok: false, error: 'forbidden' });
+    if (!accountsReady) await ensureAccounts();
+    const itemId = String((req.body && req.body.itemId) || '');
+    if (itemId && !PREMIUM_ITEMS[itemId]) return res.status(400).json({ ok: false, error: 'bad-item' });
+    const msg = String((req.body && req.body.msg) || '').slice(0, 1000);
+    if (!itemId && !msg.trim()) return res.status(400).json({ ok: false, error: 'empty-mail' });
+    const byName = String((req.body && req.body.name) || '').trim().toUpperCase().slice(0, 12);
+    let targets = [];
+    if (byName) {
+      if (!accounts[byName]) return res.status(404).json({ ok: false, error: 'not-found', name: byName });
+      targets = [byName];
+    } else {
+      targets = Object.keys(accounts);
+    }
+    const now = Date.now();
+    const hasItem = !!itemId;
+    targets.forEach(t => {
+      const acc = accounts[t];
+      if (!acc) return;
+      acc.mails = acc.mails || [];
+      acc.mails.push({
+        id: genId(), from: 'FAMOFIRE', to: t,
+        itemId: itemId || '', msg,
+        sentAt: now, claimed: !hasItem
+      });
+    });
+    saveAccounts();
+    try { io.emit('new-mail'); } catch (e) { /* sin sockets conectados */ }
+    res.json({ ok: true, sentTo: targets.length, itemId: itemId || null, msgLen: msg.length });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: 'admin-error', msg: String(e.message || e).slice(0, 120) });
+  }
+});
+
 // Webhook de MP: recibe avisos de pago y entrega el artículo aunque el jugador
 // no vuelva al juego (el pago ya fue aprobado en el sitio de MP).
 app.post('/api/mp-webhook', async (req, res) => {
@@ -1318,7 +1360,7 @@ socket.emit('account-result', { ok: true, account: { id: accounts[name].id, name
     toAcc.mails = toAcc.mails || [];
     toAcc.mails.push({
       id: genId(), from: socket.data.account, to: toName, itemId,
-      msg: String(data.msg || '').slice(0, 80),
+      msg: String(data.msg || '').slice(0, 1000),
       sentAt: Date.now(), claimed: false
     });
     saveAccounts();
@@ -1332,6 +1374,8 @@ socket.emit('account-result', { ok: true, account: { id: accounts[name].id, name
     const acc = accounts[socket.data.account];
     const mail = (acc.mails || []).find(m => m.id === String(data.mailId || ''));
     if (!mail || mail.to !== socket.data.account) return socket.emit('mail-result', { ok: false, error: 'bad-mail' });
+    // Un comunicado (sin artículo) ya viene marcado como recibido.
+    if (!mail.itemId) return socket.emit('mail-result', { ok: false, error: 'already' });
     if (mail.claimed) return socket.emit('mail-result', { ok: false, error: 'already' });
     if (!(acc.owns || []).includes(mail.itemId)) {
       acc.owns = acc.owns || [];
