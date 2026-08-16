@@ -591,6 +591,42 @@
             background: linear-gradient(135deg, #ffd94d, #d4a017) !important;
         }
 
+        /* Botón TIENDA: lateral izquierdo, justo ARRIBA del botón de LUCKY ROYALE */
+        .shop-side-btn {
+            position: absolute;
+            left: 1.5%;
+            top: calc(50% - 96px);
+            width: 190px;
+            background: linear-gradient(135deg, #ffcc00, #ff9500) !important;
+            color: #1a1200 !important;
+            font-size: 15px;
+            box-shadow: 0 0 12px rgba(255, 204, 0, 0.55);
+        }
+        .shop-side-btn:hover {
+            background: linear-gradient(135deg, #ffe066, #ffb347) !important;
+            transform: scale(1.05);
+        }
+
+        /* SALA DE COMANDO COMPACTA: todo cabe en la pantalla sin scroll.
+           Se reducen logo, título, botones y separaciones del menú central. */
+        #lobby-screen h1 {
+            font-size: 30px;
+            margin: 4px 0 2px;
+        }
+        #lobby-screen .lobby-menu {
+            gap: 4px;
+            margin-top: 6px;
+        }
+        #lobby-screen .lobby-menu .btn-main {
+            padding: 7px 20px;
+            font-size: 16px;
+        }
+        #lobby-screen #global-online-box {
+            margin: 2px 0 2px;
+            padding: 3px 14px;
+            font-size: 13px;
+        }
+
         /* Grupo superior derecho de la sala: GEMAS · CORREO · CONFIGURACIÓN */
         #lobby-actions {
             position: absolute;
@@ -606,12 +642,12 @@
         }
         /* LOGO de FamoCoins sobre el título de la sala (imagen real de la moneda) */
         #lobby-coin-logo {
-            margin-top: 12px;
+            margin-top: 4px;
             filter: drop-shadow(0 0 14px rgba(255, 204, 0, 0.5));
         }
         #lobby-coin-logo img.gem-icon {
-            width: 54px;
-            height: 54px;
+            width: 38px;
+            height: 38px;
             object-fit: contain;
             display: block;
         }
@@ -978,6 +1014,117 @@
             color: #2ede62; font-weight: 800; font-size: 12px; flex: 0 0 auto; letter-spacing: 1px;
         }
         .mail-card-empty { color: #9aa; font-size: 13px; margin-top: 16px; }
+        /* CORREO en DOS COLUMNAS (estilo Gmail): bandeja de entrada a la
+           izquierda, redacción a la derecha. */
+        #mail-cols {
+            width: 100%;
+            max-width: 1080px;
+            display: flex;
+            gap: 14px;
+            align-items: stretch;
+        }
+        #mail-col-inbox {
+            flex: 1.25;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        #mail-col-send {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .mail-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            max-height: 40vh;
+            overflow-y: auto;
+            padding: 2px 4px;
+        }
+        .mail-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            background: rgba(8, 10, 16, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 4px solid transparent;
+            border-radius: 10px;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: background 0.12s ease;
+        }
+        .mail-row:hover { background: rgba(22, 28, 42, 0.95); }
+        .mail-row.unread { border-left-color: #ffcc00; }
+        .mail-row.selected {
+            background: rgba(30, 34, 22, 0.95);
+            border-left-color: #ffcc00;
+        }
+        .mail-row-icon {
+            width: 40px; height: 40px; flex: 0 0 40px;
+            border-radius: 10px;
+            background: linear-gradient(160deg, rgba(255, 204, 0, 0.25), rgba(255, 204, 0, 0.05));
+            border: 1px solid rgba(255, 204, 0, 0.35);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px;
+        }
+        .mail-row-info { flex: 1; min-width: 0; text-align: left; }
+        .mail-row-top {
+            display: flex; align-items: baseline; gap: 6px;
+        }
+        .mail-row-name { color: #ffcc00; font-weight: 800; font-size: 13px; }
+        .mail-row-time { margin-left: auto; color: #8a8fa3; font-size: 10px; flex: 0 0 auto; }
+        .mail-row-title {
+            color: #cfd2dc; font-weight: 600; font-size: 13px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .mail-row-preview {
+            color: #8a8fa3; font-size: 11px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            margin-top: 2px;
+        }
+        .mail-detail {
+            margin-top: 8px;
+            background: rgba(8, 10, 16, 0.92);
+            border: 1px solid rgba(255, 204, 0, 0.35);
+            border-radius: 14px;
+            padding: 12px 14px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+        .mail-detail-icon {
+            width: 64px; height: 64px; flex: 0 0 64px;
+            border-radius: 14px;
+            background: linear-gradient(160deg, rgba(255, 204, 0, 0.3), rgba(255, 204, 0, 0.06));
+            border: 1px solid rgba(255, 204, 0, 0.4);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 34px;
+        }
+        .mail-detail-body { flex: 1; min-width: 0; text-align: left; }
+        .mail-detail-title { font-weight: 800; color: #fff; font-size: 15px; }
+        .mail-detail-meta { color: #9aa; font-size: 11px; margin: 2px 0 6px; }
+        .mail-detail-msg {
+            color: #d6d9e3; font-size: 13px; line-height: 1.5;
+            word-break: break-word; white-space: normal;
+        }
+        .mail-detail-btn {
+            margin-top: 8px;
+            background: linear-gradient(180deg, #ffb300, #ff8c00); color: #1a1a1a;
+            border: none; border-radius: 18px; font-weight: 800; font-size: 13px;
+            padding: 9px 16px; cursor: pointer; letter-spacing: 1px;
+            box-shadow: 0 2px 8px rgba(255, 140, 0, 0.4);
+        }
+        .mail-detail-btn.claimed {
+            background: rgba(46, 222, 98, 0.15); color: #2ede62;
+            box-shadow: none; cursor: default;
+        }
+        @media (max-width: 700px) {
+            #mail-cols { flex-direction: column; }
+            .mail-list { max-height: 30vh; }
+        }
         .copy-id-btn {
             background: rgba(255, 204, 0, 0.12); color: #ffcc00;
             border: 1px solid rgba(255, 204, 0, 0.5); border-radius: 10px;
@@ -1031,6 +1178,33 @@
             overflow: hidden;
             border-radius: 14px;
         }
+        /* BANNER en el botón de perfil COMPLETO: el marco animado, el brillo y
+           el destello recorren TODO el botón (no solo el avatar). El avatar
+           conserva la medalla dorada fija por dentro. */
+        #profile-panel.premium-frame {
+            animation: pfPanelGlow 2.2s ease-in-out infinite;
+        }
+        #profile-panel.premium-frame::after {
+            border-radius: 12px;
+        }
+        #profile-panel.banner-royal-on {
+            box-shadow: 0 0 16px rgba(255, 204, 0, 0.7), 0 0 34px rgba(255, 140, 0, 0.4), inset 0 0 16px rgba(255, 204, 0, 0.28);
+            border-color: #ffcc00 !important;
+        }
+        #profile-panel.banner-royal-on .profile-avatar {
+            border-color: #ffcc00 !important;
+            box-shadow: inset 0 0 8px rgba(255, 204, 0, 0.7);
+        }
+        @keyframes pfPanelGlow {
+            0%, 100% {
+                border-color: #ffcc00;
+                box-shadow: 0 0 12px rgba(255, 204, 0, 0.6), inset 0 0 12px rgba(255, 204, 0, 0.22);
+            }
+            50% {
+                border-color: #ff4488;
+                box-shadow: 0 0 22px rgba(255, 68, 136, 0.85), 0 0 36px rgba(176, 75, 240, 0.45), inset 0 0 20px rgba(255, 68, 136, 0.35);
+            }
+        }
         .profile-avatar.premium-frame {
             animation: pfBorderGlowMini 2.2s ease-in-out infinite;
         }
@@ -1077,6 +1251,23 @@
             display: flex; align-items: center; justify-content: center;
             border: 3px solid #000; margin: 0 auto 8px auto;
         }
+        /* PESTAÑA FONDO: fondos para la tarjeta de perfil */
+        .fondo-grid {
+            display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 4px;
+        }
+        .fondo-option {
+            background: rgba(0, 0, 0, 0.5); border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px; padding: 10px 12px; text-align: center;
+            min-width: 116px; cursor: pointer; transition: all 0.15s ease;
+        }
+        .fondo-option:hover { border-color: #ffcc00; }
+        .fondo-option.selected { border-color: #ffcc00; box-shadow: 0 0 12px rgba(255, 204, 0, 0.35); }
+        .fondo-swatch {
+            width: 100%; height: 54px; border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background-size: cover; margin-bottom: 8px;
+        }
+        .fondo-option span { font-size: 12px; color: #ffcc00; font-weight: 700; }
         .banner-option span { font-size: 12px; color: #ffcc00; font-weight: 700; }
         .skin-preview {
             width: 45px;
@@ -1802,12 +1993,12 @@
             <button id="to-battlefield-btn" class="btn-main" data-i18n="battlefieldBtn">CAMPO DE BATALLA</button>
             <button id="to-skills-btn" class="btn-main" style="background-color: #00ffff;" data-i18n="skillsBtn">HABILIDADES</button>
             <button id="to-skins-btn" class="btn-main" data-i18n="skinsBtn">PERSONALIZAR SKIN</button>
-            <button id="to-shop-btn" class="btn-main" style="background-color: #ffcc00;" data-i18n="shopBtn">TIENDA</button>
             <button id="to-ranks-btn" class="btn-main" data-i18n="ranksBtn">RANGOS MILITARES</button>
             <button id="to-ranking-btn" class="btn-main" data-i18n="rankingBtn">RANKING GLOBAL</button>
         </div>
 
-        <!-- LUCKY ROYALE: acceso lateral (centro-izquierda) a un modo especial -->
+        <!-- TIENDA arriba de LUCKY ROYALE, ambos pegados al borde izquierdo -->
+        <button id="to-shop-btn" class="btn-main shop-side-btn" data-i18n="shopBtn">TIENDA</button>
         <button id="to-lucky-btn" class="btn-main lucky-btn" data-i18n="luckyBtn">LUCKY ROYALE</button>
     </div>
 
@@ -1823,26 +2014,31 @@
     <!-- CORREO del juego: recibe y envía regalos de artículos premium (estilo Free Fire) -->
     <div id="mail-screen" class="screen" style="display: none;">
         <h1 data-i18n="mailTitle">CORREO</h1>
-        <div class="mail-send-box">
-            <div class="mail-send-title" data-i18n="mailSendTitle">ENVIAR UN REGALO</div>
-            <label class="mail-field-label" data-i18n="mailLblItem">ARTÍCULO A REGALAR</label>
-            <select id="mail-item-select"></select>
-            <label class="mail-field-label" data-i18n="mailLblTo">PARA (NOMBRE O ID)</label>
-            <input type="text" id="mail-dest-input" placeholder="Nombre o ID del soldado" maxlength="40" autocomplete="off">
-            <label class="mail-field-label" data-i18n="mailLblMsg">MENSAJE (OPCIONAL)</label>
-            <textarea id="mail-msg-input" placeholder="Mensaje (opcional)" maxlength="500" rows="3" autocomplete="off"></textarea>
-            <button id="mail-send-btn" class="btn-main mail-send-go" data-i18n="mailSend">ENVIAR</button>
-        </div>
-        <p id="mail-msg" style="font-size: 14px; color: #ffcc00; height: 20px; margin-top: 6px; text-align: center;"></p>
-        <div class="mail-inbox-title" data-i18n="mailInbox">RECIBIDOS</div>
-        <div class="mail-tabs">
-            <button class="mail-tab active" data-filter="all" data-i18n="mailTabAll">TODO</button>
-            <button class="mail-tab" data-filter="pending" data-i18n="mailTabPending">POR RECIBIR</button>
-            <button class="mail-tab" data-filter="claimed" data-i18n="mailTabClaimed">RECIBIDOS</button>
-        </div>
-        <div id="mail-list" class="mail-list"></div>
-        <div class="lobby-menu">
-            <button id="mail-back-btn" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
+        <button id="mail-back-btn" class="btn-main btn-back screen-back-btn" data-i18n="backBtn">REGRESAR</button>
+        <div id="mail-cols">
+            <div id="mail-col-inbox">
+                <div class="mail-inbox-title" data-i18n="mailInbox">RECIBIDOS</div>
+                <div class="mail-tabs">
+                    <button class="mail-tab active" data-filter="all" data-i18n="mailTabAll">TODO</button>
+                    <button class="mail-tab" data-filter="pending" data-i18n="mailTabPending">POR RECIBIR</button>
+                    <button class="mail-tab" data-filter="claimed" data-i18n="mailTabClaimed">RECIBIDOS</button>
+                </div>
+                <div id="mail-list" class="mail-list"></div>
+                <div id="mail-detail" class="mail-detail"></div>
+            </div>
+            <div id="mail-col-send">
+                <div class="mail-send-box">
+                    <div class="mail-send-title" data-i18n="mailSendTitle">ENVIAR UN REGALO</div>
+                    <label class="mail-field-label" data-i18n="mailLblItem">ARTÍCULO A REGALAR</label>
+                    <select id="mail-item-select"></select>
+                    <label class="mail-field-label" data-i18n="mailLblTo">PARA (NOMBRE O ID)</label>
+                    <input type="text" id="mail-dest-input" placeholder="Nombre o ID del soldado" maxlength="40" autocomplete="off">
+                    <label class="mail-field-label" data-i18n="mailLblMsg">MENSAJE (OPCIONAL)</label>
+                    <textarea id="mail-msg-input" placeholder="Mensaje (opcional)" maxlength="500" rows="4" autocomplete="off"></textarea>
+                    <button id="mail-send-btn" class="btn-main mail-send-go" data-i18n="mailSend">ENVIAR</button>
+                </div>
+                <p id="mail-msg" style="font-size: 14px; color: #ffcc00; height: 20px; margin-top: 6px; text-align: center;"></p>
+            </div>
         </div>
     </div>
 
@@ -2149,6 +2345,7 @@
             <button id="tab-skin-btn" class="btn-main" style="width: auto; background-color: #ffcc00;" data-i18n="tabSkin">SKIN</button>
             <button id="tab-avatar-btn" class="btn-main" style="width: auto; color: #000;" data-i18n="tabAvatar">AVATAR</button>
             <button id="tab-banner-btn" class="btn-main" style="width: auto; color: #000;" data-i18n="tabBanner">BANNER</button>
+            <button id="tab-fondo-btn" class="btn-main" style="width: auto; color: #000;">FONDO</button>
         </div>
 
         <div id="tab-skin-content">
@@ -2223,6 +2420,11 @@
             </div>
             <div class="banner-grid" id="banner-grid"></div>
             <p id="banner-lock-msg" style="font-size: 14px; color: #ff3333; margin-top: 5px; height: 18px;"></p>
+        </div>
+
+        <div id="tab-fondo-content" style="display: none;">
+            <p style="font-size: 16px; margin-bottom: 5px;">Elige el fondo de tu perfil (rellena solo la tarjeta de perfil):</p>
+            <div class="fondo-grid" id="fondo-grid"></div>
         </div>
 
         <button id="back-from-skins" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
@@ -3715,6 +3917,7 @@ skinsTitleHeader: "PERSONALIZAR",
             selectedSkill: localStorage.getItem('ff_skill') || "shield",
             avatar: localStorage.getItem('ff_avatar') || "👤",
             banner: localStorage.getItem('ff_banner') || '',
+            fondo: localStorage.getItem('ff_fondo') || '',
             language: localStorage.getItem('ff_lang') || "ESPAÑOL",
             showFps: localStorage.getItem('ff_showfps') !== 'false',
             music: localStorage.getItem('ff_music') !== 'false',
@@ -3862,6 +4065,11 @@ skinsTitleHeader: "PERSONALIZAR",
         const mailSendBtn = document.getElementById('mail-send-btn');
         const mailMsgEl = document.getElementById('mail-msg');
         const mailBadge = document.getElementById('mail-badge');
+        const mailDetail = document.getElementById('mail-detail');
+        const tabFondoBtn = document.getElementById('tab-fondo-btn');
+        const tabFondoContent = document.getElementById('tab-fondo-content');
+        const fondoGrid = document.getElementById('fondo-grid');
+        const profilePanel = document.getElementById('profile-panel');
         let shopCatalog = [];
         let shopEnabled = false;
         let shopProvider = 'none';
@@ -4114,6 +4322,7 @@ skinsTitleHeader: "PERSONALIZAR",
             localStorage.setItem('ff_skill', profile.selectedSkill);
             localStorage.setItem('ff_avatar', profile.avatar);
             localStorage.setItem('ff_banner', profile.banner || '');
+            localStorage.setItem('ff_fondo', profile.fondo || '');
             localStorage.setItem('ff_lang', profile.language);
             localStorage.setItem('ff_showfps', profile.showFps);
             localStorage.setItem('ff_music', profile.music);
@@ -4138,13 +4347,12 @@ skinsTitleHeader: "PERSONALIZAR",
             }
             if (profileAvatar) profileAvatar.innerText = profile.avatar || '👤';
             if (profileAvatarBig) profileAvatarBig.innerText = profile.avatar || '👤';
-            // Banner equipado: marco dorado real en el avatar del perfil
+            // Banner equipado: marco dorado real con animación en TODO el botón de perfil
             const hasBanner = profile.banner === 'banner_royal';
             if (profileAvatarBig) profileAvatarBig.classList.toggle('premium-frame', hasBanner);
             if (profileAvatarBig) profileAvatarBig.classList.toggle('banner-royal-on', hasBanner);
-            if (profileAvatar) profileAvatar.classList.toggle('premium-frame', hasBanner);
-            if (profileAvatar) profileAvatar.classList.toggle('banner-royal-on', hasBanner);
-            if (profileAvatar) profileAvatar.classList.toggle('premium-frame', hasBanner);
+            if (profilePanel) profilePanel.classList.toggle('premium-frame', hasBanner);
+            if (profilePanel) profilePanel.classList.toggle('banner-royal-on', hasBanner);
 
             // Pantalla de perfil completo
             profName.innerText = profile.name;
@@ -4168,6 +4376,7 @@ skinsTitleHeader: "PERSONALIZAR",
             if (musicStatusLabel) musicStatusLabel.innerText = (profile.music !== false) ? dict.musicActivated : dict.musicDeactivated;
             fpsCounterBox.style.display = profile.showFps ? 'block' : 'none';
             updateAccountUI();
+            applyProfileFondo();
         }
 
         function openProfile() {
@@ -5251,21 +5460,29 @@ skinsTitleHeader: "PERSONALIZAR",
             updateSkinSelectionUI();
         }
 
-        // ---- PESTAÑAS DE PERSONALIZAR: SKIN / AVATAR / BANNER ----
+        // ---- PESTAÑAS DE PERSONALIZAR: SKIN / AVATAR / BANNER / FONDO ----
         function showCustomizeTab(tab) {
             const isSkin = tab === 'skin';
             const isBanner = tab === 'banner';
+            const isFondo = tab === 'fondo';
             tabSkinContent.style.display = isSkin ? 'block' : 'none';
-            tabAvatarContent.style.display = (isSkin || isBanner) ? 'none' : 'block';
+            tabAvatarContent.style.display = (isSkin || isBanner || isFondo) ? 'none' : 'block';
             tabBannerContent.style.display = isBanner ? 'block' : 'none';
+            tabFondoContent.style.display = isFondo ? 'block' : 'none';
             tabSkinBtn.style.backgroundColor = isSkin ? '#ffcc00' : '#3a3f55';
             tabSkinBtn.style.color = isSkin ? '#000' : '#fff';
-            tabAvatarBtn.style.backgroundColor = isSkin || isBanner ? '#3a3f55' : '#ffcc00';
-            tabAvatarBtn.style.color = isSkin || isBanner ? '#fff' : '#000';
+            tabAvatarBtn.style.backgroundColor = (isSkin || isBanner || isFondo) ? '#3a3f55' : '#ffcc00';
+            tabAvatarBtn.style.color = (isSkin || isBanner || isFondo) ? '#fff' : '#000';
             tabBannerBtn.style.backgroundColor = isBanner ? '#ffcc00' : '#3a3f55';
             tabBannerBtn.style.color = isBanner ? '#000' : '#fff';
+            tabFondoBtn.style.backgroundColor = isFondo ? '#ffcc00' : '#3a3f55';
+            tabFondoBtn.style.color = isFondo ? '#000' : '#fff';
             if (isBanner) buildBannerGrid();
         }
+        tabFondoBtn.addEventListener('click', () => {
+            buildFondoGrid();
+            showCustomizeTab('fondo');
+        });
 
         tabSkinBtn.addEventListener('click', () => showCustomizeTab('skin'));
         tabAvatarBtn.addEventListener('click', () => {
@@ -5273,6 +5490,39 @@ skinsTitleHeader: "PERSONALIZAR",
             showCustomizeTab('avatar');
         });
         tabBannerBtn.addEventListener('click', () => showCustomizeTab('banner'));
+
+        // ---- FONDOS DE LA TARJETA DE PERFIL (pestaña FONDO) ----
+        const FONDO_OPTIONS = [
+            { id: '', label: 'Predeterminado', image: '' },
+            { id: 'fondo_amanecer', label: 'Amanecer', image: 'linear-gradient(160deg, #3b5e2b 0%, #1a2b14 60%, #0d1509 100%)' },
+            { id: 'fondo_noche', label: 'Noche Azul', image: 'linear-gradient(160deg, #0e1a3a 0%, #060a16 100%)' },
+            { id: 'fondo_nebulosa', label: 'Nebulosa', image: 'radial-gradient(circle at 70% 20%, rgba(176,75,240,0.55), transparent 55%), radial-gradient(circle at 20% 80%, rgba(0,229,255,0.4), transparent 50%), #0a0716' },
+            { id: 'fondo_lava', label: 'Lava', image: 'linear-gradient(140deg, #7a1f0a 0%, #1a0a06 100%)' },
+            { id: 'fondo_camo', label: 'Camuflaje', image: 'repeating-linear-gradient(45deg, rgba(0,0,0,0.35) 0px 12px, rgba(255,255,255,0.05) 12px 24px), linear-gradient(160deg, #2c4a1e 0%, #141f0c 100%)' }
+        ];
+        function buildFondoGrid() {
+            fondoGrid.innerHTML = '';
+            FONDO_OPTIONS.forEach(f => {
+                const opt = document.createElement('div');
+                opt.className = 'fondo-option' + (profile.fondo === f.id ? ' selected' : '');
+                opt.innerHTML = '<div class="fondo-swatch" style="' + (f.image ? 'background-image:' + f.image + ';' : 'background:#10131c;') + '"></div><span>' + f.label + '</span>';
+                opt.addEventListener('click', () => selectFondo(f.id, opt));
+                fondoGrid.appendChild(opt);
+            });
+        }
+        function selectFondo(id) {
+            profile.fondo = id || '';
+            saveProfile();
+            buildFondoGrid();
+            applyProfileFondo();
+        }
+        function applyProfileFondo() {
+            const card = document.getElementById('profile-card');
+            if (!card) return;
+            const f = FONDO_OPTIONS.find(x => x.id === profile.fondo);
+            card.style.backgroundImage = (f && f.image) ? f.image : 'none';
+            card.style.backgroundSize = 'cover';
+        }
 
         // ---- BANNERS DE PERFIL ----
         async function buildBannerGrid() {
@@ -5498,6 +5748,7 @@ skinsTitleHeader: "PERSONALIZAR",
             });
         }
         let mailFilter = 'all';
+        let selectedMailId = null;
         function timeAgo(ts, d) {
             const s = Math.max(0, (Date.now() - ts) / 1000);
             if (s < 60) return d.timeJust;
@@ -5515,6 +5766,7 @@ skinsTitleHeader: "PERSONALIZAR",
             const filtered = lastMails.filter(m => mailFilter === 'all' || (mailFilter === 'pending' ? !m.claimed : m.claimed));
             if (!filtered.length) {
                 mailList.innerHTML = '<div class="mail-card-empty">' + (lastMails.length ? shopDict('mailNoFilter') : shopDict('mailEmpty')) + '</div>';
+                if (mailDetail) mailDetail.innerHTML = '';
                 return;
             }
             filtered.forEach(m => {
@@ -5522,27 +5774,50 @@ skinsTitleHeader: "PERSONALIZAR",
                 const it = m.itemId
                     ? (MAIL_ITEMS[m.itemId] || { name: m.itemId, emoji: '🎁' })
                     : { name: shopDict('mailBroadcast'), emoji: '📢' };
-                const card = document.createElement('div');
-                card.className = 'mail-card' + (m.claimed ? '' : ' unclaimed');
-                const meta = shopDict('mailFrom') + ' ' + m.from + ' · ' + timeAgo(m.sentAt || Date.now(), dict);
-                const msgHtml = m.msg
-                    ? '<div class="mail-card-msg">' + m.msg.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>'
-                    : '';
-                card.innerHTML =
-                    '<div class="mail-card-icon">' + it.emoji + '</div>' +
-                    '<div class="mail-card-info">' +
-                    '<div class="mail-card-title">' + it.name + (m.claimed ? '' : ' <span class="mail-new-pill">' + shopDict('mailNew') + '</span>') + '</div>' +
-                    '<div class="mail-card-meta">' + meta + '</div>' +
-                    msgHtml +
-                    '</div>' +
-                    (m.claimed
-                        ? '<div class="mail-card-done">✓ ' + shopDict('mailClaimed') + '</div>'
-                        : '<button class="mail-card-btn" data-mail-id="' + m.id + '">' + shopDict('mailClaim') + '</button>');
-                mailList.appendChild(card);
+                const row = document.createElement('div');
+                row.className = 'mail-row' + (m.claimed ? '' : ' unread') + (selectedMailId === m.id ? ' selected' : '');
+                row.dataset.mailId = m.id;
+                const preview = m.msg ? m.msg.replace(/\s+/g, ' ').trim() : (shopDict('mailNoMsg') || '—');
+                row.innerHTML =
+                    '<div class="mail-row-icon">' + it.emoji + '</div>' +
+                    '<div class="mail-row-info">' +
+                    '<div class="mail-row-top"><span class="mail-row-name">' + shopDict('mailFrom') + ' ' + m.from + '</span>' +
+                    (m.claimed ? '' : '<span class="mail-new-pill">' + shopDict('mailNew') + '</span>') +
+                    '<span class="mail-row-time">' + timeAgo(m.sentAt || Date.now(), dict) + '</span></div>' +
+                    '<div class="mail-row-title">' + it.name + '</div>' +
+                    '<div class="mail-row-preview">' + preview + '</div>' +
+                    '</div>';
+                row.addEventListener('click', () => showMailDetail(m));
+                mailList.appendChild(row);
             });
-            mailList.querySelectorAll('.mail-card-btn').forEach(btn => {
-                btn.addEventListener('click', () => socket.emit('claim-mail', { mailId: btn.dataset.mailId }));
-            });
+            const sel = lastMails.find(m => m.id === selectedMailId && filtered.includes(m));
+            showMailDetail(sel || filtered[0]);
+        }
+        function showMailDetail(m) {
+            if (!m || !mailDetail) return;
+            selectedMailId = m.id;
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            const isNews = !m.itemId;
+            const it = m.itemId
+                ? (MAIL_ITEMS[m.itemId] || { name: m.itemId, emoji: '🎁' })
+                : { name: shopDict('mailBroadcast'), emoji: '📢' };
+            const meta = shopDict('mailFrom') + ' ' + m.from + ' · ' + timeAgo(m.sentAt || Date.now(), dict);
+            const msgTxt = m.msg
+                ? m.msg.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                : (shopDict('mailNoMsg') || '—');
+            mailDetail.innerHTML =
+                '<div class="mail-detail-icon">' + it.emoji + '</div>' +
+                '<div class="mail-detail-body">' +
+                '<div class="mail-detail-title">' + it.name + (isNews ? ' <span class="mail-new-pill">' + (shopDict('mailBroadcast') || 'COMUNICADO') + '</span>' : '') + (m.claimed ? '' : ' <span class="mail-new-pill">' + shopDict('mailNew') + '</span>') + '</div>' +
+                '<div class="mail-detail-meta">' + meta + '</div>' +
+                '<div class="mail-detail-msg">' + msgTxt + '</div>' +
+                (m.claimed
+                    ? '<div class="mail-detail-btn claimed">✓ ' + shopDict('mailClaimed') + '</div>'
+                    : '<button class="mail-detail-btn" data-mail-id="' + m.id + '">' + shopDict('mailClaim') + '</button>') +
+                '</div>';
+            const claimBtn = mailDetail.querySelector('.mail-detail-btn[data-mail-id]');
+            if (claimBtn) claimBtn.addEventListener('click', () => socket.emit('claim-mail', { mailId: m.id }));
+            mailList.querySelectorAll('.mail-row').forEach(r => r.classList.toggle('selected', r.dataset.mailId === m.id));
         }
         document.querySelectorAll('.mail-tab').forEach(tab => {
             tab.addEventListener('click', () => {
