@@ -784,14 +784,41 @@
             display: flex;
             flex-direction: column;
             gap: 6px;
-            width: 330px;
-            background: rgba(0, 0, 0, 0.45);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 12px;
-            padding: 12px;
+            width: 350px;
+            background: rgba(8, 10, 16, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 14px;
+            padding: 14px;
             margin-top: 8px;
         }
-        .mail-send-title { font-size: 13px; font-weight: bold; color: #ffcc00; }
+        .mail-send-title {
+            font-size: 13px; font-weight: bold; color: #ffcc00; letter-spacing: 2px;
+            padding-bottom: 8px; margin-bottom: 4px;
+            border-bottom: 1px dashed rgba(255, 204, 0, 0.3);
+        }
+        .mail-field-label {
+            font-size: 10px; color: #9aa; letter-spacing: 1.5px; text-align: left;
+            margin-top: 4px;
+        }
+        .mail-send-box select,
+        .mail-send-box input[type="text"] {
+            width: 100%; box-sizing: border-box;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 9px; color: #fff;
+            padding: 9px 11px; font-size: 13px; outline: none;
+            transition: border-color 0.15s ease;
+        }
+        .mail-send-box select:focus,
+        .mail-send-box input[type="text"]:focus { border-color: #ffcc00; }
+        .mail-send-box select option { background: #161a26; color: #fff; }
+        .mail-send-go {
+            width: 100%; margin-top: 8px;
+            background: linear-gradient(180deg, #ffcc00, #f0a500) !important;
+            color: #1a1a1a !important; font-weight: 800; letter-spacing: 2px;
+            border-radius: 18px; padding: 10px 14px;
+            box-shadow: 0 3px 12px rgba(255, 204, 0, 0.35);
+        }
         .mail-list {
             display: flex;
             flex-direction: column;
@@ -911,6 +938,51 @@
             0% { transform: translateX(-140%); }
             55%, 100% { transform: translateX(140%); }
         }
+        /* Banner real en el perfil: marco dorado redondo + aura */
+        .profile-avatar-big.premium-frame,
+        .profile-avatar.premium-frame,
+        .banner-preview-circle.premium-frame,
+        .avatar-option.premium-frame {
+            border-radius: 50%;
+        }
+        .profile-avatar-big.banner-royal-on,
+        .banner-preview-circle.banner-royal-on {
+            box-shadow: 0 0 18px rgba(255, 204, 0, 0.85), 0 0 44px rgba(255, 140, 0, 0.45);
+            transform: scale(1.05);
+            border-color: #ffcc00 !important;
+        }
+        .banner-preview-area {
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            background: rgba(0, 0, 0, 0.45); border: 1px dashed rgba(255, 204, 0, 0.35);
+            border-radius: 16px; padding: 14px 10px; margin-bottom: 12px;
+        }
+        .banner-preview-circle {
+            width: 74px; height: 74px; border-radius: 50%;
+            background: linear-gradient(135deg, #ffcc00, #ff8800);
+            color: #000; font-size: 40px;
+            display: flex; align-items: center; justify-content: center;
+            border: 3px solid #000; transition: all 0.25s ease;
+        }
+        .banner-preview-label { font-size: 12px; color: #bbb; }
+        .banner-grid {
+            display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 4px;
+        }
+        .banner-option {
+            background: rgba(0, 0, 0, 0.5); border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px; padding: 10px 14px; text-align: center;
+            min-width: 128px; cursor: pointer; transition: all 0.15s ease;
+        }
+        .banner-option:hover { border-color: #ffcc00; }
+        .banner-option.selected { border-color: #ffcc00; box-shadow: 0 0 12px rgba(255, 204, 0, 0.35); }
+        .banner-option.locked { opacity: 0.55; }
+        .banner-option-circle {
+            width: 54px; height: 54px; border-radius: 50%;
+            background: linear-gradient(135deg, #ffcc00, #ff8800);
+            color: #000; font-size: 28px;
+            display: flex; align-items: center; justify-content: center;
+            border: 3px solid #000; margin: 0 auto 8px auto;
+        }
+        .banner-option span { font-size: 12px; color: #ffcc00; font-weight: 700; }
         .skin-preview {
             width: 45px;
             height: 45px;
@@ -1650,10 +1722,13 @@
         <h1 data-i18n="mailTitle">CORREO</h1>
         <div class="mail-send-box">
             <div class="mail-send-title" data-i18n="mailSendTitle">ENVIAR UN REGALO</div>
+            <label class="mail-field-label" data-i18n="mailLblItem">ARTÍCULO A REGALAR</label>
             <select id="mail-item-select"></select>
+            <label class="mail-field-label" data-i18n="mailLblTo">PARA (NOMBRE O ID)</label>
             <input type="text" id="mail-dest-input" placeholder="Nombre o ID del soldado" maxlength="40" autocomplete="off">
+            <label class="mail-field-label" data-i18n="mailLblMsg">MENSAJE (OPCIONAL)</label>
             <input type="text" id="mail-msg-input" placeholder="Mensaje (opcional)" maxlength="60" autocomplete="off">
-            <button id="mail-send-btn" class="btn-main" style="background-color: #ffcc00; font-size: 14px; padding: 8px 14px;" data-i18n="mailSend">ENVIAR</button>
+            <button id="mail-send-btn" class="btn-main mail-send-go" data-i18n="mailSend">ENVIAR</button>
         </div>
         <p id="mail-msg" style="font-size: 14px; color: #ffcc00; height: 20px; margin-top: 6px; text-align: center;"></p>
         <div class="mail-inbox-title" data-i18n="mailInbox">RECIBIDOS</div>
@@ -1973,6 +2048,7 @@
         <div class="customize-tabs">
             <button id="tab-skin-btn" class="btn-main" style="width: auto; background-color: #ffcc00;" data-i18n="tabSkin">SKIN</button>
             <button id="tab-avatar-btn" class="btn-main" style="width: auto; color: #000;" data-i18n="tabAvatar">AVATAR</button>
+            <button id="tab-banner-btn" class="btn-main" style="width: auto; color: #000;" data-i18n="tabBanner">BANNER</button>
         </div>
 
         <div id="tab-skin-content">
@@ -2039,6 +2115,16 @@
             <p id="avatar-lock-msg" style="font-size: 14px; color: #ff3333; margin-top: 5px; height: 18px;"></p>
         </div>
 
+        <div id="tab-banner-content" style="display: none;">
+            <p style="font-size: 16px; margin-bottom: 5px;" data-i18n="bannerSubtitle">Elige el banner de tu perfil:</p>
+            <div class="banner-preview-area">
+                <div class="banner-preview-circle" id="banner-preview-circle">👤</div>
+                <div class="banner-preview-label" id="banner-preview-label" data-i18n="bannerPreviewLabel">Así se verá tu perfil</div>
+            </div>
+            <div class="banner-grid" id="banner-grid"></div>
+            <p id="banner-lock-msg" style="font-size: 14px; color: #ff3333; margin-top: 5px; height: 18px;"></p>
+        </div>
+
         <button id="back-from-skins" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
     </div>
 
@@ -2059,6 +2145,7 @@
         <p class="shop-sub" id="shop-sub">Cargando tienda…</p>
         <div class="shop-tabs">
             <button id="shop-tab-skins" class="shop-tab active" onclick="setShopTab('skins')"><span data-i18n="shopTabSkins">SKINS</span></button>
+            <button id="shop-tab-banners" class="shop-tab" onclick="setShopTab('banners')"><span data-i18n="shopTabBanners">BANNERS</span></button>
             <button id="shop-tab-avatars" class="shop-tab" onclick="setShopTab('avatars')"><span data-i18n="shopTabAvatars">AVATARES</span></button>
         </div>
         <div class="shop-grid" id="shop-grid"></div>
@@ -2519,6 +2606,7 @@ loginSection: "— INICIAR SESIÓN —",
                 shopBoughtOk: "¡Artículo comprado con GEMAS! Ya está en tu inventario.",
                 shopTabSkins: "SKINS",
                 shopTabAvatars: "AVATARES",
+                shopTabBanners: "BANNERS",
                 avatarLocked: "Este avatar se compra en la TIENDA con FamoCoins.",
                 needMoreCoins: "Te faltan FamoCoins",
                 mailBtn: "CORREO",
@@ -2541,6 +2629,9 @@ loginSection: "— INICIAR SESIÓN —",
                 mailClaimedOk: "¡Regalo reclamado! Ya está en tu inventario.",
                 mailClaimed2: "Este regalo ya fue reclamado.",
                 mailSendTitle: "ENVIAR UN REGALO (un artículo que poseas a otro soldado)",
+                mailLblItem: "ARTÍCULO A REGALAR",
+                mailLblTo: "PARA (NOMBRE O ID)",
+                mailLblMsg: "MENSAJE (OPCIONAL)",
                 mailDestPh: "Nombre o ID del soldado",
                 mailMsgPh: "Mensaje (opcional)",
                 mailSend: "ENVIAR",
@@ -2621,6 +2712,10 @@ loginSection: "— INICIAR SESIÓN —",
                 tabSkin: "SKIN",
                 tabAvatar: "AVATAR",
                 avatarSubtitle: "Elige tu avatar para el perfil:",
+                tabBanner: "BANNER",
+                bannerSubtitle: "Elige el banner que adorna tu perfil:",
+                bannerPreviewLabel: "Así se verá tu perfil",
+                bannerNone: "SIN BANNER",
                 viewProfileTitle: "PERFIL DE SOLDADO",
                 statMatches: "PARTIDAS",
                 statWins: "VICTORIAS",
@@ -2762,6 +2857,7 @@ loginSection: "— SIGN IN —",
                 shopBoughtOk: "Item purchased with GEMS! It's in your inventory now.",
                 shopTabSkins: "SKINS",
                 shopTabAvatars: "AVATARS",
+                shopTabBanners: "BANNERS",
                 avatarLocked: "This avatar can be bought in the SHOP with FamoCoins.",
                 needMoreCoins: "Need FamoCoins",
                 mailBtn: "MAIL",
@@ -2784,6 +2880,9 @@ loginSection: "— SIGN IN —",
                 mailClaimedOk: "Gift claimed! It's in your inventory now.",
                 mailClaimed2: "This gift was already claimed.",
                 mailSendTitle: "SEND A GIFT (an item you own to another soldier)",
+                mailLblItem: "ITEM TO GIFT",
+                mailLblTo: "TO (NAME OR ID)",
+                mailLblMsg: "MESSAGE (OPTIONAL)",
                 mailDestPh: "Soldier name or ID",
                 mailMsgPh: "Message (optional)",
                 mailSend: "SEND",
@@ -2864,6 +2963,10 @@ loginSection: "— SIGN IN —",
                 tabSkin: "SKIN",
                 tabAvatar: "AVATAR",
                 avatarSubtitle: "Choose your profile avatar:",
+                tabBanner: "BANNER",
+                bannerSubtitle: "Choose the banner that decorates your profile:",
+                bannerPreviewLabel: "This is how your profile will look",
+                bannerNone: "NO BANNER",
                 viewProfileTitle: "SOLDIER PROFILE",
                 statMatches: "MATCHES",
                 statWins: "WINS",
@@ -3005,6 +3108,7 @@ loginSection: "— 登录 —",
                 shopBoughtOk: "已用宝石购买！物品已放入你的仓库。",
                 shopTabSkins: "服装",
                 shopTabAvatars: "头像",
+                shopTabBanners: "挂件",
                 avatarLocked: "此头像可在商店中用 FamoCoins 购买。",
                 needMoreCoins: "FamoCoins 不足",
                 mailBtn: "邮件",
@@ -3027,6 +3131,9 @@ loginSection: "— 登录 —",
                 mailClaimedOk: "礼物已领取！已在您的背包中。",
                 mailClaimed2: "此礼物已被领取。",
                 mailSendTitle: "赠送礼物（将您拥有的物品送给其他士兵）",
+                mailLblItem: "赠送物品",
+                mailLblTo: "收件人（名称或ID）",
+                mailLblMsg: "留言（可选）",
                 mailDestPh: "士兵名称或ID",
                 mailMsgPh: "消息（可选）",
                 mailSend: "发送",
@@ -3107,6 +3214,10 @@ loginSection: "— 登录 —",
                 tabSkin: "SKIN",
                 tabAvatar: "AVATAR",
                 avatarSubtitle: "选择您的个人资料头像：",
+                tabBanner: "挂件",
+                bannerSubtitle: "选择装饰您个人资料的挂件：",
+                bannerPreviewLabel: "您的个人资料将如下显示",
+                bannerNone: "无挂件",
                 viewProfileTitle: "士兵档案",
                 statMatches: "场次",
                 statWins: "胜利",
@@ -3244,6 +3355,7 @@ loginSection: "— ENTRAR —",
                 shopGemsTitle: "SEU SALDO DE FAMOCOINS",
                 buyGemsBtn: "COMPRAR FAMOCOINS",
                 packBuy: "COMPRAR",
+                shopTabBanners: "BANNERS",
                 shopNeedGems: "Faltam FamoCoins para este item. Toque no botão FamoCoins na sala para comprar.",
                 shopBoughtOk: "Item comprado com GEMAS! Já está no seu inventário.",
                 shopTabSkins: "SKINS",
@@ -3270,6 +3382,9 @@ loginSection: "— ENTRAR —",
                 mailClaimedOk: "Presente resgatado! Já está no seu inventário.",
                 mailClaimed2: "Este presente já foi resgatado.",
                 mailSendTitle: "ENVIAR UM PRESENTE (um item seu para outro soldado)",
+                mailLblItem: "ITEM PARA PRESENTEAR",
+                mailLblTo: "PARA (NOME OU ID)",
+                mailLblMsg: "MENSAGEM (OPCIONAL)",
                 mailDestPh: "Nome ou ID do soldado",
                 mailMsgPh: "Mensagem (opcional)",
                 mailSend: "ENVIAR",
@@ -3350,6 +3465,10 @@ loginSection: "— ENTRAR —",
                 tabSkin: "SKIN",
                 tabAvatar: "AVATAR",
                 avatarSubtitle: "Escolha seu avatar de perfil:",
+                tabBanner: "BANNER",
+                bannerSubtitle: "Escolha o banner que enfeita seu perfil:",
+                bannerPreviewLabel: "É assim que seu perfil ficará",
+                bannerNone: "SEM BANNER",
                 viewProfileTitle: "PERFIL DE SOLDADO",
                 statMatches: "PARTIDAS",
                 statWins: "VITÓRIAS",
@@ -3481,6 +3600,7 @@ skinsTitleHeader: "PERSONALIZAR",
             skin: localStorage.getItem('ff_skin') || '',
             selectedSkill: localStorage.getItem('ff_skill') || "shield",
             avatar: localStorage.getItem('ff_avatar') || "👤",
+            banner: localStorage.getItem('ff_banner') || '',
             language: localStorage.getItem('ff_lang') || "ESPAÑOL",
             showFps: localStorage.getItem('ff_showfps') !== 'false',
             music: localStorage.getItem('ff_music') !== 'false',
@@ -3639,6 +3759,7 @@ skinsTitleHeader: "PERSONALIZAR",
         const coinsMsg = document.getElementById('coins-msg');
         const coinsBackBtn = document.getElementById('coins-back-btn');
         const shopTabSkins = document.getElementById('shop-tab-skins');
+        const shopTabBanners = document.getElementById('shop-tab-banners');
         const shopTabAvatars = document.getElementById('shop-tab-avatars');
         const shopMsgEl = document.getElementById('shop-msg');
         let shopTab = 'skins';
@@ -3736,6 +3857,11 @@ skinsTitleHeader: "PERSONALIZAR",
         const tabAvatarBtn = document.getElementById('tab-avatar-btn');
         const tabSkinContent = document.getElementById('tab-skin-content');
         const tabAvatarContent = document.getElementById('tab-avatar-content');
+        const tabBannerBtn = document.getElementById('tab-banner-btn');
+        const tabBannerContent = document.getElementById('tab-banner-content');
+        const bannerGrid = document.getElementById('banner-grid');
+        const bannerPreviewCircle = document.getElementById('banner-preview-circle');
+        const bannerLockMsg = document.getElementById('banner-lock-msg');
         const avatarGrid = document.getElementById('avatar-grid');
         const avatarLockMsg = document.getElementById('avatar-lock-msg');
         const viewProfileScreen = document.getElementById('view-profile-screen');
@@ -3870,6 +3996,7 @@ skinsTitleHeader: "PERSONALIZAR",
             localStorage.setItem('ff_skin', profile.skin || '');
             localStorage.setItem('ff_skill', profile.selectedSkill);
             localStorage.setItem('ff_avatar', profile.avatar);
+            localStorage.setItem('ff_banner', profile.banner || '');
             localStorage.setItem('ff_lang', profile.language);
             localStorage.setItem('ff_showfps', profile.showFps);
             localStorage.setItem('ff_music', profile.music);
@@ -3894,9 +4021,10 @@ skinsTitleHeader: "PERSONALIZAR",
             }
             if (profileAvatar) profileAvatar.innerText = profile.avatar || '👤';
             if (profileAvatarBig) profileAvatarBig.innerText = profile.avatar || '👤';
-            // Banner premium: marco dorado en el avatar del perfil
-            const hasBanner = (profile.owns || []).includes('banner_royal');
+            // Banner equipado: marco dorado real en el avatar del perfil
+            const hasBanner = profile.banner === 'banner_royal';
             if (profileAvatarBig) profileAvatarBig.classList.toggle('premium-frame', hasBanner);
+            if (profileAvatarBig) profileAvatarBig.classList.toggle('banner-royal-on', hasBanner);
             if (profileAvatar) profileAvatar.classList.toggle('premium-frame', hasBanner);
 
             // Pantalla de perfil completo
@@ -5004,15 +5132,20 @@ skinsTitleHeader: "PERSONALIZAR",
             updateSkinSelectionUI();
         }
 
-        // ---- PESTAÑAS DE PERSONALIZAR: SKIN / AVATAR ----
+        // ---- PESTAÑAS DE PERSONALIZAR: SKIN / AVATAR / BANNER ----
         function showCustomizeTab(tab) {
             const isSkin = tab === 'skin';
+            const isBanner = tab === 'banner';
             tabSkinContent.style.display = isSkin ? 'block' : 'none';
-            tabAvatarContent.style.display = isSkin ? 'none' : 'block';
+            tabAvatarContent.style.display = (isSkin || isBanner) ? 'none' : 'block';
+            tabBannerContent.style.display = isBanner ? 'block' : 'none';
             tabSkinBtn.style.backgroundColor = isSkin ? '#ffcc00' : '#3a3f55';
             tabSkinBtn.style.color = isSkin ? '#000' : '#fff';
-            tabAvatarBtn.style.backgroundColor = isSkin ? '#3a3f55' : '#ffcc00';
-            tabAvatarBtn.style.color = isSkin ? '#fff' : '#000';
+            tabAvatarBtn.style.backgroundColor = isSkin || isBanner ? '#3a3f55' : '#ffcc00';
+            tabAvatarBtn.style.color = isSkin || isBanner ? '#fff' : '#000';
+            tabBannerBtn.style.backgroundColor = isBanner ? '#ffcc00' : '#3a3f55';
+            tabBannerBtn.style.color = isBanner ? '#000' : '#fff';
+            if (isBanner) buildBannerGrid();
         }
 
         tabSkinBtn.addEventListener('click', () => showCustomizeTab('skin'));
@@ -5020,6 +5153,57 @@ skinsTitleHeader: "PERSONALIZAR",
             updateAvatarSelectionUI();
             showCustomizeTab('avatar');
         });
+        tabBannerBtn.addEventListener('click', () => showCustomizeTab('banner'));
+
+        // ---- BANNERS DE PERFIL ----
+        async function buildBannerGrid() {
+            if (!shopCatalog.length) {
+                try {
+                    const cfg = await fetch('/config').then(r => r.json());
+                    shopCatalog = (cfg.shop && cfg.shop.items) || [];
+                } catch (e) { }
+            }
+            const banners = shopCatalog.filter(it => it.type === 'banner');
+            bannerGrid.innerHTML = '';
+            const noneOpt = document.createElement('div');
+            noneOpt.className = 'banner-option' + (profile.banner === '' ? ' selected' : '');
+            noneOpt.innerHTML = '<div class="banner-option-circle">' + (profile.avatar || '👤') + '</div><span>' + shopDict('bannerNone') + '</span>';
+            noneOpt.addEventListener('click', () => selectBanner('', noneOpt));
+            bannerGrid.appendChild(noneOpt);
+            banners.forEach(b => {
+                const owned = (profile.owns || []).includes(b.id);
+                const active = profile.banner === b.id;
+                const opt = document.createElement('div');
+                opt.className = 'banner-option' + (active ? ' selected' : '') + (owned ? '' : ' locked');
+                opt.innerHTML =
+                    '<div class="banner-option-circle' + (active ? ' premium-frame' : '') + '">' + (profile.avatar || '👤') + '</div>' +
+                    '<span>' + b.emoji + ' ' + b.name + (owned ? '' : ' 🔒') + '</span>';
+                opt.addEventListener('click', () => selectBanner(b.id, opt));
+                bannerGrid.appendChild(opt);
+            });
+            updateBannerPreview();
+        }
+        function updateBannerPreview() {
+            const now = profile.avatar || '👤';
+            const has = profile.banner === 'banner_royal';
+            bannerPreviewCircle.textContent = now;
+            bannerPreviewCircle.classList.toggle('premium-frame', has);
+            bannerPreviewCircle.classList.toggle('banner-royal-on', has);
+        }
+        function selectBanner(bannerId, cardElement) {
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            if (bannerId && !(profile.owns || []).includes(bannerId)) {
+                bannerLockMsg.innerText = shopDict('avatarLocked');
+                return;
+            }
+            bannerLockMsg.innerText = "";
+            profile.banner = bannerId;
+            saveProfile();
+            buildBannerGrid();
+            updateBannerPreview();
+            updateAvatarSelectionUI();
+            updateLobbyUI();
+        }
 
         // ---- AVATARES DE PERFIL (solo visual, sin efectos en partida) ----
         const avatarOptions = ['👤','🦸','🥷','🧙','👮','🧑‍🚒','🐲','🦅','🐺','🦖','🦁','🐯','🤖','👽','💀','🎃'];
@@ -5063,7 +5247,7 @@ skinsTitleHeader: "PERSONALIZAR",
 
         function updateAvatarSelectionUI() {
             if (!profile.avatar) profile.avatar = '👤';
-            const hasBanner = (profile.owns || []).includes('banner_royal');
+            const hasBanner = profile.banner === 'banner_royal';
             avatarGrid.querySelectorAll('.avatar-option').forEach(el => {
                 el.classList.toggle('selected', el.dataset.emoji === profile.avatar);
                 el.classList.toggle('premium-frame', hasBanner && el.dataset.emoji === profile.avatar);
@@ -5146,6 +5330,7 @@ skinsTitleHeader: "PERSONALIZAR",
         function setShopTab(tab) {
             shopTab = tab;
             shopTabSkins.classList.toggle('active', tab === 'skins');
+            shopTabBanners.classList.toggle('active', tab === 'banners');
             shopTabAvatars.classList.toggle('active', tab === 'avatars');
             buildShopGrid();
         }
@@ -5548,7 +5733,7 @@ skinsTitleHeader: "PERSONALIZAR",
         }
         function buildShopGrid() {
             shopGrid.innerHTML = '';
-            const visible = shopCatalog.filter(it => shopTab === 'avatars' ? it.type === 'avatar' : (it.type === 'skin' || it.type === 'banner'));
+            const visible = shopCatalog.filter(it => shopTab === 'avatars' ? it.type === 'avatar' : (shopTab === 'banners' ? it.type === 'banner' : it.type === 'skin'));
             visible.forEach(item => {
                 const owned = (profile.owns || []).includes(item.id);
                 const enough = (profile.gems || 0) >= item.gems;
