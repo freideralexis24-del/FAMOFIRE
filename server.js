@@ -255,6 +255,44 @@ app.post('/api/admin-grant', async (req, res) => {
   }
 });
 
+// ADMIN (solo el dueño): fija valores ABSOLUTOS de una cuenta (saldos, artículos
+// e ID único). Pensado para arreglar duplicados: quitar todo a una cuenta clon y
+// regenerarle un ID que no colisione con ninguna otra. Requiere ADMIN_KEY.
+app.post('/api/admin-set', async (req, res) => {
+  try {
+    const ADMIN_KEY = process.env.ADMIN_KEY || '';
+    if (!ADMIN_KEY) return res.status(501).json({ ok: false, error: 'admin-disabled' });
+    const key = String((req.body && req.body.key) || '');
+    if (key !== ADMIN_KEY) return res.status(403).json({ ok: false, error: 'forbidden' });
+    if (!accountsReady) await ensureAccounts();
+    const byName = String(((req.body && req.body.name) || '')).trim().toUpperCase().slice(0, 12);
+    const byId = String(((req.body && req.body.id) || '')).trim().toUpperCase();
+    let acc = null, accountKey = '';
+    if (byName && accounts[byName]) { acc = accounts[byName]; accountKey = byName; }
+    else if (byId) {
+      const found = Object.keys(accounts).find(k => String(accounts[k].id || '').toUpperCase() === byId);
+      if (found) { acc = accounts[found]; accountKey = found; }
+    }
+    if (!acc) return res.status(404).json({ ok: false, error: 'not-found', id: byId, name: byName || undefined });
+    acc = normalizeAcc(acc);
+    if (req.body && req.body.gems !== undefined) {
+      const gems = Number(req.body.gems);
+      if (Number.isFinite(gems) && gems >= 0 && gems <= 1000000) acc.gems = Math.floor(gems);
+    }
+    if (req.body && req.body.clearItems === true) acc.owns = [];
+    let oldId = acc.id;
+    let newId = null;
+    if (req.body && req.body.regenerateId === true) {
+      newId = uniqueId();
+      acc.id = newId;
+    }
+    saveAccounts();
+    res.json({ ok: true, account: accountKey, oldId, id: acc.id, newId, gems: acc.gems, ownsCount: acc.owns.length });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: 'admin-error', msg: String(e.message || e).slice(0, 120) });
+  }
+});
+
 // Webhook de MP: recibe avisos de pago y entrega el artículo aunque el jugador
 // no vuelva al juego (el pago ya fue aprobado en el sitio de MP).
 app.post('/api/mp-webhook', async (req, res) => {
@@ -507,11 +545,23 @@ async function initAccounts() {
   // tiene (de la era pre-ID), se le genera uno ahora. NO se borra ninguna cuenta
   // jamás: el espacio ocupado es mínimo y evita pérdidas de cuentas reales.
   let backfilled = false;
+  const seenIds = new Set();
   for (const name of Object.keys(accounts)) {
     const a = accounts[name];
     normalizeAcc(a);
+    if (a && a.id) seenIds.add(String(a.id).toUpperCase());
+  }
+  for (const name of Object.keys(accounts)) {
+    const a = accounts[name];
+    if (a && a.id && seenIds.has(String(a.id).toUpperCase()) &&
+        Object.keys(accounts).some(k => k !== name && String(accounts[k].id || '').toUpperCase() === String(a.id).toUpperCase())) {
+      a.id = uniqueId(seenIds);
+      seenIds.add(String(a.id).toUpperCase());
+      backfilled = true;
+    }
     if (a && !a.id) {
-      a.id = genId();
+      a.id = uniqueId(seenIds);
+      seenIds.add(String(a.id).toUpperCase());
       backfilled = true;
     }
   }
@@ -521,6 +571,14 @@ async function initAccounts() {
 function genId() {
   // ID corto y legible (8 caracteres hex) para controlar cada cuenta
   return crypto.randomBytes(4).toString('hex').toUpperCase();
+}
+function uniqueId(taken) {
+  // Genera un ID que no esté en uso por NINGUNA otra cuenta
+  const set = new Set(taken ? Array.from(taken) : Object.values(accounts).map(a => String(a.id || '').toUpperCase()));
+  let id = genId();
+  let guard = 0;
+  while (set.has(id) && guard++ < 100) id = genId();
+  return id;
 }
 function saveAccounts() {
   if (db) {
