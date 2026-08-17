@@ -305,6 +305,54 @@ app.post('/api/admin-set', async (req, res) => {
   }
 });
 
+// ADMIN (solo el dueño): lista TODAS las cuentas con su ID actual, monedas y
+// última actividad, para auditar la numeración de IDs. Requiere ADMIN_KEY.
+app.get('/api/admin-list', async (req, res) => {
+  try {
+    const ADMIN_KEY = process.env.ADMIN_KEY || '';
+    if (!ADMIN_KEY) return res.status(501).json({ ok: false, error: 'admin-disabled' });
+    if (String((req.query && req.query.key) || '') !== ADMIN_KEY) return res.status(403).json({ ok: false, error: 'forbidden' });
+    if (!accountsReady) await ensureAccounts();
+    const list = Object.keys(accounts).map(k => {
+      const a = normalizeAcc(accounts[k]);
+      return { name: k, id: a.id, gems: a.gems || 0, level: a.level, lastSeen: a.lastSeen || 0 };
+    }).sort((x, y) => (parseInt(String(x.id), 10) || 0) - (parseInt(String(y.id), 10) || 0));
+    res.json({ ok: true, count: list.length, accounts: list });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: 'admin-error', msg: String(e.message || e).slice(0, 120) });
+  }
+});
+
+// ADMIN (solo el dueño): REINICIA la numeración de TODOS los IDs. La cuenta
+// "owner" recibe 10000000 y el resto se renumera por antigüedad (la más vieja
+// primero): 10000001, 10000002... consecutivos sin huecos. Requiere ADMIN_KEY.
+app.post('/api/admin-renumber', async (req, res) => {
+  try {
+    const ADMIN_KEY = process.env.ADMIN_KEY || '';
+    if (!ADMIN_KEY) return res.status(501).json({ ok: false, error: 'admin-disabled' });
+    const key = String((req.body && req.body.key) || '');
+    if (key !== ADMIN_KEY) return res.status(403).json({ ok: false, error: 'forbidden' });
+    if (!accountsReady) await ensureAccounts();
+    const owner = String((req.body && req.body.owner) || '').trim().toUpperCase().slice(0, 12);
+    const names = Object.keys(accounts).sort((a, b) => {
+      const ia = a === owner ? -1 : (b === owner ? 1 : 0);
+      return ia !== 0 ? ia : (Number(accounts[a].lastSeen) || 0) - (Number(accounts[b].lastSeen) || 0);
+    });
+    let next = 10000000;
+    const assigned = [];
+    for (const name of names) {
+      const oldId = String(accounts[name].id || '');
+      accounts[name].id = String(next);
+      assigned.push({ name, oldId, id: String(next) });
+      next++;
+    }
+    saveAccounts();
+    res.json({ ok: true, owner, count: assigned.length, assigned });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: 'admin-error', msg: String(e.message || e).slice(0, 120) });
+  }
+});
+
 // ADMIN (solo el dueño): regala a un jugador o a TODOS los jugadores un artículo
 // (o un simple comunicado sin artículo) por el BUZÓN, con texto largo. Requiere
 // ADMIN_KEY. Sin "name" va para todas las cuentas del juego.
@@ -413,7 +461,11 @@ try {
       host: process.env.SMTP_HOST,
       port: Number(process.env.SMTP_PORT) || 587,
       secure: Number(process.env.SMTP_PORT) === 465,
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS || '' }
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS || '' },
+      // FORZAR IPv4 en la conexión SMTP: evita "connect ENETUNREACH <ipv6>"
+      // que ocurre cuando el servidor de correo responde con IPv6 y la red del
+      // hosting no tiene ruta (Render/Free y Gmail). Este lookup solo usa IPv4.
+      lookup: (host, opts, cb) => dns.lookup(host, Object.assign({}, opts, { family: 4 }), cb)
     });
   }
 } catch (e) { transporter = null; }
@@ -1610,6 +1662,17 @@ socket.emit('account-result', { ok: true, account: { id: accounts[name].id, name
     }
     socket.data.room = null;
     socket.data.inQueue = false;
+  });
+
+  // Cierre de sesión explícito: se libera el candado de la cuenta AL INSTANTE,
+  // sin esperar el timeout de conexión (~10 s), así otra pestaña/dispositivo
+  // puede entrar con esa cuenta de inmediato después de cerrar sesión.
+  socket.on('logout', () => {
+    if (socket.data.account && accountLocks.get(socket.data.account) === socket) {
+      accountLocks.delete(socket.data.account);
+    }
+    socket.data.account = null;
+    socket.data.name = null;
   });
 
   socket.on('disconnect', () => {

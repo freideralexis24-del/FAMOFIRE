@@ -5629,6 +5629,8 @@ applyTranslations();
 
         // Cerrar sesión: olvida la cuenta local y permite entrar con otra
         logoutBtn.addEventListener('click', () => {
+            socket.emit('logout');
+            try { socket.disconnect(); } catch (e) { }
             localStorage.removeItem('ff_name');
             localStorage.removeItem('ff_level');
             localStorage.removeItem('ff_exp');
