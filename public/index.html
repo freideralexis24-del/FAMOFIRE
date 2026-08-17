@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>FAMOFIRE</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
     <!-- Librería de Socket.io importada -->
@@ -1983,6 +1983,375 @@
             box-sizing: border-box;
             word-break: break-all;
         }
+
+        /* ============ CONTROLES TÁCTILES PARA MÓVIL ============
+           Joystick izquierdo (movimiento 360°), joystick derecho flotante
+           (apuntar cañón + disparar) y botón de habilidad. Se superponen al
+           canvas SOLO dentro de la partida y en pantallas táctiles. */
+        #mobile-controls {
+            position: fixed;
+            inset: 0;
+            z-index: 60;
+            pointer-events: none;
+            touch-action: none;
+        }
+        #mobile-controls > * {
+            pointer-events: auto;
+            touch-action: none;
+        }
+        .joy-zone {
+            position: absolute;
+            width: 42%;
+            height: 60%;
+            transform: translate(-50%, -50%);
+        }
+        #joy-move-zone {
+            left: 22%;
+            top: 78%;
+        }
+        #joy-aim-zone {
+            left: 78%;
+            top: 78%;
+        }
+        /* Tamaños de los controles táctiles: escalan con la pantalla (vmin),
+           con tope para que en tablets no se vuelvan gigantes. */
+        :root {
+            --jb: min(112px, 24vmin);
+            --jk: min(50px, 11vmin);
+            --jm: min(68px, 15vmin);
+        }
+        .joy-base {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: var(--jb);
+            height: var(--jb);
+            margin: 0;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.06) 60%, rgba(255, 255, 255, 0.02) 100%);
+            border: 2px solid rgba(255, 255, 255, 0.45);
+            box-shadow: 0 0 14px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(255, 255, 255, 0.12);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+        /* El joystick izquierdo (movimiento) se ve SIEMPRE en partida;
+           el derecho (apuntar/disparar) es flotante y aparece al tocarlo. */
+        #joy-move-zone .joy-base {
+            display: flex;
+        }
+        .joy-zone.active .joy-base {
+            display: flex;
+        }
+        .joy-knob {
+            width: var(--jk);
+            height: var(--jk);
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.75) 0%, rgba(204, 204, 204, 0.85) 100%);
+            border: 2px solid rgba(0, 0, 0, 0.5);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+            position: relative;
+        }
+        .joy-zone.active .joy-knob {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            margin-left: calc(var(--jk) / -2);
+            margin-top: calc(var(--jk) / -2);
+            transform: translate(0, 0);
+        }
+        #mobile-skill-btn {
+            position: absolute;
+            width: var(--jm);
+            height: var(--jm);
+            border-radius: 50%;
+            border: 2px solid rgba(255, 204, 0, 0.85);
+            background: rgba(10, 15, 20, 0.55);
+            color: #ffcc00;
+            font-size: calc(var(--jm) * 0.42);
+            cursor: pointer;
+            box-shadow: 0 0 12px rgba(255, 204, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.6);
+            z-index: 61;
+        }
+        #mobile-skill-btn:active {
+            background: rgba(255, 204, 0, 0.4);
+        }
+        #mobile-skill-btn.cooldown {
+            opacity: 0.45;
+            filter: grayscale(0.6);
+        }
+
+        /* EDITOR DE CONTROLES TÁCTILES */
+        #mobile-edit-screen {
+            overflow: hidden;
+        }
+        #mobile-edit-screen h1 {
+            font-size: 28px;
+            margin: 8px 0 2px;
+        }
+        #mobile-edit-hint {
+            font-size: 13px;
+            color: #aaa;
+            margin: 0 0 10px 0;
+            text-align: center;
+        }
+        #mobile-edit-stage {
+            position: relative;
+            width: min(560px, 92vw);
+            height: min(52vh, 400px);
+            background: rgba(0, 0, 0, 0.45);
+            border: 2px dashed rgba(255, 255, 255, 0.25);
+            border-radius: 14px;
+            overflow: hidden;
+            touch-action: none;
+        }
+        .edit-control {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: grab;
+            user-select: none;
+            touch-action: none;
+        }
+        .edit-control.dragging {
+            cursor: grabbing;
+            opacity: 0.85;
+        }
+        .edit-joy-base {
+            width: 84px;
+            height: 84px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.08) 60%, rgba(255, 255, 255, 0.03) 100%);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+        .edit-joy-knob {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #fff, #bbb);
+            border: 2px solid rgba(0, 0, 0, 0.5);
+        }
+        .edit-skill-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 2px solid #ffcc00;
+            background: rgba(10, 15, 20, 0.6);
+            color: #ffcc00;
+            font-size: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+        .edit-label-edit {
+            font-size: 10px;
+            color: #fff;
+            text-shadow: 1px 1px 2px #000;
+            background: rgba(0, 0, 0, 0.55);
+            padding: 2px 6px;
+            border-radius: 6px;
+            white-space: nowrap;
+        }
+    /* ================================================================
+           ADAPTACIÓN AUTOMÁTICA A MÓVIL (sin app: la misma web responde)
+           - Pantallas táctiles/estrechas: HUD compacto, menús encogidos,
+             sin zoom accidental, sin resaltado de toque, zona segura iPhone.
+           - PC/ventanas grandes: todo queda como estaba (reglas base arriba).
+           ================================================================ */
+        html, body {
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        canvas {
+            touch-action: none;
+        }
+
+        /* Móvil o pantalla táctil: compactar todo el HUD y los menús. */
+        @media (max-width: 900px), (pointer: coarse) {
+            h1 {
+                font-size: 26px;
+            }
+            .btn-main {
+                padding: 10px 16px;
+                font-size: 16px;
+            }
+            input {
+                padding: 10px 16px;
+                font-size: 18px;
+            }
+            .screen select {
+                font-size: 15px;
+            }
+            .lobby-menu {
+                width: min(300px, 82vw);
+            }
+            #lobby-screen .lobby-menu .btn-main {
+                padding: 8px 14px;
+                font-size: 15px;
+            }
+            #lobby-actions .top-btn {
+                width: 46px;
+                height: 46px;
+                font-size: 20px;
+            }
+
+            /* HUD en partida: esquinas compactas que no tapen el mapa. */
+            #ui-top-left {
+                top: 12px;
+                left: 12px;
+                gap: 6px;
+            }
+            #minimap-container {
+                width: 92px;
+                height: 92px;
+                border-width: 2px;
+                border-radius: 6px;
+            }
+            #hp-container {
+                width: 92px;
+                height: 16px;
+                border-width: 2px;
+            }
+            #skill-hud {
+                width: 92px;
+                padding: 4px;
+                gap: 5px;
+            }
+            #skill-icon-box {
+                width: 28px;
+                height: 28px;
+                font-size: 16px;
+            }
+            #skill-key-label {
+                font-size: 9px;
+                padding: 2px;
+            }
+            .is-mobile #skill-key-label {
+                display: none; /* en celular la habilidad se pulsa con el botón táctil */
+            }
+            #hud-top-right {
+                top: 12px;
+                right: 12px;
+            }
+            #pro-stats-panel {
+                padding: 6px 12px;
+                gap: 12px;
+                border-width: 2px;
+                border-radius: 8px;
+            }
+            .stat-box-label {
+                font-size: 9px;
+            }
+            .stat-box-value {
+                font-size: 16px;
+            }
+            #kill-feed {
+                max-width: 200px;
+                margin-top: 6px;
+            }
+            .kill-msg {
+                font-size: 12px;
+                padding: 3px 8px;
+            }
+            #fps-counter-box {
+                display: none; /* en móvil no se muestra el contador de FPS */
+            }
+
+            /* Barra de vida y chat del espectador */
+            #spectator-screen {
+                padding: 12px;
+            }
+
+            /* Zona segura de iPhone (muesca / barra inferior) */
+            #ui-top-left {
+                top: max(12px, env(safe-area-inset-top));
+                left: max(12px, env(safe-area-inset-left));
+            }
+            #hud-top-right {
+                top: max(12px, env(safe-area-inset-top));
+                right: max(12px, env(safe-area-inset-right));
+            }
+            #fps-counter-box {
+                bottom: max(20px, env(safe-area-inset-bottom));
+            }
+
+            /* Botones laterales del lobby: más angostos para que quepan */
+            .lucky-btn, .shop-side-btn {
+                width: 150px;
+                font-size: 13px;
+            }
+        }
+
+        /* Pantallas muy bajas (celular apaisado): compactar aún más. */
+        @media (max-width: 900px) and (max-height: 480px) {
+            #lobby-screen h1 {
+                font-size: 24px;
+                margin: 2px 0;
+            }
+            #lobby-screen .logo-img {
+                width: 90px;
+                margin-top: 6px;
+            }
+            #lobby-screen .lobby-menu {
+                margin-top: 4px;
+            }
+            #lobby-screen .lobby-menu .btn-main {
+                padding: 6px 12px;
+                font-size: 14px;
+            }
+            #profile-panel {
+                padding: 8px 12px;
+                margin-bottom: 6px;
+            }
+        }
+
+        /* Celular en vertical: todo más compacto, sin cortes. */
+        @media (orientation: portrait) and (max-width: 900px) {
+            .screen {
+                overflow-y: auto;
+            }
+            #profile-panel {
+                max-width: 92vw;
+            }
+        }
+
+        /* El lienzo del juego y las pantallas usan el alto REAL del navegador
+           móvil (dvh), que excluye la barra de direcciones. En PC no cambia. */
+        @media (max-width: 900px) {
+            canvas {
+                position: fixed;
+                top: 0;
+                left: 0;
+            }
+            .screen {
+                height: 100dvh;
+            }
+            /* Editor de controles: el escenario más alto en apaisado para
+               arrastrar sin que los controles se amontonen. */
+            #mobile-edit-stage {
+                height: min(66vh, 380px);
+            }
+            /* Joysticks derechos del apaisado: más cerca de las esquinas. */
+            @media (orientation: landscape) {
+                #joy-move-zone { left: 22%; top: 75%; }
+                #joy-aim-zone { left: 78%; top: 75%; }
+                #ui-top-left { top: max(8px, env(safe-area-inset-top)); }
+                #hud-top-right { top: max(8px, env(safe-area-inset-top)); }
+                #minimap-container {
+                    width: 76px;
+                    height: 76px;
+                }
+            }
+        }
     </style>
 </head>
 <body>
@@ -2708,10 +3077,57 @@
 
     <canvas id="gameCanvas"></canvas>
 
+    <!-- CONTROLES TÁCTILES PARA MÓVIL: joystick izquierdo (movimiento 360°),
+         joystick derecho flotante (apuntar el cañón + disparar) y botón de habilidad.
+         Solo se muestran en dispositivos táctiles dentro de una partida. -->
+    <div id="mobile-controls" style="display: none;">
+        <div id="joy-move-zone">
+            <div id="joy-move-base"><div id="joy-move-knob"></div></div>
+        </div>
+        <div id="joy-aim-zone">
+            <div id="joy-aim-base"><div id="joy-aim-knob"></div></div>
+        </div>
+        <button id="mobile-skill-btn" title="Habilidad táctica">🛡️</button>
+    </div>
+
+    <!-- EDITOR DE CONTROLES MÓVILES: arrastra joysticks y el botón de habilidad
+         a la posición que prefieras y guarda. Se abre desde Configuración. -->
+    <div id="mobile-edit-screen" class="screen" style="display: none;">
+        <button id="mce-back-btn" class="btn-main btn-back screen-back-btn" data-i18n="backBtn">REGRESAR</button>
+        <h1 data-i18n="mobileEditTitle">EDITAR CONTROLES TÁCTILES</h1>
+        <p id="mobile-edit-hint">Arrastra cada control a la posición que quieras y pulsa GUARDAR.</p>
+        <div id="mobile-edit-stage">
+            <div id="edit-joy-move" class="edit-control">
+                <div class="edit-joy-base"><div class="edit-joy-knob"></div></div>
+                <span class="edit-label-edit" data-i18n="editMoveLabel">MOVIMIENTO</span>
+            </div>
+            <div id="edit-joy-aim" class="edit-control">
+                <div class="edit-joy-base"><div class="edit-joy-knob"></div></div>
+                <span class="edit-label-edit" data-i18n="editAimLabel">APUNTAR / DISPARAR</span>
+            </div>
+            <div id="edit-skill-btn" class="edit-control">
+                <span class="edit-skill-circle">🛡️</span>
+                <span class="edit-label-edit" data-i18n="editSkillLabel">HABILIDAD</span>
+            </div>
+        </div>
+        <div class="lobby-menu">
+            <button id="mce-save-btn" class="btn-main" style="background-color: #00ff00;" data-i18n="editSaveBtn">GUARDAR</button>
+            <button id="mce-reset-btn" class="btn-main" data-i18n="editResetBtn">RESTAURAR</button>
+        </div>
+        <p id="mobile-edit-msg" style="font-size: 14px; color: #ffcc00; height: 18px; margin-top: 8px; text-align: center;"></p>
+    </div>
+
     <script>
         // --- CONEXIÓN DE SOCKET.IO AL SERVIDOR CENTRAL LATAM ---
         // Se conecta al mismo servidor que sirvió la página (funciona en la web y en local)
         const socket = io();
+        // --- DETECCIÓN DE DISPOSITIVO: marca la página como "móvil" cuando el
+        // visitante entra desde un celular/tablet táctil. La clase is-mobile
+        // activa los ajustes CSS responsivos; en PC no cambia nada. ---
+        const IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile|Windows Phone|BlackBerry/i.test(navigator.userAgent)
+            || (navigator.maxTouchPoints || 0) > 1
+            || 'ontouchstart' in window;
+        if (IS_MOBILE) document.body.classList.add('is-mobile');
         let remotePlayers = {}; 
 
         // --- MODO ESPECTADOR (Campo de Batalla) ---
@@ -4014,6 +4430,9 @@ skinsTitleHeader: "PERSONALIZAR",
             savedControls = null;
         }
 
+        let savedMobileCtrl = null;
+        try { savedMobileCtrl = JSON.parse(localStorage.getItem('ff_mobile_ctrl')); } catch(e) { savedMobileCtrl = null; }
+
         let profile = {
             name: localStorage.getItem('ff_name') || "",
             id: localStorage.getItem('ff_id') || "",
@@ -4037,6 +4456,8 @@ skinsTitleHeader: "PERSONALIZAR",
             google: localStorage.getItem('ff_google') === 'true',
             googleEmail: localStorage.getItem('ff_googlemail') || '',
             hasPassword: localStorage.getItem('ff_haspw') === 'true',
+            mobileUI: localStorage.getItem('ff_mobile_ui') === '1',
+            mobileCtrl: savedMobileCtrl,
             controls: (savedControls && savedControls.up && savedControls.left && savedControls.down && savedControls.right && savedControls.skill) ? savedControls : {
                 up: ['w', ''],
                 left: ['a', ''],
@@ -4445,6 +4866,8 @@ skinsTitleHeader: "PERSONALIZAR",
             localStorage.setItem('ff_google', profile.google);
             localStorage.setItem('ff_googlemail', profile.googleEmail || '');
             localStorage.setItem('ff_haspw', profile.hasPassword);
+            localStorage.setItem('ff_mobile_ui', profile.mobileUI ? '1' : '0');
+            localStorage.setItem('ff_mobile_ctrl', JSON.stringify(profile.mobileCtrl || null));
             localStorage.setItem('ff_ctrl_up', JSON.stringify(profile.controls.up));
             localStorage.setItem('ff_ctrl_left', JSON.stringify(profile.controls.left));
             localStorage.setItem('ff_ctrl_down', JSON.stringify(profile.controls.down));
@@ -4510,6 +4933,7 @@ skinsTitleHeader: "PERSONALIZAR",
         function enterSpectator(killerId, killerName, killerBot) {
             if (currentMode !== 'battlefield' || gameOver || spectateMode) return false;
             spectateMode = true;
+            updateMobileUI();
             spectateTargetType = 'none';
             spectateBotName = null;
             if (killerBot) {
@@ -5048,6 +5472,104 @@ skinsTitleHeader: "PERSONALIZAR",
             configScreen.style.display = 'flex';
         });
 
+        // ---- EDITOR DE CONTROLES TÁCTILES (Controles para móvil) ----
+        const toMobileControlsBtn = document.getElementById('to-mobile-controls-btn');
+        const mobileEditScreen = document.getElementById('mobile-edit-screen');
+        const mceBackBtn = document.getElementById('mce-back-btn');
+        const mceSaveBtn = document.getElementById('mce-save-btn');
+        const mceResetBtn = document.getElementById('mce-reset-btn');
+        const mobileEditMsg = document.getElementById('mobile-edit-msg');
+        const editControls = {
+            move: document.getElementById('edit-joy-move'),
+            aim: document.getElementById('edit-joy-aim'),
+            skill: document.getElementById('edit-skill-btn')
+        };
+        const editingState = { key: null, id: null, offsetX: 0, offsetY: 0 };
+        function layoutEditControls() {
+            const c = getMobileCtrl();
+            const stage = document.getElementById('mobile-edit-stage');
+            if (!stage) return;
+            const r = stage.getBoundingClientRect();
+            editControls.move.style.left = (c.move.cx / 100 * r.width) + 'px';
+            editControls.move.style.top = (c.move.cy / 100 * r.height) + 'px';
+            editControls.aim.style.left = (c.aim.cx / 100 * r.width) + 'px';
+            editControls.aim.style.top = (c.aim.cy / 100 * r.height) + 'px';
+            editControls.skill.style.left = (c.skill.cx / 100 * r.width) + 'px';
+            editControls.skill.style.top = (c.skill.cy / 100 * r.height) + 'px';
+        }
+        function openMobileEditor() {
+            configScreen.style.display = 'none';
+            mobileEditScreen.style.display = 'flex';
+            mobileEditMsg.innerText = "";
+            layoutEditControls();
+        }
+        if (toMobileControlsBtn) toMobileControlsBtn.addEventListener('click', openMobileEditor);
+        if (mceBackBtn) mceBackBtn.addEventListener('click', () => {
+            mobileEditScreen.style.display = 'none';
+            configScreen.style.display = 'flex';
+        });
+        Object.keys(editControls).forEach(key => {
+            const el = editControls[key];
+            el.addEventListener('pointerdown', (e) => {
+                editingState.key = key;
+                editingState.id = e.pointerId;
+                const r = el.getBoundingClientRect();
+                const stage = document.getElementById('mobile-edit-stage').getBoundingClientRect();
+                editingState.offsetX = e.clientX - r.left;
+                editingState.offsetY = e.clientY - r.top;
+                el.classList.add('dragging');
+                el.setPointerCapture(e.pointerId);
+                e.preventDefault();
+            });
+            el.addEventListener('pointermove', (e) => {
+                if (editingState.key !== key || e.pointerId !== editingState.id) return;
+                const stage = document.getElementById('mobile-edit-stage').getBoundingClientRect();
+                let x = e.clientX - stage.left - editingState.offsetX;
+                let y = e.clientY - stage.top - editingState.offsetY;
+                x = Math.max(0, Math.min(stage.width - 60, x));
+                y = Math.max(0, Math.min(stage.height - 60, y));
+                el.style.left = x + 'px';
+                el.style.top = y + 'px';
+            });
+            el.addEventListener('pointerup', (e) => {
+                if (editingState.key !== key || e.pointerId !== editingState.id) return;
+                editingState.key = null;
+                editingState.id = null;
+                el.classList.remove('dragging');
+                mobileEditMsg.innerText = "";
+            });
+            el.addEventListener('pointercancel', (e) => {
+                editingState.key = null;
+                editingState.id = null;
+                el.classList.remove('dragging');
+            });
+        });
+        function clampPct(v) { return Math.max(4, Math.min(96, v)); }
+        function saveMobileCtrlFromEditor() {
+            const stage = document.getElementById('mobile-edit-stage');
+            const r = stage.getBoundingClientRect();
+            const read = (el) => ({
+                cx: clampPct(parseFloat(el.style.left) / r.width * 100),
+                cy: clampPct(parseFloat(el.style.top) / r.height * 100)
+            });
+            profile.mobileCtrl = {
+                move: read(editControls.move),
+                aim: read(editControls.aim),
+                skill: read(editControls.skill)
+            };
+            saveProfile();
+        }
+        if (mceSaveBtn) mceSaveBtn.addEventListener('click', () => {
+            saveMobileCtrlFromEditor();
+            mobileEditMsg.innerText = "✓ Controles guardados";
+            applyMobileCtrlPositions();
+        });
+        if (mceResetBtn) mceResetBtn.addEventListener('click', () => {
+            profile.mobileCtrl = JSON.parse(JSON.stringify(DEFAULT_MOBILE_CTRL));
+            layoutEditControls();
+            mobileEditMsg.innerText = "✓ Posiciones restauradas";
+        });
+
         function startRebind(actionKey, slotIndex) {
             activeRebind = { action: actionKey, index: slotIndex };
             const dict = i18n[profile.language] || i18n["ESPAÑOL"];
@@ -5368,6 +5890,7 @@ applyTranslations();
             statsScreen.style.display = 'none';
             uiTopLeft.style.display = 'flex';
             hudTopRight.style.display = 'flex';
+            updateMobileUI();
             skillHud.style.display = 'none';
             killFeedContainer.innerHTML = '';
             matchStats.kills = 0;
@@ -5485,6 +6008,7 @@ applyTranslations();
             else if (profile.selectedSkill === 'heal') skillHudSymbol.innerText = '💉';
             else if (profile.selectedSkill === 'ghost') skillHudSymbol.innerText = '👻';
             else if (profile.selectedSkill === 'radar') skillHudSymbol.innerText = '📡';
+            if (mobileSkillBtn) mobileSkillBtn.innerText = skillHudSymbol.innerText;
 
             generateObstacles();
             uiTopLeft.style.display = 'flex';
@@ -5500,6 +6024,7 @@ applyTranslations();
             matchStats.damage = 0;
             spawnEnemies();
             updateHUDCounters();
+            updateMobileUI();
         }
 
         toSkillsBtn.addEventListener('click', () => {
@@ -6726,16 +7251,7 @@ applyTranslations();
             if (isShieldActive || isGhostActive) return;
 
             if (e.button === 0 && player.shootCooldown <= 0 && !spectateMode) {
-                bullets.push({
-                    x: player.x, y: player.y, startX: player.x, startY: player.y,
-                    dx: Math.cos(player.angle) * 12, dy: Math.sin(player.angle) * 12,
-                    radius: 4, color: '#ffff00', maxRange: 550, isPlayer: true, owner: 'player'
-                });
-                player.shootCooldown = 15;
-                playShotSound();
-                if (currentMode === 'battlefield') {
-                    socket.emit('player-shot', { x: player.x, y: player.y, angle: player.angle });
-                }
+                firePlayerBullet();
             }
         });
 
@@ -6815,6 +7331,163 @@ applyTranslations();
             return false;
         }
 
+        // ======================= CONTROLES TÁCTILES (MÓVIL) =======================
+        // Doble joystick virtual: izquierdo para movimiento 360° y derecho flotante
+        // para apuntar el cañón y disparar, más un botón de habilidad táctica.
+        // Las posiciones se guardan en profile.mobileCtrl y se editan arrastrando
+        // los controles en el editor (Configuración > Controles para móvil).
+        const DEFAULT_MOBILE_CTRL = {
+            move: { cx: 22, cy: 78 },
+            aim: { cx: 78, cy: 78 },
+            skill: { cx: 90, cy: 52 }
+        };
+        function getMobileCtrl() {
+            const c = profile.mobileCtrl;
+            if (!c || !c.move || !c.aim || !c.skill) return JSON.parse(JSON.stringify(DEFAULT_MOBILE_CTRL));
+            return c;
+        }
+        function mobileUIActive() {
+            return !!profile.mobileUI || ('ontouchstart' in window) || (navigator.maxTouchPoints || 0) > 0;
+        }
+        const joyMove = { active: false, id: null, nx: 0, ny: 0, mag: 0 };
+        const joyAim = { active: false, id: null, dx: 0, dy: 0, mag: 0 };
+        const joyMoveZone = document.getElementById('joy-move-zone');
+        const joyAimZone = document.getElementById('joy-aim-zone');
+        const joyMoveBase = document.getElementById('joy-move-base');
+        const joyAimBase = document.getElementById('joy-aim-base');
+        const joyMoveKnob = document.getElementById('joy-move-knob');
+        const joyAimKnob = document.getElementById('joy-aim-knob');
+        const mobileSkillBtn = document.getElementById('mobile-skill-btn');
+        const mobileControls = document.getElementById('mobile-controls');
+        const JOY_RADIUS = Math.max(30, Math.min(45, Math.round(Math.min(window.innerWidth, window.innerHeight) * 0.11)));
+        function applyMobileCtrlPositions() {
+            const c = getMobileCtrl();
+            joyMoveZone.style.left = c.move.cx + '%';
+            joyMoveZone.style.top = c.move.cy + '%';
+            joyAimZone.style.left = c.aim.cx + '%';
+            joyAimZone.style.top = c.aim.cy + '%';
+            mobileSkillBtn.style.left = c.skill.cx + '%';
+            mobileSkillBtn.style.top = c.skill.cy + '%';
+        }
+        function updateMobileUI() {
+            const show = mobileUIActive() && gameStarted && !gameOver && !spectateMode;
+            if (mobileControls) mobileControls.style.display = show ? 'block' : 'none';
+            if (show) applyMobileCtrlPositions();
+        }
+        function resetJoyMoveKnob() {
+            joyMoveKnob.style.transform = 'translate(0,0)';
+        }
+        function resetJoyAimKnob() {
+            joyAimKnob.style.transform = 'translate(0,0)';
+        }
+        function onJoyMoveDown(e) {
+            if (!gameStarted || gameOver || spectateMode) return;
+            joyMove.active = true;
+            joyMove.id = e.pointerId;
+            joyMove.ox = e.clientX;
+            joyMove.oy = e.clientY;
+            joyMoveZone.classList.add('active');
+            joyMoveBase.style.position = 'fixed';
+            joyMoveBase.style.left = e.clientX + 'px';
+            joyMoveBase.style.top = e.clientY + 'px';
+            joyMoveBase.style.margin = '0';
+            joyMoveBase.style.transform = 'translate(-50%, -50%)';
+            joyMoveKnob.style.transform = 'translate(0,0)';
+            joyMoveZone.setPointerCapture(e.pointerId);
+            e.preventDefault();
+        }
+        function onJoyMoveMove(e) {
+            if (!joyMove.active || e.pointerId !== joyMove.id) return;
+            let dx = e.clientX - joyMove.ox;
+            let dy = e.clientY - joyMove.oy;
+            let d = Math.hypot(dx, dy);
+            let cl = d > JOY_RADIUS ? JOY_RADIUS / d : 1;
+            joyMoveKnob.style.transform = 'translate(' + (dx * cl) + 'px,' + (dy * cl) + 'px)';
+            joyMove.mag = Math.min(1, d / JOY_RADIUS);
+            joyMove.nx = (dx / (d || 1)) * joyMove.mag;
+            joyMove.ny = (dy / (d || 1)) * joyMove.mag;
+        }
+        function onJoyMoveUp(e) {
+            if (!joyMove.active || e.pointerId !== joyMove.id) return;
+            joyMove.active = false;
+            joyMove.id = null;
+            joyMove.nx = 0; joyMove.ny = 0; joyMove.mag = 0;
+            joyMoveZone.classList.remove('active');
+            resetJoyMoveKnob();
+        }
+        function onJoyAimDown(e) {
+            if (!gameStarted || gameOver || spectateMode) return;
+            joyAim.active = true;
+            joyAim.id = e.pointerId;
+            joyAim.ox = e.clientX;
+            joyAim.oy = e.clientY;
+            joyAimZone.classList.add('active');
+            joyAimBase.style.position = 'fixed';
+            joyAimBase.style.left = e.clientX + 'px';
+            joyAimBase.style.top = e.clientY + 'px';
+            joyAimBase.style.margin = '0';
+            joyAimBase.style.transform = 'translate(-50%, -50%)';
+            joyAimKnob.style.transform = 'translate(0,0)';
+            joyAimZone.setPointerCapture(e.pointerId);
+            e.preventDefault();
+        }
+        function onJoyAimMove(e) {
+            if (!joyAim.active || e.pointerId !== joyAim.id) return;
+            let dx = e.clientX - joyAim.ox;
+            let dy = e.clientY - joyAim.oy;
+            let d = Math.hypot(dx, dy);
+            let cl = d > JOY_RADIUS ? JOY_RADIUS / d : 1;
+            joyAimKnob.style.transform = 'translate(' + (dx * cl) + 'px,' + (dy * cl) + 'px)';
+            joyAim.dx = dx; joyAim.dy = dy;
+            joyAim.mag = Math.min(1, d / JOY_RADIUS);
+        }
+        function onJoyAimUp(e) {
+            if (!joyAim.active || e.pointerId !== joyAim.id) return;
+            joyAim.active = false;
+            joyAim.id = null;
+            joyAim.dx = 0; joyAim.dy = 0; joyAim.mag = 0;
+            joyAimZone.classList.remove('active');
+            resetJoyAimKnob();
+        }
+        if (joyMoveZone) {
+            joyMoveZone.addEventListener('pointerdown', onJoyMoveDown);
+            joyMoveZone.addEventListener('pointermove', onJoyMoveMove);
+            joyMoveZone.addEventListener('pointerup', onJoyMoveUp);
+            joyMoveZone.addEventListener('pointercancel', onJoyMoveUp);
+        }
+        if (joyAimZone) {
+            joyAimZone.addEventListener('pointerdown', onJoyAimDown);
+            joyAimZone.addEventListener('pointermove', onJoyAimMove);
+            joyAimZone.addEventListener('pointerup', onJoyAimUp);
+            joyAimZone.addEventListener('pointercancel', onJoyAimUp);
+        }
+        // Al girar el celular o cerrar/abrir la barra del navegador, el canvas
+        // se redimensiona al momento (la cámara y el HUD táctil se adaptan solos).
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+        if (mobileSkillBtn) {
+            mobileSkillBtn.addEventListener('click', () => {
+                if (gameStarted && !gameOver && !spectateMode) triggerSkillAction();
+            });
+        }
+
+        // ---- Disparo del jugador (compartido por ratón y joystick derecho) ----
+        function firePlayerBullet() {
+            if (spectateMode || player.shootCooldown > 0 || gameOver) return;
+            bullets.push({
+                x: player.x, y: player.y, startX: player.x, startY: player.y,
+                dx: Math.cos(player.angle) * 12, dy: Math.sin(player.angle) * 12,
+                radius: 4, color: '#ffff00', maxRange: 550, isPlayer: true, owner: 'player'
+            });
+            player.shootCooldown = 15;
+            playShotSound();
+            if (currentMode === 'battlefield') {
+                socket.emit('player-shot', { x: player.x, y: player.y, angle: player.angle });
+            }
+        }
+
         function hasLineOfSight(x1, y1, x2, y2) {
             let steps = Math.ceil(Math.hypot(x2 - x1, y2 - y1) / 10);
             for (let i = 1; i <= steps; i++) {
@@ -6847,6 +7520,14 @@ applyTranslations();
             if(gameOver || !gameStarted) return;
 
             if (player.shootCooldown > 0) player.shootCooldown--;
+
+            // Joystick derecho táctil: apunta el cañón y dispara mientras esté presionado
+            if (joyAim.active && !spectateMode) {
+                if (joyAim.mag > 0.1) {
+                    player.angle = Math.atan2(joyAim.dy, joyAim.dx);
+                }
+                firePlayerBullet();
+            }
 
             let wasGhostActive = skillState.active && profile.selectedSkill === 'ghost';
 
@@ -6881,6 +7562,7 @@ applyTranslations();
             let timeSinceUsed = performance.now() - skillState.lastUsedTime;
             let cooldownPercent = Math.max(0, 100 - (timeSinceUsed / skillState.maxCooldown) * 100);
             skillCooldownOverlay.style.height = cooldownPercent + '%';
+            if (mobileSkillBtn) mobileSkillBtn.classList.toggle('cooldown', cooldownPercent > 0 || skillState.active);
 
             if (currentMode === 'battlefield') {
                 safeZone.timer++;
@@ -6936,10 +7618,16 @@ applyTranslations();
             let nextX = player.x;
             let nextY = player.y;
             if (!spectateMode) {
-                if (isActionPressed('up')) nextY -= player.speed;
-                if (isActionPressed('down')) nextY += player.speed;
-                if (isActionPressed('left')) nextX -= player.speed;
-                if (isActionPressed('right')) nextX += player.speed;
+                if (joyMove.active && joyMove.mag > 0.12) {
+                    // Joystick táctil: movimiento en 360 grados con velocidad constante
+                    nextX += joyMove.nx * player.speed;
+                    nextY += joyMove.ny * player.speed;
+                } else {
+                    if (isActionPressed('up')) nextY -= player.speed;
+                    if (isActionPressed('down')) nextY += player.speed;
+                    if (isActionPressed('left')) nextX -= player.speed;
+                    if (isActionPressed('right')) nextX += player.speed;
+                }
             }
 
             let canMoveX = true;
@@ -7740,6 +8428,7 @@ applyTranslations();
             spectateTargetType = 'none';
             spectateBotName = null;
             spectatorScreen.style.display = 'none';
+            updateMobileUI();
 
             // Liberar la partida en el servidor SIEMPRE (ganes, pierdas o salgas):
             // sin esto el socket queda "dentro" de la sala y no puede volver a buscar

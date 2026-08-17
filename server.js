@@ -45,6 +45,10 @@ const io = new Server(server, {
   connectTimeout: 20000,
 });
 
+app.use((req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store');
+  next();
+});
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.get('/health', (req, res) => res.send('ok'));
