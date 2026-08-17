@@ -3414,6 +3414,7 @@ loginSection: "— INICIAR SESIÓN —",
                 errBadPass: "⚠️ Contraseña incorrecta",
                 errNameTaken: "⚠️ Ese nickname ya está registrado. Inicia sesión con tu contraseña",
                 errGeneric: "⚠️ Sin conexión con el servidor. Intenta de nuevo",
+                errConnecting: "Conectando al servidor... reintentando automáticamente",
                 nicknamePlaceholder: "Ingresa tu Nickname",
                 lobbyTitle: "SALA DE COMANDO",
                 soldierLabel: "Soldado",
@@ -3671,6 +3672,7 @@ loginSection: "— SIGN IN —",
                 errBadPass: "⚠️ Incorrect password",
                 errNameTaken: "⚠️ That nickname is already registered. Log in with your password",
                 errGeneric: "⚠️ No server connection. Try again",
+                errConnecting: "Connecting to server... retrying automatically",
                 nicknamePlaceholder: "Enter your Nickname",
                 lobbyTitle: "COMMAND ROOM",
                 soldierLabel: "Soldier",
@@ -3928,6 +3930,7 @@ loginSection: "— 登录 —",
                 errBadPass: "⚠️ 密码错误",
                 errNameTaken: "⚠️ 该昵称已被注册。请使用密码登录",
                 errGeneric: "⚠️ 无法连接服务器，请重试",
+                errConnecting: "正在连接服务器... 自动重试中",
                 nicknamePlaceholder: "输入您的昵称",
                 lobbyTitle: "指挥室",
                 soldierLabel: "士兵",
@@ -4185,6 +4188,7 @@ loginSection: "— ENTRAR —",
                 errBadPass: "⚠️ Senha incorreta",
                 errNameTaken: "⚠️ Esse apelido já está registrado. Faça login com sua senha",
                 errGeneric: "⚠️ Sem conexão com o servidor. Tente novamente",
+                errConnecting: "Conectando ao servidor... tentando novamente automaticamente",
                 nicknamePlaceholder: "Digite seu Apelido",
                 lobbyTitle: "SALA DE COMANDO",
                 soldierLabel: "Soldado",
@@ -5155,7 +5159,8 @@ skinsTitleHeader: "PERSONALIZAR",
                 return;
             }
             if (!socket.connected) {
-                showLoginMessage(dict.errGeneric);
+                showLoginMessage(dict.errConnecting);
+                socket.once('connect', () => socket.emit('account-login', { name: typedName, password: typedPass }));
                 return;
             }
             showLoginMessage("...");
