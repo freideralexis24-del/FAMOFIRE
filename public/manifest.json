@@ -1,0 +1,32 @@
+{
+  "name": "FAMOFIRE - Battle Royale de Tanques",
+  "short_name": "FAMOFIRE",
+  "description": "Battle royale de tanques: entrenamiento, campo de batalla online y tienda premium.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1a2b14",
+  "theme_color": "#1a2b14",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

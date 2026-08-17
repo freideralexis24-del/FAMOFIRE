@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>FAMOFIRE</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+    <!-- PWA: al "Agregar a pantalla de inicio" el juego abre a pantalla
+         completa, SIN la barra de URL del navegador (todo el espacio para jugar). -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-180.png">
+    <meta name="theme-color" content="#1a2b14">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <!-- Librería de Socket.io importada -->
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
@@ -2192,11 +2201,11 @@
                 font-size: 15px;
             }
             .lobby-menu {
-                width: min(300px, 82vw);
+                width: min(320px, 88vw);
             }
             #lobby-screen .lobby-menu .btn-main {
-                padding: 8px 14px;
-                font-size: 15px;
+                padding: 12px 22px;
+                font-size: 17px;
             }
             #lobby-actions .top-btn {
                 width: 46px;
@@ -2305,8 +2314,8 @@
                 margin-top: 4px;
             }
             #lobby-screen .lobby-menu .btn-main {
-                padding: 6px 12px;
-                font-size: 14px;
+                padding: 9px 16px;
+                font-size: 15px;
             }
             #profile-panel {
                 padding: 8px 12px;
