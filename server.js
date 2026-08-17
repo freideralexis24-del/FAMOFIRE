@@ -290,6 +290,14 @@ app.post('/api/admin-set', async (req, res) => {
       newId = uniqueId();
       acc.id = newId;
     }
+    if (req.body && req.body.setId) {
+      const sid = String(req.body.setId).trim();
+      if (!isNewStyleId(sid)) return res.status(400).json({ ok: false, error: 'bad-id-format' });
+      const clash = Object.keys(accounts).find(k => k !== accountKey && String(accounts[k].id || '').toUpperCase() === sid.toUpperCase());
+      if (clash) return res.status(409).json({ ok: false, error: 'id-taken', by: clash });
+      acc.id = sid;
+      newId = sid;
+    }
     saveAccounts();
     res.json({ ok: true, account: accountKey, oldId, id: acc.id, newId, gems: acc.gems, ownsCount: acc.owns.length });
   } catch (e) {
