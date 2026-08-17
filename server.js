@@ -472,6 +472,47 @@ try {
 const RESET_SECRET = process.env.RESET_SECRET || 'famofire-local-reset-secret';
 const RESET_TTL_MIN = Math.max(1, parseInt(process.env.RESET_TTL_MINUTES || '30', 10) || 30); // minutos de validez del enlace
 const APP_BASE_URL = (process.env.APP_URL || (process.env.RENDER_EXTERNAL_URL ? 'https://' + process.env.RENDER_EXTERNAL_URL : 'http://localhost:3000')).replace(/\/+$/, '');
+// Nombre/remitente que ven los jugadores. Con API (Brevo/Resend) DEBE ser un
+// remitente verificado en la plataforma para no caer en spam.
+const MAIL_FROM = process.env.EMAIL_FROM || process.env.SMTP_FROM || process.env.SMTP_USER || 'FAMOFIRE <noreply@famofire.com>';
+
+// ---- Envío por API dedicada (Brevo / Resend) ----
+// Preferido frente a SMTP: IPs de envío dedicadas, mejor reputación (menos
+// riesgo de spam) y sin problemas de IPv6/ENETUNREACH. Solo se usa si existe
+// BREVO_API_KEY o RESEND_API_KEY en el entorno; si no, se cae a SMTP.
+function apiMailProvider() {
+  if (process.env.BREVO_API_KEY) return 'brevo';
+  if (process.env.RESEND_API_KEY) return 'resend';
+  return null;
+}
+function mailFromParts() {
+  if (typeof MAIL_FROM === 'string' && MAIL_FROM.includes('<')) {
+    const m = MAIL_FROM.match(/^(.*?)\s*<([^>]+)>$/);
+    if (m) return { name: m[1].trim(), email: m[2].trim() };
+  }
+  return { name: 'FAMOFIRE', email: MAIL_FROM };
+}
+async function sendMailViaApi(to, subject, html) {
+  const prov = apiMailProvider();
+  const from = mailFromParts();
+  if (prov === 'brevo') {
+    const r = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: { 'api-key': process.env.BREVO_API_KEY, 'content-type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify({ sender: { name: from.name, email: from.email }, to: [{ email: to }], subject, htmlContent: html })
+    });
+    if (!r.ok) throw new Error('BREVO HTTP ' + r.status + ': ' + String(await r.text()).slice(0, 160));
+  } else if (prov === 'resend') {
+    const r = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { authorization: 'Bearer ' + process.env.RESEND_API_KEY, 'content-type': 'application/json' },
+      body: JSON.stringify({ from: MAIL_FROM, to: [to], subject, html })
+    });
+    if (!r.ok) throw new Error('RESEND HTTP ' + r.status + ': ' + String(await r.text()).slice(0, 160));
+  } else {
+    throw new Error('sin proveedor de API configurado');
+  }
+}
 
 // ---- Moneda del juego: FAMOCOINS (estilo diamantes de Free Fire) ----
 // El jugador compra FamoCoins con dinero real (Mercado Pago) y con ellas compra
@@ -1284,20 +1325,31 @@ socket.emit('account-result', { ok: true, account: { id: accounts[name].id, name
       if (!acc.googleId) return socket.emit('password-reset-requested', { ok: false, error: 'no-email' });
       const token = resetToken(acc.googleId, 'pwreset');
       const resetUrl = APP_BASE_URL + '/?reset=' + encodeURIComponent(token);
+      const resetHtml = `<h2>Restablecer contraseña</h2><p>Soldado <b>${accountKey}</b>: abre este enlace para elegir una contraseña nueva:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>El enlace expira en <b>${RESET_TTL_MIN} minutos</b>. Si no lo pediste, ignora este correo.</p>`;
       let emailed = false, emailStatus = 'off', emailError = '';
       if (!acc.googleEmail) {
         // Hay SMTP, pero esta cuenta no tiene correo vinculado: el jugador
         // debe entrar con Google para vincularlo (mensaje claro, no "modo local").
         emailStatus = 'no-target';
+      } else if (apiMailProvider()) {
+        try {
+          await sendMailViaApi(acc.googleEmail, 'FAMOFIRE - Restablecer contraseña', resetHtml);
+          emailed = true;
+          emailStatus = 'sent';
+        } catch (e) {
+          emailStatus = 'failed';
+          emailError = String((e && e.message) || e || '').replace(/</g, '&lt;').slice(0, 200);
+          console.error('[EMAIL] no se pudo enviar (API):', e.message);
+        }
       } else if (!transporter) {
         emailStatus = 'off';
       } else {
         try {
           await transporter.sendMail({
-            from: process.env.SMTP_FROM || process.env.SMTP_USER,
+            from: MAIL_FROM,
             to: acc.googleEmail,
             subject: 'FAMOFIRE - Restablecer contraseña',
-            html: `<h2>Restablecer contraseña</h2><p>Soldado <b>${accountKey}</b>: abre este enlace para elegir una contraseña nueva:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>El enlace expira en <b>${RESET_TTL_MIN} minutos</b>. Si no lo pediste, ignora este correo.</p>`
+            html: resetHtml
           });
           emailed = true;
           emailStatus = 'sent';
