@@ -824,6 +824,99 @@
         .shop-status.soon { color: #999; }
         .shop-buy { font-size: 14px; padding: 8px 14px; }
         .shop-sub { font-size: 13px; color: #aaa; text-align: center; max-width: 640px; }
+        .shop-fondo-pv {
+            width: 92px;
+            height: 92px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid rgba(255, 255, 255, 0.12);
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .shop-fondo-pv-emoji { font-size: 30px; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8)); position: relative; z-index: 2; }
+        .fondo-option.locked { opacity: 0.6; }
+        /* FONDO ANIMADO "LAGO DE LAVA": la lava se llena y se vacía en bucle */
+        .pf-lava { position: relative; overflow: hidden; }
+        .pf-lava-fill {
+            position: absolute;
+            left: -5%;
+            right: -5%;
+            bottom: -2%;
+            height: 10%;
+            border-radius: 50% 50% 0 0;
+            background: linear-gradient(to top, #ff4d00 0%, #ff9d00 55%, rgba(255, 160, 40, 0.25) 100%);
+            animation: lavaCycle 6s ease-in-out infinite;
+            z-index: 0;
+            pointer-events: none;
+        }
+        @keyframes lavaCycle { 0% { height: 8%; } 30% { height: 88%; } 50% { height: 88%; } 80% { height: 12%; } 100% { height: 8%; } }
+        .pf-bubble { position: absolute; bottom: 8%; width: 5px; height: 5px; border-radius: 50%; background: rgba(255, 190, 60, 0.95); animation: lavaBubble 3.2s ease-in infinite; z-index: 1; pointer-events: none; }
+        @keyframes lavaBubble { 0% { transform: translateY(0); opacity: 0; } 12% { opacity: 1; } 100% { transform: translateY(-70px); opacity: 0; } }
+        .pf-bubble.b2 { width: 4px; height: 4px; animation-duration: 2.6s; animation-delay: .8s; }
+        .pf-bubble.b3 { width: 6px; height: 6px; animation-duration: 3.8s; animation-delay: 1.4s; }
+        /* FONDO "GALAXIA": estrellas que derivan */
+        .pf-stars::before, .pf-stars::after {
+            content: '';
+            position: absolute;
+            inset: -20%;
+            background-image:
+                radial-gradient(2px 2px at 30% 40%, #fff, transparent),
+                radial-gradient(2px 2px at 70% 20%, #cfe8ff, transparent),
+                radial-gradient(2px 2px at 45% 70%, #fff, transparent),
+                radial-gradient(2px 2px at 85% 55%, #ffe9a8, transparent),
+                radial-gradient(2px 2px at 15% 85%, #fff, transparent),
+                radial-gradient(2px 2px at 60% 10%, #9fd8ff, transparent);
+            background-repeat: repeat;
+            background-size: 140px 140px;
+            z-index: 0;
+            pointer-events: none;
+            animation: starDrift 22s linear infinite;
+        }
+        .pf-stars::after { inset: -40%; background-position: 0 0, 30px 40px, 60px 10px, 10px 80px, 90px 50px, 50px 100px; animation: starDrift 30s linear infinite reverse; opacity: .7; }
+        @keyframes starDrift { from { transform: translateY(0); } to { transform: translateY(80px); } }
+        /* FONDO "TORMENTA": rayo que cruza */
+        .pf-storm::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(115deg, transparent 40%, rgba(180, 220, 255, 0.35) 48%, rgba(255, 255, 255, 0.6) 50%, rgba(180, 220, 255, 0.35) 52%, transparent 60%);
+            transform: translateX(-130%);
+            animation: stormFlash 5.2s ease-in-out infinite;
+            z-index: 0;
+            pointer-events: none;
+        }
+        @keyframes stormFlash { 0%, 82%, 100% { transform: translateX(-130%); } 8%, 90% { transform: translateX(130%); } }
+        /* FONDO "ORO": brillo que barre la tarjeta */
+        .pf-gold::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(100deg, transparent 30%, rgba(255, 215, 120, 0.22) 50%, transparent 70%);
+            background-size: 220% 100%;
+            animation: goldShine 4.4s linear infinite;
+            z-index: 0;
+            pointer-events: none;
+        }
+        @keyframes goldShine { 0% { background-position: 180% 0; } 100% { background-position: -80% 0; } }
+        /* El contenido de la tarjeta siempre queda encima de las animaciones de fondo */
+        #profile-card > * { position: relative; z-index: 1; }
+        /* MODAL "PROBAR" de la tienda: vista previa viva del artículo */
+        .try-premium { position: fixed; inset: 0; z-index: 1300; display: none; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(2px); }
+        .try-premium.open { display: flex; }
+        .try-box { background: #0b0f14; border: 2px solid #ffcc00; border-radius: 16px; padding: 18px; max-width: 380px; width: 100%; text-align: center; box-shadow: 0 0 50px rgba(255, 204, 0, 0.3); }
+        .try-preview { height: 180px; border-radius: 12px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; background: rgba(0, 0, 0, 0.4); background-size: cover; background-position: center; }
+        .try-preview canvas.ff-skin-preview { width: 120px; height: 120px; }
+        .try-avatar-big { font-size: 88px; line-height: 120px; position: relative; z-index: 1; }
+        .try-banner-big { display: inline-block; padding: 28px 42px; border-radius: 16px; background: rgba(0, 0, 0, 0.45); font-size: 40px; position: relative; z-index: 1; }
+        .try-emoji-big { font-size: 64px; position: relative; z-index: 1; }
+        .try-name { font-size: 19px; font-weight: bold; color: #ffcc00; margin: 10px 0 4px; }
+        .try-desc { font-size: 13px; color: #bbb; margin-bottom: 8px; }
+        .try-msg { font-size: 12px; color: #2ede62; margin: 8px 0; min-height: 16px; }
+        .try-actions { display: flex; gap: 10px; justify-content: center; margin-top: 8px; }
         /* Vistas previas animadas en la tienda: la skin en vivo y el banner real */
         .shop-skin-pv {
             width: 92px;
@@ -2450,6 +2543,7 @@
             <button id="shop-tab-skins" class="shop-tab active" onclick="setShopTab('skins')"><span data-i18n="shopTabSkins">SKINS</span></button>
             <button id="shop-tab-banners" class="shop-tab" onclick="setShopTab('banners')"><span data-i18n="shopTabBanners">BANNERS</span></button>
             <button id="shop-tab-avatars" class="shop-tab" onclick="setShopTab('avatars')"><span data-i18n="shopTabAvatars">AVATARES</span></button>
+            <button id="shop-tab-fondos" class="shop-tab" onclick="setShopTab('fondos')"><span data-i18n="shopTabFondos">FONDOS</span></button>
         </div>
         <div class="shop-grid" id="shop-grid"></div>
         <p id="shop-msg" style="font-size: 14px; color: #ffcc00; height: 36px; margin-top: 8px; text-align: center;"></p>
@@ -2910,6 +3004,8 @@ loginSection: "— INICIAR SESIÓN —",
                 shopTabSkins: "SKINS",
                 shopTabAvatars: "AVATARES",
                 shopTabBanners: "BANNERS",
+                shopTabFondos: "FONDOS",
+                tryPreview: "PROBAR",
                 avatarLocked: "Este avatar se compra en la TIENDA con FamoCoins.",
                 needMoreCoins: "Te faltan FamoCoins",
                 mailBtn: "CORREO",
@@ -3165,6 +3261,8 @@ loginSection: "— SIGN IN —",
                 shopTabSkins: "SKINS",
                 shopTabAvatars: "AVATARS",
                 shopTabBanners: "BANNERS",
+                shopTabFondos: "WALLPAPERS",
+                tryPreview: "TRY",
                 avatarLocked: "This avatar can be bought in the SHOP with FamoCoins.",
                 needMoreCoins: "Need FamoCoins",
                 mailBtn: "MAIL",
@@ -3420,6 +3518,8 @@ loginSection: "— 登录 —",
                 shopTabSkins: "服装",
                 shopTabAvatars: "头像",
                 shopTabBanners: "挂件",
+                shopTabFondos: "背景",
+                tryPreview: "试玩",
                 avatarLocked: "此头像可在商店中用 FamoCoins 购买。",
                 needMoreCoins: "FamoCoins 不足",
                 mailBtn: "邮件",
@@ -3675,6 +3775,8 @@ loginSection: "— ENTRAR —",
                 buyCancel: "CANCELAR",
                 shopTabSkins: "SKINS",
                 shopTabAvatars: "AVATARES",
+                shopTabFondos: "FUNDOS",
+                tryPreview: "TESTAR",
                 avatarLocked: "Este avatar pode ser comprado na LOJA com FamoCoins.",
                 needMoreCoins: "Faltam FamoCoins",
                 mailBtn: "CORREIO",
@@ -4074,7 +4176,7 @@ skinsTitleHeader: "PERSONALIZAR",
         let shopEnabled = false;
         let shopProvider = 'none';
         let shopPackages = [];
-        let gemCfg = { name: 'GEMAS', emoji: '💎', img: '' };
+        let gemCfg = { name: 'FamoCoins', emoji: '💎', img: '/img/coin.png' };
         const gemPacks = document.getElementById('gem-packs');
         const gemPill = document.getElementById('gem-pill');
         const gemGlyph = document.getElementById('gem-glyph');
@@ -4086,6 +4188,7 @@ skinsTitleHeader: "PERSONALIZAR",
         const shopTabSkins = document.getElementById('shop-tab-skins');
         const shopTabBanners = document.getElementById('shop-tab-banners');
         const shopTabAvatars = document.getElementById('shop-tab-avatars');
+        const shopTabFondos = document.getElementById('shop-tab-fondos');
         const shopMsgEl = document.getElementById('shop-msg');
         let shopTab = 'skins';
         const ranksScreen = document.getElementById('ranks-screen');
@@ -4305,6 +4408,8 @@ skinsTitleHeader: "PERSONALIZAR",
         }
 
         applyTranslations();
+        // Moneda: cargar y pintar coin.png desde el arranque (antes del login).
+        primeCoin();
 
         function saveProfile() {
             localStorage.setItem('ff_name', profile.name);
@@ -4538,10 +4643,12 @@ skinsTitleHeader: "PERSONALIZAR",
             }, 4000);
         }
 
+        let _hudAliveCache = -1, _hudKillsCache = -1;
+        // Solo se escribe en el DOM cuando el valor cambia (evita reflow por frame).
         function updateHUDCounters() {
             let totalAlive = enemies.length + 1 + Object.keys(remotePlayers).length;
-            hudAlive.innerText = totalAlive;
-            hudKills.innerText = matchStats.kills;
+            if (totalAlive !== _hudAliveCache) { _hudAliveCache = totalAlive; hudAlive.innerText = totalAlive; }
+            if (matchStats.kills !== _hudKillsCache) { _hudKillsCache = matchStats.kills; hudKills.innerText = matchStats.kills; }
         }
 
         function showLoginMessage(msg) {
@@ -4565,9 +4672,9 @@ skinsTitleHeader: "PERSONALIZAR",
             }
             saveProfile();
             updateLobbyUI();
-            applyGemConfig();
+            paintGemUI();
             updateGemUI();
-            refreshGemCfg();
+            primeCoin();
             socket.emit('player-join', { name: profile.name, color: profile.color, skin: profile.skin || '' });
             socket.emit('get-mails'); // badge del buzón al entrar
             loginScreen.style.display = 'none';
@@ -4953,7 +5060,7 @@ skinsTitleHeader: "PERSONALIZAR",
         function setLanguage(lang) {
             profile.language = lang;
             saveProfile();
-            applyTranslations();
+applyTranslations();
             updateLobbyUI();
             const dict = i18n[profile.language] || i18n["ESPAÑOL"];
             langSelectedMsg.innerText = `${dict.langChanged} ${lang}`;
@@ -5500,13 +5607,25 @@ skinsTitleHeader: "PERSONALIZAR",
             { id: 'fondo_lava', label: 'Lava', image: 'linear-gradient(140deg, #7a1f0a 0%, #1a0a06 100%)' },
             { id: 'fondo_camo', label: 'Camuflaje', image: 'repeating-linear-gradient(45deg, rgba(0,0,0,0.35) 0px 12px, rgba(255,255,255,0.05) 12px 24px), linear-gradient(160deg, #2c4a1e 0%, #141f0c 100%)' }
         ];
+        let FONDO_EXTRA = [];
+        // Suma los fondos premium de la TIENDA a las opciones normales.
+        function getAllFondos() {
+            if (!FONDO_EXTRA.length && shopCatalog.length) {
+                FONDO_EXTRA = shopCatalog.filter(it => it.type === 'fondo').map(x => ({ id: x.id, label: x.name, image: x.bg, emoji: x.emoji, anim: x.anim, premium: true }));
+            }
+            return FONDO_OPTIONS.concat(FONDO_EXTRA);
+        }
         function buildFondoGrid() {
             fondoGrid.innerHTML = '';
-            FONDO_OPTIONS.forEach(f => {
+            getAllFondos().forEach(f => {
+                const owned = !f.premium || (profile.owns || []).includes(f.id);
                 const opt = document.createElement('div');
-                opt.className = 'fondo-option' + (profile.fondo === f.id ? ' selected' : '');
-                opt.innerHTML = '<div class="fondo-swatch" style="' + (f.image ? 'background-image:' + f.image + ';' : 'background:#10131c;') + '"></div><span>' + f.label + '</span>';
-                opt.addEventListener('click', () => selectFondo(f.id, opt));
+                opt.className = 'fondo-option' + (profile.fondo === f.id ? ' selected' : '') + (owned ? '' : ' locked');
+                opt.innerHTML = '<div class="fondo-swatch" style="' + (f.image ? 'background-image:' + f.image + ';' : 'background:#10131c;') + '"></div><span>' + (f.emoji ? f.emoji + ' ' : '') + f.label + (owned ? '' : ' 🔒') + '</span>';
+                opt.addEventListener('click', () => {
+                    if (!owned) { openTryItem(f.id); return; }
+                    selectFondo(f.id);
+                });
                 fondoGrid.appendChild(opt);
             });
         }
@@ -5519,9 +5638,10 @@ skinsTitleHeader: "PERSONALIZAR",
         function applyProfileFondo() {
             const card = document.getElementById('profile-card');
             if (!card) return;
-            const f = FONDO_OPTIONS.find(x => x.id === profile.fondo);
+            const f = getAllFondos().find(x => x.id === profile.fondo);
             card.style.backgroundImage = (f && f.image) ? f.image : 'none';
             card.style.backgroundSize = 'cover';
+            applyFondoAnim(card, f && f.anim);
         }
 
         // ---- BANNERS DE PERFIL ----
@@ -5701,6 +5821,7 @@ skinsTitleHeader: "PERSONALIZAR",
             shopTabSkins.classList.toggle('active', tab === 'skins');
             shopTabBanners.classList.toggle('active', tab === 'banners');
             shopTabAvatars.classList.toggle('active', tab === 'avatars');
+            shopTabFondos.classList.toggle('active', tab === 'fondos');
             buildShopGrid();
         }
 
@@ -5723,7 +5844,11 @@ skinsTitleHeader: "PERSONALIZAR",
             avatar_king: { name: 'Avatar Rey', emoji: '👑' },
             avatar_genie: { name: 'Avatar Genio', emoji: '🧞' },
             avatar_guard: { name: 'Avatar Guardia Real', emoji: '💂' },
-            avatar_scorp: { name: 'Avatar Escorpión', emoji: '🦂' }
+            avatar_scorp: { name: 'Avatar Escorpión', emoji: '🦂' },
+            fondo_lagolava: { name: 'Fondo Lago de Lava', emoji: '🌋' },
+            fondo_galaxia: { name: 'Fondo Galaxia Infinita', emoji: '🌌' },
+            fondo_trueno: { name: 'Fondo Tormenta Eléctrica', emoji: '⚡' },
+            fondo_oro: { name: 'Fondo Oro de Leyenda', emoji: '👑' }
         };
         let lastMails = [];
         function updateMailBadge() {
@@ -5916,27 +6041,31 @@ skinsTitleHeader: "PERSONALIZAR",
                 if (mailMsgEl) mailMsgEl.innerText = msg;
             }
         });
-        // Ícono de la moneda: imagen del juego si el servidor la publica, si no emoji.
+        // ================= MONEDA FAMOCOINS (coin.png) =================
+        // La imagen llega del servidor en /config (shop.currency.img) y el
+        // archivo real está en /img/coin.png. Se usa SIEMPRE la imagen; solo
+        // si no carga se muestra el emoji, así el glifo nunca queda vacío.
         function gemIconHtml(size) {
-            if (gemCfg.img) {
-                return '<img class="gem-icon" src="' + gemCfg.img + '" alt="' + (gemCfg.name || 'moneda') + '" style="width:' + size + 'px;height:' + size + 'px;object-fit:contain;vertical-align:middle;">';
-            }
-            return (gemCfg.emoji || '💎');
+            const src = gemCfg.img || '/img/coin.png';
+            const emoji = gemCfg.emoji || '💎';
+            const name = gemCfg.name || 'FamoCoins';
+            return '<img class="gem-icon" src="' + src + '" alt="' + name + '" style="width:' + size + 'px;height:' + size + 'px;object-fit:contain;vertical-align:middle;" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'inline\';"><span class="gem-icon-emoji" style="display:none;font-size:' + Math.round(size * 0.8) + 'px;line-height:' + size + 'px;vertical-align:middle;">' + emoji + '</span>';
         }
-        function applyGemConfig() {
+        function paintGemUI() {
             const dict = i18n[profile.language] || i18n["ESPAÑOL"];
-            const name = (gemCfg && gemCfg.name) ? gemCfg.name : dict.gemName;
-            const emoji = (gemCfg && gemCfg.emoji) ? gemCfg.emoji : '💎';
-            if (gemGlyph) {
-                gemGlyph.innerHTML = gemIconHtml(22);
-                if (!gemCfg.img && gemGlyph.textContent === '') gemGlyph.textContent = emoji;
-            }
-            // LOGO de FamoCoins del lobby: usa la imagen recortada de la moneda
+            const name = (gemCfg && gemCfg.name) ? gemCfg.name : (dict.gemName || 'FamoCoins');
+            if (gemGlyph) gemGlyph.innerHTML = gemIconHtml(22);
+            const coinsTitleEl = document.getElementById('coins-title');
+            if (coinsTitleEl) coinsTitleEl.textContent = name;
+            // LOGO de FamoCoins del lobby: la imagen directa; si no carga se oculta
             const coinLogo = document.getElementById('lobby-coin-logo');
             if (coinLogo) {
                 const logoImg = coinLogo.querySelector('img');
-                if (gemCfg && gemCfg.img && logoImg) {
-                    logoImg.src = gemCfg.img;
+                if (logoImg) {
+                    logoImg.onerror = () => { coinLogo.style.display = 'none'; };
+                    logoImg.style.width = '38px';
+                    logoImg.style.height = '38px';
+                    logoImg.src = (gemCfg && gemCfg.img) || '/img/coin.png';
                     coinLogo.style.display = 'block';
                 }
             }
@@ -5947,33 +6076,22 @@ skinsTitleHeader: "PERSONALIZAR",
             const shopGemsVal = document.getElementById('shop-gems-val');
             if (shopGemsVal) shopGemsVal.innerText = String(profile.gems || 0);
         }
-        // Carga la info de la moneda (nombre + imagen) apenas entras al lobby.
-        async function refreshGemCfg() {
+        // Prepara la moneda apenas se abre el juego (antes del login), así la
+        // sala ya llega con la imagen lista y no se ve el diamante ni el emoji.
+        async function primeCoin() {
             try {
                 const cfg = await fetch('/config').then(r => r.json());
-                if (cfg.shop && cfg.shop.currency) gemCfg = cfg.shop.currency;
-                await finalizeGemImg();
-                applyGemConfig();
-                updateGemUI();
-            } catch (e) { }
+                if (cfg.shop && cfg.shop.currency) {
+                    gemCfg = Object.assign({ name: 'FamoCoins', emoji: '💎', img: '/img/coin.png' }, cfg.shop.currency || {});
+                    if (!gemCfg.img) gemCfg.img = '/img/coin.png';
+                }
+            } catch (e) {
+                gemCfg.img = gemCfg.img || '/img/coin.png';
+            }
+            paintGemUI();
         }
-        // Aísla la moneda de su fondo: rellena desde las esquinas (el fondo suele
-        // ser un color sólido contiguo), borra los píxeles tocados y recorta el
-        // margen transparente. El resultado sustituye a la imagen original.
-        async function finalizeGemImg() {
-            if (!gemCfg || !gemCfg.img || String(gemCfg.img).startsWith('data:')) return;
-            try {
-                const img = new Image();
-                img.src = gemCfg.img;
-                await new Promise((res, rej) => { img.onload = res; img.onerror = rej; });
-                const W = 512;
-                const H = Math.max(1, Math.round(img.naturalHeight * W / img.naturalWidth));
-                const c = document.createElement('canvas');
-                c.width = W; c.height = H;
-                const ctx = c.getContext('2d');
-                ctx.drawImage(img, 0, 0, W, H);
-                const id = ctx.getImageData(0, 0, W, H);
-                const d = id.data;
+        /* (Se eliminó el recorte de píxeles de la moneda: la imagen coin.png se
+           muestra directa; este bloque quedó comentado por referencia.)
                 // Si la imagen YA es transparente (esquinas vacías), no hay fondo que quitar:
                 // se recortan los márgenes vacíos y se reescala a un tamaño sano para lucir grande.
                 const c1 = [0, 0, 0, 0]; let cn = 0;
@@ -6063,13 +6181,7 @@ skinsTitleHeader: "PERSONALIZAR",
                             out.data[dp + 3] = keep ? d[sp + 3] : 0;
                         }
                     }
-                    const outc = document.createElement('canvas');
-                    outc.width = w2; outc.height = h2;
-                    outc.getContext('2d').putImageData(out, 0, 0);
-                    gemCfg.img = outc.toDataURL('image/png');
-                }
-            } catch (e) { /* si algo falla se conserva la imagen original */ }
-        }
+                    */
         async function loadShopCatalog() {
             try {
                 const cfg = await fetch('/config').then(r => r.json());
@@ -6077,13 +6189,13 @@ skinsTitleHeader: "PERSONALIZAR",
                 shopPackages = (cfg.shop && cfg.shop.packages) || [];
                 shopEnabled = !!(cfg.shop && cfg.shop.enabled);
                 shopProvider = (cfg.shop && cfg.shop.provider) || 'none';
-                if (cfg.shop && cfg.shop.currency) { gemCfg = cfg.shop.currency; await finalizeGemImg(); }
-                applyGemConfig();
+                if (cfg.shop && cfg.shop.currency) { gemCfg = Object.assign({ name: 'FamoCoins', emoji: '💎', img: '/img/coin.png' }, cfg.shop.currency || {}); if (!gemCfg.img) gemCfg.img = '/img/coin.png'; }
+                paintGemUI();
                 updateGemUI();
                 shopSub.innerText = shopProvider === 'mp'
-                    ? "Skins, banner y avatares se desbloquean con tus FamoCoins. ¿Sin saldo? Toca el botón FamoCoins de la sala para comprar."
+                    ? "Skins, banners, avatares y fondos se desbloquean con tus FamoCoins. Toca PROBAR para verlos gratis antes de comprar. ¿Sin saldo? Toca el botón FamoCoins de la sala."
                     : (shopEnabled
-                        ? "Skins, banner y avatares se desbloquean con tus FamoCoins."
+                        ? "Skins, banners, avatares y fondos se desbloquean con tus FamoCoins. Toca PROBAR para verlos gratis antes de comprar."
                         : "Los pagos aún no están activados: pronto podrás comprar FamoCoins y artículos exclusivos.");
                 renderGemPacks();
                 buildShopGrid();
@@ -6218,7 +6330,7 @@ skinsTitleHeader: "PERSONALIZAR",
         }
         function buildShopGrid() {
             shopGrid.innerHTML = '';
-            const visible = shopCatalog.filter(it => shopTab === 'avatars' ? it.type === 'avatar' : (shopTab === 'banners' ? it.type === 'banner' : it.type === 'skin'));
+            const visible = shopCatalog.filter(it => shopTab === 'avatars' ? it.type === 'avatar' : (shopTab === 'banners' ? it.type === 'banner' : (shopTab === 'fondos' ? it.type === 'fondo' : it.type === 'skin')));
             visible.forEach(item => {
                 const owned = (profile.owns || []).includes(item.id);
                 const enough = (profile.gems || 0) >= item.gems;
@@ -6231,11 +6343,14 @@ skinsTitleHeader: "PERSONALIZAR",
                     previewHtml = '<div class="shop-banner-pv"><div class="shop-banner-pv-avatar premium-frame">' + item.emoji + '</div></div>';
                 } else if (item.type === 'avatar') {
                     previewHtml = '<div class="shop-avatar-pv">' + item.emoji + '</div>';
+                } else if (item.type === 'fondo') {
+                    previewHtml = '<div class="shop-fondo-pv' + (item.anim === 'lava' ? ' pf-lava" style="background-image:' + (item.bg || 'linear-gradient(160deg,#8a2b0a,#140602)') : '" style="background-image:' + (item.bg || 'linear-gradient(140deg,#3b5e2b,#1a2b14)')) + '"><span class="shop-fondo-pv-emoji">' + item.emoji + '</span></div>';
                 }
                 div.innerHTML =
                     previewHtml +
                     '<div class="shop-name">' + item.name + '</div>' +
                     '<div class="shop-desc">' + item.desc + '</div>' +
+                    '<button class="btn-main shop-buy" style="background:#0e2440;border-color:#00e5ff;" onclick="openTryItem(\'' + item.id + '\')">' + shopDict('tryPreview') + '</button>' +
                     (owned
                         ? '<div class="shop-status owned">✓ ' + shopDict('shopOwned') + '</div>'
                         : (shopEnabled
@@ -6244,6 +6359,86 @@ skinsTitleHeader: "PERSONALIZAR",
                 shopGrid.appendChild(div);
             });
         }
+
+        // ---- PROBAR ARTÍCULOS: vista previa viva antes de comprar ----
+        // Aplica las animaciones de fondo (lava/estrellas/tormenta/oro) a un
+        // elemento: se usa igual en la tarjeta de perfil y en el modal PROBAR.
+        function applyFondoAnim(el, anim) {
+            if (!el) return;
+            el.classList.remove('pf-lava', 'pf-stars', 'pf-storm', 'pf-gold');
+            const oldFill = el.querySelector('.pf-lava-fill');
+            if (oldFill) oldFill.remove();
+            el.querySelectorAll('.pf-bubble').forEach(b => b.remove());
+            if (!anim) return;
+            if (anim === 'lava') {
+                el.classList.add('pf-lava');
+                const fill = document.createElement('div');
+                fill.className = 'pf-lava-fill';
+                el.appendChild(fill);
+                for (let i = 0; i < 3; i++) {
+                    const b = document.createElement('span');
+                    b.className = 'pf-bubble' + (i === 1 ? ' b2' : (i === 2 ? ' b3' : ''));
+                    b.style.left = (20 + i * 24) + '%';
+                    el.appendChild(b);
+                }
+            } else if (anim === 'stars') el.classList.add('pf-stars');
+            else if (anim === 'storm') el.classList.add('pf-storm');
+            else if (anim === 'gold') el.classList.add('pf-gold');
+        }
+        let tryModal = null;
+        let tryItemId = null;
+        function buildTryModal() {
+            tryModal = document.createElement('div');
+            tryModal.className = 'try-premium';
+            tryModal.innerHTML =
+                '<div class="try-box">' +
+                '<div class="try-preview" id="try-preview"></div>' +
+                '<div class="try-name" id="try-name"></div>' +
+                '<div class="try-desc" id="try-desc"></div>' +
+                '<div class="try-msg" id="try-msg">Esto es una PRUEBA gratis: así se ve el artículo. Para tenerlo de verdad en tu cuenta y usarlo en tu perfil y en la partida, debes comprarlo.</div>' +
+                '<div class="try-actions">' +
+                '<button class="btn-main" id="try-buy">COMPRAR</button>' +
+                '<button class="btn-main btn-back" id="try-close">CERRAR</button>' +
+                '</div></div>';
+            document.body.appendChild(tryModal);
+            tryModal.querySelector('#try-close').addEventListener('click', closeTryModal);
+        }
+        function openTryItem(itemId) {
+            const item = shopCatalog.find(i => i.id === itemId);
+            if (!item) return;
+            tryItemId = itemId;
+            const pv = document.getElementById('try-preview');
+            pv.className = 'try-preview';
+            pv.style.backgroundImage = '';
+            applyFondoAnim(pv, null);
+            pv.querySelectorAll('canvas.ff-skin-preview').forEach(c => c.remove());
+            if (item.type === 'fondo') {
+                pv.style.backgroundImage = item.bg || 'linear-gradient(140deg,#3b5e2b,#1a2b14)';
+                pv.innerHTML = '<span class="try-emoji-big">' + item.emoji + '</span>';
+                applyFondoAnim(pv, item.anim || '');
+            } else if (item.type === 'skin') {
+                const c = document.createElement('canvas');
+                c.className = 'ff-skin-preview';
+                c.dataset.skin = item.id;
+                c.width = 120; c.height = 120;
+                pv.appendChild(c);
+            } else if (item.type === 'avatar') {
+                pv.innerHTML = '<div class="try-avatar-big">' + item.emoji + '</div>';
+            } else if (item.type === 'banner') {
+                pv.innerHTML = '<div class="try-banner-big premium-frame">' + (profile.avatar || '👤') + '</div>';
+            }
+            document.getElementById('try-name').innerText = item.emoji + ' ' + item.name;
+            document.getElementById('try-desc').innerText = item.desc;
+            const buyBt = document.getElementById('try-buy');
+            buyBt.style.display = (profile.owns || []).includes(item.id) ? 'none' : '';
+            buyBt.innerHTML = (item.gems + ' ' + gemIconHtml(18) + ' ' + (gemCfg.name || 'FamoCoins'));
+            buyBt.onclick = () => { closeTryModal(); buyWithGems(item.id); };
+            tryModal.classList.add('open');
+        }
+        function closeTryModal() {
+            if (tryModal) tryModal.classList.remove('open');
+        }
+        buildTryModal();
 
         // Si volvimos del pago: verificar y entregar el artículo.
         // (IIFE que corre al cargar la página)
@@ -7151,28 +7346,53 @@ skinsTitleHeader: "PERSONALIZAR",
             skin_elite:    { type: 'elite', aura: '#b04bf0', glow: '#7b2ff7', bodyA: '#2a0d52', bodyB: '#8f3df5', bodyC: '#d8a1ff' },
             skin_fantasma: { type: 'ghost', aura: '#19ffc8', glow: '#0fd9b0', bodyA: '#0b3d33', bodyB: '#19ffc8', bodyC: '#7affdf' }
         };
+        const fxGradCache = new WeakMap();
+        // Los gradientes se crean UNA vez por contexto/radio y se reutilizan
+        // (antes se creaban y las sombras se computaban en cada frame, lo que
+        // provocaba bajones de FPS en el campo de batalla).
+        function cachedFxGrad(ctx, tag, r, make) {
+            let m = fxGradCache.get(ctx);
+            if (!m) { m = new Map(); fxGradCache.set(ctx, m); }
+            const key = tag + '|' + Math.round(r);
+            let g = m.get(key);
+            if (!g) { g = make(ctx, r); m.set(key, g); }
+            return g;
+        }
         function drawPremiumSkin(fx, ctx, r, t, alpha) {
+            const ghostFill = fx.type === 'ghost';
+            const bodyGrad = cachedFxGrad(ctx, fx.type, r, (c, rad) => {
+                let g;
+                if (fx.type === 'elite') {
+                    g = c.createLinearGradient(-rad, -rad, rad, rad);
+                } else if (ghostFill) {
+                    g = c.createRadialGradient(0, 0, rad * 0.1, 0, 0, rad);
+                } else {
+                    g = c.createRadialGradient(-rad * 0.3, -rad * 0.3, rad * 0.15, 0, 0, rad);
+                }
+                g.addColorStop(0, ghostFill ? fx.bodyC : fx.bodyA);
+                g.addColorStop(0.55, fx.bodyB);
+                g.addColorStop(1, ghostFill ? fx.bodyA : fx.bodyC);
+                return g;
+            });
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.globalAlpha = (ghostFill ? 0.8 : 1) * alpha;
+            ctx.fillStyle = bodyGrad;
+            ctx.fill();
             if (fx.type === 'fire') {
                 const pulse = 0.75 + 0.25 * Math.sin(t * 3.1);
+                // Halo suave (trazo ancho translúcido) sin shadowBlur: mismo
+                // brillo, fracción del costo de dibujo.
                 ctx.beginPath();
                 ctx.arc(0, 0, r * 1.55, 0, Math.PI * 2);
                 ctx.strokeStyle = fx.aura;
-                ctx.globalAlpha = (0.25 + 0.2 * pulse) * alpha;
-                ctx.lineWidth = 3;
-                ctx.shadowBlur = 22;
-                ctx.shadowColor = fx.aura;
+                ctx.lineWidth = 9;
+                ctx.globalAlpha = (0.12 + 0.1 * pulse) * alpha;
                 ctx.stroke();
-                ctx.shadowBlur = 0;
-                const grad = ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.15, 0, 0, r);
-                grad.addColorStop(0, fx.bodyA);
-                grad.addColorStop(0.55, fx.bodyB);
-                grad.addColorStop(1, fx.bodyC);
-                ctx.beginPath();
-                ctx.arc(0, 0, r, 0, Math.PI * 2);
-                ctx.globalAlpha = alpha;
-                ctx.fillStyle = grad;
-                ctx.fill();
-                for (let i = 0; i < 6; i++) {
+                ctx.lineWidth = 3;
+                ctx.globalAlpha = (0.25 + 0.2 * pulse) * alpha;
+                ctx.stroke();
+                for (let i = 0; i < 5; i++) {
                     const a = t * (1.6 + i * 0.13) + i * Math.PI / 3;
                     const d = r * (1.2 + 0.25 * Math.sin(t * 2 + i));
                     const px = Math.cos(a) * d;
@@ -7187,30 +7407,21 @@ skinsTitleHeader: "PERSONALIZAR",
                 ctx.beginPath();
                 ctx.arc(0, 0, r * 1.5, 0, Math.PI * 2);
                 ctx.strokeStyle = fx.aura;
-                ctx.globalAlpha = (0.35 + 0.15 * Math.sin(t * 2.2)) * alpha;
-                ctx.lineWidth = 3;
+                ctx.lineWidth = 9;
+                ctx.globalAlpha = 0.14 * alpha;
+                ctx.stroke();
                 ctx.setLineDash([10, 8]);
                 ctx.lineDashOffset = -t * 26;
-                ctx.shadowBlur = 16;
-                ctx.shadowColor = fx.glow;
+                ctx.lineWidth = 3;
+                ctx.globalAlpha = (0.35 + 0.15 * Math.sin(t * 2.2)) * alpha;
                 ctx.stroke();
                 ctx.setLineDash([]);
-                ctx.shadowBlur = 0;
                 ctx.beginPath();
                 ctx.arc(0, 0, r * 1.3, 0, Math.PI * 2);
                 ctx.strokeStyle = fx.glow;
                 ctx.globalAlpha = 0.3 * alpha;
                 ctx.lineWidth = 1.5;
                 ctx.stroke();
-                const grad = ctx.createLinearGradient(-r, -r, r, r);
-                grad.addColorStop(0, fx.bodyA);
-                grad.addColorStop(0.6, fx.bodyB);
-                grad.addColorStop(1, fx.bodyC);
-                ctx.beginPath();
-                ctx.arc(0, 0, r, 0, Math.PI * 2);
-                ctx.globalAlpha = alpha;
-                ctx.fillStyle = grad;
-                ctx.fill();
                 for (let i = 0; i < 4; i++) {
                     const a = t * 1.8 + i * Math.PI / 2;
                     ctx.beginPath();
@@ -7224,24 +7435,15 @@ skinsTitleHeader: "PERSONALIZAR",
                 ctx.beginPath();
                 ctx.arc(0, 0, r * 1.45 + wob * 3, 0, Math.PI * 2);
                 ctx.strokeStyle = fx.aura;
-                ctx.globalAlpha = (0.3 + 0.15 * Math.sin(t * 3.4)) * alpha;
-                ctx.lineWidth = 2.5;
+                ctx.lineWidth = 8;
+                ctx.globalAlpha = 0.12 * alpha;
+                ctx.stroke();
                 ctx.setLineDash([7, 9]);
                 ctx.lineDashOffset = t * 14;
-                ctx.shadowBlur = 18;
-                ctx.shadowColor = fx.aura;
+                ctx.lineWidth = 2.5;
+                ctx.globalAlpha = (0.3 + 0.15 * Math.sin(t * 3.4)) * alpha;
                 ctx.stroke();
                 ctx.setLineDash([]);
-                ctx.shadowBlur = 0;
-                const grad = ctx.createRadialGradient(0, 0, r * 0.1, 0, 0, r);
-                grad.addColorStop(0, fx.bodyC);
-                grad.addColorStop(0.55, fx.bodyB);
-                grad.addColorStop(1, fx.bodyA);
-                ctx.beginPath();
-                ctx.arc(0, 0, r, 0, Math.PI * 2);
-                ctx.globalAlpha = 0.8 * alpha;
-                ctx.fillStyle = grad;
-                ctx.fill();
                 ctx.globalAlpha = (0.18 + 0.1 * Math.sin(t * 2.8)) * alpha;
                 ctx.beginPath();
                 ctx.arc(0, 0, r + 2, 0, Math.PI * 2);
@@ -7331,11 +7533,13 @@ skinsTitleHeader: "PERSONALIZAR",
                 ctx.closePath();
 
                 ctx.strokeStyle = '#2b4720';
-                ctx.lineWidth = 15;
+                ctx.lineWidth = 7;
                 ctx.strokeRect(0, 0, mapWidth, mapHeight);
             }
 
             if (currentMode === 'training') {
+                ctx.fillStyle = '#557A46';
+                ctx.fillRect(0, 0, mapWidth, mapHeight);
                 obstacles.forEach(obs => {
                     ctx.fillStyle = '#4a3319';
                     ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
@@ -7413,35 +7617,43 @@ skinsTitleHeader: "PERSONALIZAR",
                     if (profile.selectedSkill === 'shield') {
                         ctx.arc(0, 0, player.radius + 8, 0, Math.PI * 2);
                         ctx.strokeStyle = '#00ffff';
-                        ctx.lineWidth = 4;
-                        ctx.shadowBlur = 15;
-                        ctx.shadowColor = '#00ffff';
+                        ctx.lineWidth = 9;
+                        ctx.globalAlpha = 0.35;
+                        ctx.stroke();
+                        ctx.lineWidth = 3;
+                        ctx.globalAlpha = 1;
                         ctx.stroke();
                     } else if (profile.selectedSkill === 'heal') {
                         ctx.arc(0, 0, player.radius + 6, 0, Math.PI * 2);
                         ctx.strokeStyle = '#00ff00';
+                        ctx.lineWidth = 8;
+                        ctx.globalAlpha = 0.35;
+                        ctx.stroke();
                         ctx.lineWidth = 3;
-                        ctx.shadowBlur = 12;
-                        ctx.shadowColor = '#00ff00';
+                        ctx.globalAlpha = 1;
                         ctx.stroke();
                     } else if (profile.selectedSkill === 'ghost') {
                         ctx.arc(0, 0, player.radius + 6, 0, Math.PI * 2);
                         ctx.strokeStyle = '#ff00ff';
-                        ctx.lineWidth = 3;
+                        ctx.lineWidth = 8;
+                        ctx.globalAlpha = 0.35;
                         ctx.setLineDash([4, 4]);
-                        ctx.shadowBlur = 12;
-                        ctx.shadowColor = '#ff00ff';
+                        ctx.stroke();
+                        ctx.lineWidth = 3;
+                        ctx.globalAlpha = 1;
                         ctx.stroke();
                     } else if (profile.selectedSkill === 'radar') {
                         ctx.arc(0, 0, player.radius + 10, 0, Math.PI * 2);
                         ctx.strokeStyle = '#ff3333';
+                        ctx.lineWidth = 9;
+                        ctx.globalAlpha = 0.35;
+                        ctx.stroke();
                         ctx.lineWidth = 3;
-                        ctx.shadowBlur = 15;
-                        ctx.shadowColor = '#ff3333';
+                        ctx.globalAlpha = 1;
                         ctx.stroke();
                     }
                     ctx.closePath();
-                    ctx.shadowBlur = 0;
+                    ctx.globalAlpha = 1;
                     ctx.setLineDash([]);
                 }
 
@@ -7463,11 +7675,13 @@ skinsTitleHeader: "PERSONALIZAR",
                     ctx.fill();
                     ctx.restore();
                 } else if (player.color === 'multicolor') {
-                    let grad = ctx.createLinearGradient(-player.radius, -player.radius, player.radius, player.radius);
-                    grad.addColorStop(0, '#ff0000');
-                    grad.addColorStop(0.5, '#00ff00');
-                    grad.addColorStop(1, '#0000ff');
-                    ctx.fillStyle = grad;
+                    ctx.fillStyle = cachedFxGrad(ctx, 'multicolor', player.radius, (c, rad) => {
+                        const g = c.createLinearGradient(-rad, -rad, rad, rad);
+                        g.addColorStop(0, '#ff0000');
+                        g.addColorStop(0.5, '#00ff00');
+                        g.addColorStop(1, '#0000ff');
+                        return g;
+                    });
                     ctx.fill();
                 } else if (player.color === 'camo') {
                     ctx.fillStyle = '#888888';

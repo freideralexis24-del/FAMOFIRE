@@ -60,7 +60,7 @@ app.get('/config', (req, res) => res.json({
       img: gemImgUrl()
     },
     packages: Object.entries(GEM_PACKAGES).map(([id, p]) => ({ id, name: p.name, gems: p.gems, priceCOP: p.priceCOP })),
-    items: Object.entries(PREMIUM_ITEMS).map(([id, it]) => ({ id, type: it.type, name: it.name, emoji: it.emoji, desc: it.desc, gems: it.gems, color: it.color || '' }))
+    items: Object.entries(PREMIUM_ITEMS).map(([id, it]) => ({ id, type: it.type, name: it.name, emoji: it.emoji, desc: it.desc, gems: it.gems, color: it.color || '', bg: it.bg || '', anim: it.anim || '' }))
   }
 }));
 
@@ -440,7 +440,12 @@ const PREMIUM_ITEMS = {
   avatar_king:   { type: 'avatar', name: 'Avatar Rey',             emoji: '👑', gems: 80,  desc: 'Corona dorada del rey' },
   avatar_genie:  { type: 'avatar', name: 'Avatar Genio',           emoji: '🧞', gems: 80,  desc: 'Genio que concede deseos' },
   avatar_guard:  { type: 'avatar', name: 'Avatar Guardia Real',    emoji: '💂', gems: 80,  desc: 'Guardia de honor del comando' },
-  avatar_scorp:  { type: 'avatar', name: 'Avatar Escorpión',       emoji: '🦂', gems: 80,  desc: 'Picadura letal del desierto' }
+  avatar_scorp:  { type: 'avatar', name: 'Avatar Escorpión',       emoji: '🦂', gems: 80,  desc: 'Picadura letal del desierto' },
+  // ---- FONDOS premium (se ven animados en tu tarjeta de perfil) ----
+  fondo_lagolava:{ type: 'fondo', name: 'Fondo Lago de Lava',      emoji: '🌋', gems: 220, desc: 'La lava sube y baja en tu perfil', bg: 'linear-gradient(160deg, #8a2b0a 0%, #3a1208 60%, #140602 100%)', anim: 'lava' },
+  fondo_galaxia: { type: 'fondo', name: 'Fondo Galaxia Infinita',  emoji: '🌌', gems: 220, desc: 'Estrellas que derivan en el espacio', bg: 'radial-gradient(circle at 30% 25%, rgba(120,60,220,0.55), transparent 55%), radial-gradient(circle at 75% 75%, rgba(0,160,255,0.4), transparent 50%), #05030f', anim: 'stars' },
+  fondo_trueno:  { type: 'fondo', name: 'Fondo Tormenta Eléctrica',emoji: '⚡', gems: 220, desc: 'Rayos que cruzan tu perfil', bg: 'linear-gradient(160deg, #0b1c3a 0%, #06101f 100%)', anim: 'storm' },
+  fondo_oro:     { type: 'fondo', name: 'Fondo Oro de Leyenda',    emoji: '👑', gems: 220, desc: 'Brillo dorado de campeón', bg: 'linear-gradient(140deg, #b8860b 0%, #3a2a05 100%)', anim: 'gold' }
 };
 // Cuentas viejas no tienen gemas: se normalizan al cargar y antes de responder.
 function normalizeAcc(acc) {
