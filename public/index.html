@@ -307,8 +307,34 @@
         .config-subtitle {
             font-size: 14px;
             color: #aaa;
-            margin: 0 0 16px 0;
+            margin: 0 0 12px 0;
             text-align: center;
+        }
+        /* CONFIGURACIÓN COMPACTA: todo cabe en pantalla sin barra de scroll.
+           Se reducen título, pestañas, secciones y filas. */
+        #config-screen {
+            overflow: hidden;
+        }
+        #config-screen h1 {
+            font-size: 30px;
+            margin: 6px 0 2px;
+        }
+        #config-screen .config-tabs {
+            margin-bottom: 10px;
+        }
+        #config-screen .config-tab {
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+        #config-screen .cfg-section {
+            padding: 6px 12px;
+            margin-bottom: 10px;
+        }
+        #config-screen .cfg-row {
+            padding: 7px 2px;
+        }
+        #config-screen .config-footer {
+            margin: 8px auto 0 auto;
         }
         .config-body {
             width: 100%;
@@ -433,11 +459,19 @@
         }
 
         /* PERFIL COMPLETO */
+        #profile-screen {
+            overflow: hidden;
+            justify-content: center;
+        }
+        #profile-screen h1 {
+            font-size: 30px;
+            margin: 4px 0 10px;
+        }
         #profile-card {
             background: rgba(10, 15, 20, 0.9);
             border: 3px solid #ffcc00;
             border-radius: 16px;
-            padding: 24px 30px;
+            padding: 22px 28px;
             text-align: center;
             box-shadow: 6px 6px 0px #000;
             max-width: 420px;
@@ -621,11 +655,6 @@
             padding: 7px 20px;
             font-size: 16px;
         }
-        #lobby-screen #global-online-box {
-            margin: 2px 0 2px;
-            padding: 3px 14px;
-            font-size: 13px;
-        }
 
         /* Grupo superior derecho de la sala: GEMAS · CORREO · CONFIGURACIÓN */
         #lobby-actions {
@@ -639,17 +668,6 @@
         }
         #lobby-actions #gear-btn {
             position: static;
-        }
-        /* LOGO de FamoCoins sobre el título de la sala (imagen real de la moneda) */
-        #lobby-coin-logo {
-            margin-top: 4px;
-            filter: drop-shadow(0 0 14px rgba(255, 204, 0, 0.5));
-        }
-        #lobby-coin-logo img.gem-icon {
-            width: 38px;
-            height: 38px;
-            object-fit: contain;
-            display: block;
         }
 
         /* Botón que muestra cuántas GEMAS tienes (clic: abre la tienda) */
@@ -853,7 +871,7 @@
             z-index: 0;
             pointer-events: none;
         }
-        @keyframes lavaCycle { 0% { height: 8%; } 30% { height: 88%; } 50% { height: 88%; } 80% { height: 12%; } 100% { height: 8%; } }
+        @keyframes lavaCycle { 0% { height: 8%; } 30% { height: 100%; } 50% { height: 100%; } 80% { height: 12%; } 100% { height: 8%; } }
         .pf-bubble { position: absolute; bottom: 8%; width: 5px; height: 5px; border-radius: 50%; background: rgba(255, 190, 60, 0.95); animation: lavaBubble 3.2s ease-in infinite; z-index: 1; pointer-events: none; }
         @keyframes lavaBubble { 0% { transform: translateY(0); opacity: 0; } 12% { opacity: 1; } 100% { transform: translateY(-70px); opacity: 0; } }
         .pf-bubble.b2 { width: 4px; height: 4px; animation-duration: 2.6s; animation-delay: .8s; }
@@ -903,7 +921,9 @@
         }
         @keyframes goldShine { 0% { background-position: 180% 0; } 100% { background-position: -80% 0; } }
         /* El contenido de la tarjeta siempre queda encima de las animaciones de fondo */
-        #profile-card > * { position: relative; z-index: 1; }
+        #profile-card > *:not(.pf-lava-fill):not(.pf-bubble) { position: relative; z-index: 1; }
+        #profile-card .pf-lava-fill { z-index: 0 !important; }
+        #profile-card .pf-bubble { z-index: 1; }
         /* MODAL "PROBAR" de la tienda: vista previa viva del artículo */
         .try-premium { position: fixed; inset: 0; z-index: 1300; display: none; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(2px); }
         .try-premium.open { display: flex; }
@@ -1271,6 +1291,20 @@
             overflow: hidden;
             border-radius: 14px;
         }
+        /* FONDO EQUIPADO: el cuadro del botón de perfil muestra el fondo y su
+           animación ocupando TODO el panel; el contenido (avatar, nombre, rango)
+           va siempre por encima, legible. */
+        #profile-panel > *:not(.pf-lava-fill):not(.pf-bubble) {
+            position: relative;
+            z-index: 2;
+        }
+        #profile-panel .pf-lava-fill {
+            z-index: 0 !important;
+            width: 100%;
+        }
+        #profile-panel .pf-bubble {
+            z-index: 1;
+        }
         /* BANNER en el botón de perfil COMPLETO: el marco animado, el brillo y
            el destello recorren TODO el botón (no solo el avatar). El avatar
            conserva la medalla dorada fija por dentro. */
@@ -1578,23 +1612,7 @@
             box-shadow: 0 2px 6px rgba(0,0,0,0.5);
         }
 
-        /* CONTADOR GLOBAL ONLINE (solo en la sala de comando, abajo a la derecha) */
-        #global-online-box {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.75);
-            border: 2px solid #ffcc00;
-            border-radius: 6px;
-            padding: 6px 14px;
-            font-size: 16px;
-            color: #00ffff;
-            z-index: 30;
-            text-shadow: 1px 1px 2px #000;
-            pointer-events: none;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-        }
-
+        /* CONTADOR GLOBAL ONLINE: retirado por diseño (no se muestra). */
         #hud-top-right {
             position: absolute;
             top: 20px;
@@ -2060,11 +2078,6 @@
             <div id="gear-btn" onclick="openConfigMenu()">⚙️</div>
         </div>
 
-        <!-- LOGO de FamoCoins sobre el título de la sala de comando -->
-        <div id="lobby-coin-logo" style="display: none;">
-            <img class="gem-icon" alt="FamoCoins" title="FamoCoins">
-        </div>
-
         <!-- PERFIL COMPACTO (arriba a la izquierda): nombre y rango arriba, clic para ver el perfil completo -->
         <div id="profile-panel" onclick="openProfile()" title="Ver perfil">
             <div id="profile-avatar" class="profile-avatar">👤</div>
@@ -2077,9 +2090,6 @@
         </div>
 
         <h1 data-i18n="lobbyTitle">SALA DE COMANDO</h1>
-
-        <!-- INDICADOR DE JUGADORES ONLINE (solo visible en la sala de comando) -->
-        <div id="global-online-box">Online: <span id="global-online-val">1</span></div>
 
         <div class="lobby-menu">
             <button id="to-training-btn" class="btn-main" data-i18n="trainingBtn">MODO ENTRENAMIENTO</button>
@@ -2243,6 +2253,13 @@
                             <div class="cfg-row-hint" data-i18n="controlsHint">Movimiento, disparo y habilidades</div>
                         </div>
                         <button id="to-controls-btn" class="cfg-action-btn" data-i18n="editBtn">EDITAR</button>
+                    </div>
+                    <div class="cfg-row">
+                        <div class="cfg-row-label">
+                            <div>Controles para móvil</div>
+                            <div class="cfg-row-hint">Joystick y botones táctiles en pantalla</div>
+                        </div>
+                        <button id="to-mobile-controls-btn" class="cfg-action-btn" data-i18n="editBtn">EDITAR</button>
                     </div>
                 </div>
             </div>
@@ -2722,12 +2739,6 @@
                     socket.emit('guest-login', { name: savedName, deviceToken: getDeviceToken() });
                 }
             }
-        });
-
-        // Recibir contador global de jugadores conectados en todo el servidor
-        socket.on('update-global-online', (count) => {
-            const globalBox = document.getElementById('global-online-val');
-            if (globalBox) globalBox.innerText = count;
         });
 
         // Recibir el Top 100 histórico del Servidor LATAM ordenado globalmente por puntos
@@ -5639,9 +5650,18 @@ applyTranslations();
             const card = document.getElementById('profile-card');
             if (!card) return;
             const f = getAllFondos().find(x => x.id === profile.fondo);
-            card.style.backgroundImage = (f && f.image) ? f.image : 'none';
+            const img = (f && f.image) ? f.image : 'none';
+            card.style.backgroundImage = img;
             card.style.backgroundSize = 'cover';
             applyFondoAnim(card, f && f.anim);
+            // El MISMO fondo se aplica al cuadro compacto del botón de perfil
+            // (la sala), cubriendo todo el panel con su animación por encima.
+            const panel = document.getElementById('profile-panel');
+            if (panel) {
+                panel.style.backgroundImage = img === 'none' ? 'none' : img;
+                panel.style.backgroundSize = 'cover';
+                applyFondoAnim(panel, f && f.anim);
+            }
         }
 
         // ---- BANNERS DE PERFIL ----
@@ -6057,18 +6077,6 @@ applyTranslations();
             if (gemGlyph) gemGlyph.innerHTML = gemIconHtml(22);
             const coinsTitleEl = document.getElementById('coins-title');
             if (coinsTitleEl) coinsTitleEl.textContent = name;
-            // LOGO de FamoCoins del lobby: la imagen directa; si no carga se oculta
-            const coinLogo = document.getElementById('lobby-coin-logo');
-            if (coinLogo) {
-                const logoImg = coinLogo.querySelector('img');
-                if (logoImg) {
-                    logoImg.onerror = () => { coinLogo.style.display = 'none'; };
-                    logoImg.style.width = '38px';
-                    logoImg.style.height = '38px';
-                    logoImg.src = (gemCfg && gemCfg.img) || '/img/coin.png';
-                    coinLogo.style.display = 'block';
-                }
-            }
         }
         function updateGemUI() {
             if (lobbyGemsEl) lobbyGemsEl.innerText = String(profile.gems || 0);

@@ -735,10 +735,6 @@ const rand = (a, b) => a + Math.random() * (b - a);
 const dist2 = (ax, ay, bx, by) => (ax - bx) ** 2 + (ay - by) ** 2;
 const num = (v, fallback) => { const n = Number(v); return Number.isFinite(n) ? n : fallback; };
 
-function broadcastOnline() {
-  io.emit('update-global-online', io.engine.clientsCount);
-}
-
 // ---------- Cola de emparejamiento ----------
 const queue = [];
 // Candado de sesión única: cada cuenta (con contraseña o Google) solo puede
@@ -934,7 +930,6 @@ io.on('connection', (socket) => {
   socket.data.color = '#ffffff';
   socket.data.skin = ''; // id del skin premium (ej. skin_fuego) o '' para normal
   socket.data.account = null; // nombre de la cuenta logueada (si hay)
-  broadcastOnline();
 
   // ---------- Sistema de cuentas (cada jugador la suya) ----------
   // Los nombres se normalizan a MAYÚSCULAS: "alexis" y "ALEXIS" son la misma cuenta,
@@ -1607,7 +1602,6 @@ socket.emit('account-result', { ok: true, account: { id: accounts[name].id, name
       // Sin victoria automática: la decide cada cliente (los bots son locales)
       if (match.aliveCount === 0) match.endedAt = Date.now();
     }
-    broadcastOnline();
   });
 });
 
