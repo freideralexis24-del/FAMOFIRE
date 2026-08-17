@@ -571,14 +571,14 @@ async function initAccounts() {
         await db.query("ALTER TABLE accounts ADD COLUMN IF NOT EXISTS mails TEXT NOT NULL DEFAULT '[]'");
         await db.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS gems INT NOT NULL DEFAULT 0');
       } catch (e) { /* versión vieja de Postgres u otro problema menor: se ignora */ }
-      const { rows } = await db.query('SELECT name, password, points, level, exp, lastseen, id, google_id, google_email, unnamed, device_token, matches, wins, kills, dmg, deaths, owns, mails, gems FROM accounts');
+      const { rows } = await db.query('SELECT name, password, points, level, exp, lastseen, id, google_id, google_email, unnamed, device_token, matches, wins, kills, dmg, deaths, owns, mails, gems FROM accounts ORDER BY lastseen ASC');
       accounts = {};
       for (const r of rows) {
         let owns = [];
         if (r.owns) { try { owns = Array.isArray(JSON.parse(r.owns)) ? JSON.parse(r.owns) : []; } catch (e) { owns = []; } }
         let mails = [];
         if (r.mails) { try { mails = Array.isArray(JSON.parse(r.mails)) ? JSON.parse(r.mails) : []; } catch (e) { mails = []; } }
-        accounts[r.name] = normalizeAcc({ id: r.id || genId(), password: r.password, points: Number(r.points), level: Number(r.level), exp: Number(r.exp), lastSeen: Number(r.lastseen) || 0, googleId: r.google_id || '', googleEmail: r.google_email || '', unnamed: !!r.unnamed, deviceToken: r.device_token || '', matches: Number(r.matches) || 0, wins: Number(r.wins) || 0, kills: Number(r.kills) || 0, dmg: Number(r.dmg) || 0, deaths: Number(r.deaths) || 0, owns, mails, gems: Number(r.gems) || 0 });
+        accounts[r.name] = normalizeAcc({ id: r.id || genAccountId(), password: r.password, points: Number(r.points), level: Number(r.level), exp: Number(r.exp), lastSeen: Number(r.lastseen) || 0, googleId: r.google_id || '', googleEmail: r.google_email || '', unnamed: !!r.unnamed, deviceToken: r.device_token || '', matches: Number(r.matches) || 0, wins: Number(r.wins) || 0, kills: Number(r.kills) || 0, dmg: Number(r.dmg) || 0, deaths: Number(r.deaths) || 0, owns, mails, gems: Number(r.gems) || 0 });
       }
       console.log(`[DB] ${rows.length} cuentas cargadas desde PostgreSQL`);
     } catch (e) {
@@ -595,6 +595,9 @@ async function initAccounts() {
   // ID único por cuenta (para control de jugadores). Si una cuenta antigua no lo
   // tiene (de la era pre-ID), se le genera uno ahora. NO se borra ninguna cuenta
   // jamás: el espacio ocupado es mínimo y evita pérdidas de cuentas reales.
+  // MIGRACIÓN A IDs PERMANENTES: los IDs viejos (hex aleatorio de 8 chars) se
+  // reemplazan por el patrón numérico secuencial 10000000, 10000001, ...
+  // El orden de asignación es el de creación (la cuenta más antigua → 10000000).
   let backfilled = false;
   const seenIds = new Set();
   for (const name of Object.keys(accounts)) {
@@ -604,14 +607,15 @@ async function initAccounts() {
   }
   for (const name of Object.keys(accounts)) {
     const a = accounts[name];
-    if (a && a.id && seenIds.has(String(a.id).toUpperCase()) &&
-        Object.keys(accounts).some(k => k !== name && String(accounts[k].id || '').toUpperCase() === String(a.id).toUpperCase())) {
-      a.id = uniqueId(seenIds);
+    if (!a) continue;
+    if (!isNewStyleId(a.id)) {
+      a.id = genAccountId();
       seenIds.add(String(a.id).toUpperCase());
       backfilled = true;
     }
-    if (a && !a.id) {
-      a.id = uniqueId(seenIds);
+    if (seenIds.has(String(a.id).toUpperCase()) &&
+        Object.keys(accounts).some(k => k !== name && String(accounts[k].id || '').toUpperCase() === String(a.id).toUpperCase())) {
+      a.id = genAccountId();
       seenIds.add(String(a.id).toUpperCase());
       backfilled = true;
     }
@@ -622,6 +626,22 @@ async function initAccounts() {
 function genId() {
   // ID corto y legible (8 caracteres hex) para controlar cada cuenta
   return crypto.randomBytes(4).toString('hex').toUpperCase();
+}
+function genAccountId() {
+  // ID NUMÉRICO PERMANENTE y secuencial: la primera cuenta es 10000000,
+  // la siguiente 10000001, 10000002... y así crece de 1 en 1. El ID de una
+  // cuenta NUNCA se regenera mientras exista; solo se asigna cuando la cuenta
+  // no tiene uno o tiene el formato viejo (hex aleatorio) en la migración.
+  let max = 9999999;
+  for (const name of Object.keys(accounts)) {
+    const a = accounts[name];
+    const n = parseInt(String((a && a.id) || ''), 10);
+    if (Number.isInteger(n) && n >= 10000000 && n > max) max = n;
+  }
+  return String(max + 1);
+}
+function isNewStyleId(id) {
+  return /^\d{8,}$/.test(String(id || ''));
 }
 function uniqueId(taken) {
   // Genera un ID que no esté en uso por NINGUNA otra cuenta
@@ -998,7 +1018,7 @@ io.on('connection', (socket) => {
     if (String(data.password || '').length < 4) return socket.emit('account-result', { ok: false, error: 'short-pass' });
     let passHash;
     try { passHash = await bcrypt.hash(String(data.password || ''), 10); } catch (e) { passHash = sha(data.password); }
-    accounts[name] = { id: genId(), password: passHash, points: 0, level: 1, exp: 0, lastSeen: Date.now(), matches: 0, wins: 0, kills: 0, dmg: 0, deaths: 0, owns: [], gems: 0 };
+    accounts[name] = { id: genAccountId(), password: passHash, points: 0, level: 1, exp: 0, lastSeen: Date.now(), matches: 0, wins: 0, kills: 0, dmg: 0, deaths: 0, owns: [], gems: 0 };
     saveAccounts();
     accountLocks.set(name, socket);
     socket.data.account = name;
@@ -1043,7 +1063,7 @@ socket.emit('account-result', { ok: true, account: { id: accounts[name].id, name
       // (el nombre de la cuenta aún no se muestra en ranking ni en partidas).
       let base = 'J' + sub.slice(0, 7).toUpperCase();
       for (let i = 0; i < 100 && accounts[base]; i++) base = 'J' + sub.slice(0, 6).toUpperCase() + i;
-      accounts[base] = { id: genId(), googleId: sub, googleEmail: email, password: sha(crypto.randomBytes(16).toString('hex')) + '\\google', unnamed: true, points: 0, level: 1, exp: 0, lastSeen: Date.now(), matches: 0, wins: 0, kills: 0, dmg: 0, deaths: 0, owns: [], gems: 0 };
+      accounts[base] = { id: genAccountId(), googleId: sub, googleEmail: email, password: sha(crypto.randomBytes(16).toString('hex')) + '\\google', unnamed: true, points: 0, level: 1, exp: 0, lastSeen: Date.now(), matches: 0, wins: 0, kills: 0, dmg: 0, deaths: 0, owns: [], gems: 0 };
       name = base;
       isNew = true;
       saveAccounts();
@@ -1102,7 +1122,7 @@ socket.emit('account-result', { ok: true, account: { id: accounts[name].id, name
     let passHash = '';
     if (p) { try { passHash = await bcrypt.hash(p, 10); } catch (e) { passHash = sha(p); } }
     const tok = String(data.deviceToken || '').slice(0, 64);
-    accounts[name] = { id: genId(), password: passHash, deviceToken: tok ? sha('dlv:' + tok) : '', points: 0, level: 1, exp: 0, lastSeen: Date.now(), matches: 0, wins: 0, kills: 0, dmg: 0, deaths: 0, owns: [], gems: 0 };
+    accounts[name] = { id: genAccountId(), password: passHash, deviceToken: tok ? sha('dlv:' + tok) : '', points: 0, level: 1, exp: 0, lastSeen: Date.now(), matches: 0, wins: 0, kills: 0, dmg: 0, deaths: 0, owns: [], gems: 0 };
     saveAccounts();
     socket.data.account = name;
     socket.data.name = name;

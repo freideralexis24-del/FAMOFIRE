@@ -657,12 +657,12 @@
             margin: 4px 0 2px;
         }
         #lobby-screen .lobby-menu {
-            gap: 4px;
-            margin-top: 6px;
+            gap: 8px;
+            margin-top: 22px;
         }
         #lobby-screen .lobby-menu .btn-main {
-            padding: 7px 20px;
-            font-size: 16px;
+            padding: 12px 28px;
+            font-size: 18px;
         }
 
         /* Grupo superior derecho de la sala: GEMAS · CORREO · CONFIGURACIÓN */
@@ -2202,6 +2202,10 @@
             }
             .lobby-menu {
                 width: min(320px, 88vw);
+            }
+            #lobby-screen .lobby-menu {
+                gap: 6px;
+                margin-top: 8px;
             }
             #lobby-screen .lobby-menu .btn-main {
                 padding: 12px 22px;
@@ -6612,11 +6616,14 @@ applyTranslations();
             const coinsTitleEl = document.getElementById('coins-title');
             if (coinsTitleEl) coinsTitleEl.textContent = name;
         }
+        function formatCoins(n) {
+            return String(Number(n) || 0).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
         function updateGemUI() {
-            if (lobbyGemsEl) lobbyGemsEl.innerText = String(profile.gems || 0);
+            if (lobbyGemsEl) lobbyGemsEl.innerText = formatCoins(profile.gems || 0);
             if (gemPill) gemPill.style.display = profile.name ? 'inline-flex' : 'none';
             const shopGemsVal = document.getElementById('shop-gems-val');
-            if (shopGemsVal) shopGemsVal.innerText = String(profile.gems || 0);
+            if (shopGemsVal) shopGemsVal.innerText = formatCoins(profile.gems || 0);
         }
         // Prepara la moneda apenas se abre el juego (antes del login), así la
         // sala ya llega con la imagen lista y no se ve el diamante ni el emoji.
@@ -6749,7 +6756,7 @@ applyTranslations();
             const name = gemCfg.name || dict.gemName;
             const head = document.createElement('div');
             head.className = 'shop-sub';
-            head.innerHTML = dict.shopGemsTitle + ': <b id="shop-gems-val" style="color:#00e5ff;">' + String(profile.gems || 0) + '</b> ' + gemIconHtml(22) + ' &nbsp;·&nbsp; ' + dict.buyGemsBtn;
+            head.innerHTML = dict.shopGemsTitle + ': <b id="shop-gems-val" style="color:#00e5ff;">' + formatCoins(profile.gems || 0) + '</b> ' + gemIconHtml(22) + ' &nbsp;·&nbsp; ' + dict.buyGemsBtn;
             gemPacks.appendChild(head);
             if (!shopPackages.length || !shopEnabled) return;
             const row = document.createElement('div');
@@ -6824,7 +6831,7 @@ applyTranslations();
             if (!item) return;
             const dict = i18n[profile.language] || i18n["ESPAÑOL"];
             const coinName = (gemCfg && gemCfg.name) || dict.gemName || 'FamoCoins';
-            shopConfirmText.innerText = dict.shopConfirmMsg.replace('{name}', item.name).replace('{gems}', item.gems).replace('{coin}', coinName);
+            shopConfirmText.innerText = dict.shopConfirmMsg.replace('{name}', item.name).replace('{gems}', formatCoins(item.gems)).replace('{coin}', coinName);
             shopConfirmYes.innerText = dict.buyYes;
             shopConfirmNo.innerText = dict.buyCancel;
             pendingShopItem = itemId;
@@ -6868,7 +6875,7 @@ applyTranslations();
         function gemPriceLabel(item) {
             const dict = i18n[profile.language] || i18n["ESPAÑOL"];
             const name = gemCfg.name || dict.gemName;
-            return item.gems + ' ' + gemIconHtml(20) + ' ' + name;
+            return formatCoins(item.gems) + ' ' + gemIconHtml(20) + ' ' + name;
         }
         function buildShopGrid() {
             shopGrid.innerHTML = '';
@@ -6973,7 +6980,7 @@ applyTranslations();
             document.getElementById('try-desc').innerText = item.desc;
             const buyBt = document.getElementById('try-buy');
             buyBt.style.display = (profile.owns || []).includes(item.id) ? 'none' : '';
-            buyBt.innerHTML = (item.gems + ' ' + gemIconHtml(18) + ' ' + (gemCfg.name || 'FamoCoins'));
+            buyBt.innerHTML = (formatCoins(item.gems) + ' ' + gemIconHtml(18) + ' ' + (gemCfg.name || 'FamoCoins'));
             buyBt.onclick = () => { closeTryModal(); buyWithGems(item.id); };
             tryModal.classList.add('open');
         }
