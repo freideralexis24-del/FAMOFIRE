@@ -5778,7 +5778,15 @@ applyTranslations();
         // solo cada 30s (hasta 5 veces) para que el correo salga sin que el
         // jugador tenga que pulsar nada más.
         function requestResetWithRetry(name, attempt) {
-            socket.emit('request-password-reset', { name });
+            // Si el socket aún no conectó (Render free despertando), NO se pierde
+            // la petición: se queda esperando y se envía solo al conectar.
+            if (socket.connected) {
+                socket.emit('request-password-reset', { name });
+            } else {
+                if (resetPendingConn) socket.off('connect', resetPendingConn);
+                resetPendingConn = () => socket.emit('request-password-reset', { name });
+                socket.once('connect', resetPendingConn);
+            }
             if (forgotTimeout) clearTimeout(forgotTimeout);
             forgotTimeout = setTimeout(() => {
                 if (forgotRetrying) return;
@@ -5797,9 +5805,11 @@ applyTranslations();
         }
         let forgotTimeout = null;
         let forgotRetrying = false;
+        let resetPendingConn = null;
 
         socket.on('password-reset-requested', (res) => {
             if (forgotTimeout) { clearTimeout(forgotTimeout); forgotTimeout = null; }
+            if (resetPendingConn) { socket.off('connect', resetPendingConn); resetPendingConn = null; }
             const dict = i18n[profile.language] || i18n["ESPAÑOL"];
             if (!res || !res.ok) {
                 if (res && res.error === 'not-found') forgotMsg.innerText = dict.errNoAccount;
