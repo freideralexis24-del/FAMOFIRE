@@ -341,35 +341,10 @@ app.get('/api/admin-list', async (req, res) => {
   }
 });
 
-// ADMIN (solo el dueño): REINICIA la numeración de TODOS los IDs. La cuenta
-// "owner" recibe 10000000 y el resto se renumera por antigüedad (la más vieja
-// primero): 10000001, 10000002... consecutivos sin huecos. Requiere ADMIN_KEY.
-app.post('/api/admin-renumber', async (req, res) => {
-  try {
-    const ADMIN_KEY = process.env.ADMIN_KEY || '';
-    if (!ADMIN_KEY) return res.status(501).json({ ok: false, error: 'admin-disabled' });
-    const key = String((req.body && req.body.key) || '');
-    if (key !== ADMIN_KEY) return res.status(403).json({ ok: false, error: 'forbidden' });
-    if (!accountsReady) await ensureAccounts();
-    const owner = String((req.body && req.body.owner) || '').trim().toUpperCase().slice(0, 12);
-    const names = Object.keys(accounts).sort((a, b) => {
-      const ia = a === owner ? -1 : (b === owner ? 1 : 0);
-      return ia !== 0 ? ia : (Number(accounts[a].lastSeen) || 0) - (Number(accounts[b].lastSeen) || 0);
-    });
-    let next = 10000000;
-    const assigned = [];
-    for (const name of names) {
-      const oldId = String(accounts[name].id || '');
-      accounts[name].id = String(next);
-      assigned.push({ name, oldId, id: String(next) });
-      next++;
-    }
-    saveAccounts();
-    res.json({ ok: true, owner, count: assigned.length, assigned });
-  } catch (e) {
-    res.status(500).json({ ok: false, error: 'admin-error', msg: String(e.message || e).slice(0, 120) });
-  }
-});
+// NOTA: el endpoint de renumeración masiva de IDs fue ELIMINADO a propósito.
+// Los IDs se consideran PERMANENTES: nadie (ni siquiera el admin por clave)
+// puede volver a cambiarlos. La única vía es admin-set con setId (una cuenta a
+// la vez, solo si hay motivo y respetando que no colisione).
 
 // ADMIN (solo el dueño): regala a un jugador o a TODOS los jugadores un artículo
 // (o un simple comunicado sin artículo) por el BUZÓN, con texto largo. Requiere
@@ -714,30 +689,21 @@ async function initAccounts() {
   // ID único por cuenta (para control de jugadores). Si una cuenta antigua no lo
   // tiene (de la era pre-ID), se le genera uno ahora. NO se borra ninguna cuenta
   // jamás: el espacio ocupado es mínimo y evita pérdidas de cuentas reales.
-  // MIGRACIÓN A IDs PERMANENTES: los IDs viejos (hex aleatorio de 8 chars) se
-  // reemplazan por el patrón numérico secuencial 10000000, 10000001, ...
-  // El orden de asignación es el de creación (la cuenta más antigua → 10000000).
-  let backfilled = false;
+  // Los IDs YA asignados NUNCA se vuelven a tocar: cualquier renumeración aquí
+  // provocaba que cada reinicio de Render cambiara los IDs de los jugadores.
   const seenIds = new Set();
   for (const name of Object.keys(accounts)) {
     const a = accounts[name];
     normalizeAcc(a);
     if (a && a.id) seenIds.add(String(a.id).toUpperCase());
   }
+  let backfilled = false;
   for (const name of Object.keys(accounts)) {
     const a = accounts[name];
-    if (!a) continue;
-    if (!isNewStyleId(a.id)) {
-      a.id = genAccountId();
-      seenIds.add(String(a.id).toUpperCase());
-      backfilled = true;
-    }
-    if (seenIds.has(String(a.id).toUpperCase()) &&
-        Object.keys(accounts).some(k => k !== name && String(accounts[k].id || '').toUpperCase() === String(a.id).toUpperCase())) {
-      a.id = genAccountId();
-      seenIds.add(String(a.id).toUpperCase());
-      backfilled = true;
-    }
+    if (!a || a.id) continue;
+    a.id = genAccountId();
+    seenIds.add(String(a.id).toUpperCase());
+    backfilled = true;
   }
   if (backfilled) saveAccounts();
   accountsReady = true;
@@ -785,6 +751,7 @@ async function dbSaveAll() {
     const q = `INSERT INTO accounts (name, id, password, points, level, exp, lastseen, google_id, google_email, unnamed, device_token, matches, wins, kills, dmg, deaths, owns, mails, gems)
                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
                ON CONFLICT (name) DO UPDATE SET
+                 id = EXCLUDED.id,
                  password = EXCLUDED.password,
                  points = EXCLUDED.points,
                  level = EXCLUDED.level,
