@@ -298,8 +298,18 @@ app.post('/api/admin-set', async (req, res) => {
       acc.id = sid;
       newId = sid;
     }
+    // Vincular un correo para la recuperación de contraseña de cuentas que se
+    // crearon con contraseña y NO pasaron por Google (ej. ALEXIS). Si la cuenta
+    // no tiene un id de Google, se genera uno interno estable para poder firmar
+    // los enlaces de recuperación con el MISMO flujo de Google.
+    if (req.body && req.body.email) {
+      const em = String(req.body.email).trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)) return res.status(400).json({ ok: false, error: 'bad-email' });
+      acc.googleEmail = em;
+      if (!acc.googleId) acc.googleId = 'mail:' + accountKey;
+    }
     saveAccounts();
-    res.json({ ok: true, account: accountKey, oldId, id: acc.id, newId, gems: acc.gems, ownsCount: acc.owns.length });
+    res.json({ ok: true, account: accountKey, oldId, id: acc.id, newId, gems: acc.gems, ownsCount: acc.owns.length, email: maskEmail(acc.googleEmail) });
   } catch (e) {
     res.status(500).json({ ok: false, error: 'admin-error', msg: String(e.message || e).slice(0, 120) });
   }
@@ -307,6 +317,14 @@ app.post('/api/admin-set', async (req, res) => {
 
 // ADMIN (solo el dueño): lista TODAS las cuentas con su ID actual, monedas y
 // última actividad, para auditar la numeración de IDs. Requiere ADMIN_KEY.
+// El correo vinculado aparece enmascarado (f***@dominio) para no exponerlo.
+function maskEmail(e) {
+  if (!e) return '';
+  const s = String(e);
+  const i = s.indexOf('@');
+  if (i <= 1) return s;
+  return s[0] + '***' + s.slice(i);
+}
 app.get('/api/admin-list', async (req, res) => {
   try {
     const ADMIN_KEY = process.env.ADMIN_KEY || '';
@@ -315,7 +333,7 @@ app.get('/api/admin-list', async (req, res) => {
     if (!accountsReady) await ensureAccounts();
     const list = Object.keys(accounts).map(k => {
       const a = normalizeAcc(accounts[k]);
-      return { name: k, id: a.id, gems: a.gems || 0, level: a.level, lastSeen: a.lastSeen || 0 };
+      return { name: k, id: a.id, gems: a.gems || 0, level: a.level, lastSeen: a.lastSeen || 0, email: maskEmail(a.googleEmail), hasGoogle: !!a.googleId };
     }).sort((x, y) => (parseInt(String(x.id), 10) || 0) - (parseInt(String(y.id), 10) || 0));
     res.json({ ok: true, count: list.length, accounts: list });
   } catch (e) {
