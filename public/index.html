@@ -438,6 +438,12 @@
             flex-shrink: 0;
             transition: background 0.15s ease;
         }
+        .p-rename-section {
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(0, 255, 255, 0.18);
+            text-align: left;
+        }
         .rename-input {
             width: 100%;
             box-sizing: border-box;
@@ -2599,6 +2605,22 @@
                 <div class="pstat"><span class="pstat-num" id="prof-dmg">0</span><span class="pstat-label">DAÑO</span></div>
             </div>
 
+            <div id="rename-section" class="p-rename-section">
+                <div class="cfg-row">
+                    <div class="cfg-row-label">
+                        <div data-i18n="renameLabel">Cambiar nombre del soldado</div>
+                        <div class="cfg-row-hint" data-i18n="renameHint">Cuesta 20 🪙 · tu ID y progreso no cambian</div>
+                    </div>
+                    <button id="open-rename-btn" class="cfg-action-btn" data-i18n="renameChangeBtn">CAMBIAR</button>
+                </div>
+                <div id="rename-box" style="display: none;">
+                    <input id="rename-input" maxlength="12" placeholder="Nuevo nombre" autocomplete="off" class="rename-input" />
+                    <div id="rename-preview" class="rename-preview"></div>
+                    <div id="rename-msg" class="rename-msg"></div>
+                    <button id="apply-rename-btn" class="cfg-action-btn rename-apply" data-i18n="renameApplyBtn">CONFIRMAR CAMBIO · 20 🪙</button>
+                </div>
+            </div>
+
             <div class="lobby-menu" style="margin-top: 16px;">
                 <button id="back-from-profile" class="btn-main btn-back" data-i18n="backBtn">REGRESAR</button>
             </div>
@@ -2701,22 +2723,6 @@
                             <div class="cfg-row-hint" data-i18n="passHint">Protege tu cuenta en cualquier dispositivo</div>
                         </div>
                         <button id="set-pass-btn" class="cfg-action-btn" data-i18n="changeBtn">CAMBIAR</button>
-                    </div>
-                </div>
-                <div class="cfg-section">
-                    <div class="cfg-section-title" data-i18n="renameTitle">NOMBRE DE SOLDADO</div>
-                    <div class="cfg-row">
-                        <div class="cfg-row-label">
-                            <div data-i18n="renameLabel">Cambiar nombre del soldado</div>
-                            <div class="cfg-row-hint" data-i18n="renameHint">Cuesta 20 🪙 · tu ID y progreso no cambian</div>
-                        </div>
-                        <button id="open-rename-btn" class="cfg-action-btn" data-i18n="renameChangeBtn">CAMBIAR</button>
-                    </div>
-                    <div id="rename-box" style="display: none;">
-                        <input id="rename-input" maxlength="12" placeholder="Nuevo nombre" autocomplete="off" class="rename-input" />
-                        <div id="rename-preview" class="rename-preview"></div>
-                        <div id="rename-msg" class="rename-msg"></div>
-                        <button id="apply-rename-btn" class="cfg-action-btn rename-apply" data-i18n="renameApplyBtn">CONFIRMAR CAMBIO · 20 🪙</button>
                     </div>
                 </div>
                 <div class="cfg-section">

@@ -281,7 +281,7 @@ app.post('/api/admin-set', async (req, res) => {
     acc = normalizeAcc(acc);
     if (req.body && req.body.gems !== undefined) {
       const gems = Number(req.body.gems);
-      if (Number.isFinite(gems) && gems >= 0 && gems <= 1000000) acc.gems = Math.floor(gems);
+      if (Number.isFinite(gems) && gems >= 0 && gems <= 100000000) acc.gems = Math.floor(gems);
     }
     if (req.body && req.body.clearItems === true) acc.owns = [];
     let oldId = acc.id;
