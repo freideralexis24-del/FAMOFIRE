@@ -934,7 +934,25 @@
         @keyframes lavaBubble { 0% { transform: translateY(0); opacity: 0; } 12% { opacity: 1; } 100% { transform: translateY(-70px); opacity: 0; } }
         .pf-bubble.b2 { width: 4px; height: 4px; animation-duration: 2.6s; animation-delay: .8s; }
         .pf-bubble.b3 { width: 6px; height: 6px; animation-duration: 3.8s; animation-delay: 1.4s; }
-        /* FONDO "GALAXIA": estrellas que derivan */
+        /* FONDO "GALAXIA": nebulosa girando con estrellas que derivan */
+        .pf-galaxy-swirl {
+            position: absolute;
+            inset: -60%;
+            background: conic-gradient(
+                from 0deg,
+                transparent 0deg 55deg,
+                rgba(150, 90, 255, 0.3) 95deg,
+                transparent 140deg 235deg,
+                rgba(0, 200, 255, 0.22) 275deg,
+                transparent 320deg
+            );
+            border-radius: 50%;
+            filter: blur(12px);
+            animation: galaxySpin 36s linear infinite;
+            z-index: 0;
+            pointer-events: none;
+        }
+        @keyframes galaxySpin { to { transform: rotate(360deg); } }
         .pf-stars::before, .pf-stars::after {
             content: '';
             position: absolute;
@@ -7180,6 +7198,8 @@ applyTranslations();
             const oldFill = el.querySelector('.pf-lava-fill');
             if (oldFill) oldFill.remove();
             el.querySelectorAll('.pf-bubble').forEach(b => b.remove());
+            const oldSwirl = el.querySelector('.pf-galaxy-swirl');
+            if (oldSwirl) oldSwirl.remove();
             if (!anim) return;
             if (anim === 'lava') {
                 el.classList.add('pf-lava');
@@ -7192,8 +7212,12 @@ applyTranslations();
                     b.style.left = (20 + i * 24) + '%';
                     el.appendChild(b);
                 }
-            } else if (anim === 'stars') el.classList.add('pf-stars');
-            else if (anim === 'storm') el.classList.add('pf-storm');
+            } else if (anim === 'stars') {
+                el.classList.add('pf-stars');
+                const swirl = document.createElement('div');
+                swirl.className = 'pf-galaxy-swirl';
+                el.appendChild(swirl);
+            } else if (anim === 'storm') el.classList.add('pf-storm');
             else if (anim === 'gold') el.classList.add('pf-gold');
         }
         let tryModal = null;
