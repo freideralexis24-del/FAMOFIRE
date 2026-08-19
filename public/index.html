@@ -531,6 +531,8 @@
             text-align: center;
             box-shadow: 6px 6px 0px #000;
             max-width: 420px;
+            position: relative;
+            overflow: hidden;
         }
         .profile-avatar-big {
             width: 80px;
@@ -917,17 +919,17 @@
         .pf-lava { position: relative; overflow: hidden; }
         .pf-lava-fill {
             position: absolute;
-            left: -5%;
-            right: -5%;
-            bottom: -2%;
+            left: 0;
+            right: 0;
+            bottom: 0;
             height: 10%;
-            border-radius: 50% 50% 0 0;
+            border-radius: 12% 12% 0 0;
             background: linear-gradient(to top, #ff4d00 0%, #ff9d00 55%, rgba(255, 160, 40, 0.25) 100%);
             animation: lavaCycle 6s ease-in-out infinite;
             z-index: 0;
             pointer-events: none;
         }
-        @keyframes lavaCycle { 0% { height: 8%; } 30% { height: 100%; } 50% { height: 100%; } 80% { height: 12%; } 100% { height: 8%; } }
+        @keyframes lavaCycle { 0% { height: 8%; } 30% { height: 104%; } 50% { height: 104%; } 80% { height: 12%; } 100% { height: 8%; } }
         .pf-bubble { position: absolute; bottom: 8%; width: 5px; height: 5px; border-radius: 50%; background: rgba(255, 190, 60, 0.95); animation: lavaBubble 3.2s ease-in infinite; z-index: 1; pointer-events: none; }
         @keyframes lavaBubble { 0% { transform: translateY(0); opacity: 0; } 12% { opacity: 1; } 100% { transform: translateY(-70px); opacity: 0; } }
         .pf-bubble.b2 { width: 4px; height: 4px; animation-duration: 2.6s; animation-delay: .8s; }
@@ -952,18 +954,55 @@
         }
         .pf-stars::after { inset: -40%; background-position: 0 0, 30px 40px, 60px 10px, 10px 80px, 90px 50px, 50px 100px; animation: starDrift 30s linear infinite reverse; opacity: .7; }
         @keyframes starDrift { from { transform: translateY(0); } to { transform: translateY(80px); } }
-        /* FONDO "TORMENTA": rayo que cruza */
-        .pf-storm::after {
+        /* FONDO "TORMENTA ELÉCTRICA": el cielo parpadea y un rayo en zigzag
+           cruza el cuadro con doble destello, todo contenido dentro del marco. */
+        .pf-storm::before {
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(115deg, transparent 40%, rgba(180, 220, 255, 0.35) 48%, rgba(255, 255, 255, 0.6) 50%, rgba(180, 220, 255, 0.35) 52%, transparent 60%);
-            transform: translateX(-130%);
-            animation: stormFlash 5.2s ease-in-out infinite;
+            background: linear-gradient(180deg, rgba(150, 200, 255, 0.32) 0%, rgba(120, 170, 255, 0.14) 55%, transparent 100%);
+            opacity: 0;
+            animation: stormSkyFlash 5.2s ease-in-out infinite;
             z-index: 0;
             pointer-events: none;
         }
-        @keyframes stormFlash { 0%, 82%, 100% { transform: translateX(-130%); } 8%, 90% { transform: translateX(130%); } }
+        .pf-storm::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 38%;
+            margin-left: -19%;
+            background: linear-gradient(180deg, #fff 0%, #e4f1ff 32%, rgba(210, 235, 255, 0.75) 58%, rgba(210, 235, 255, 0) 68%);
+            filter: drop-shadow(0 0 8px rgba(170, 215, 255, 0.95)) drop-shadow(0 0 18px rgba(140, 190, 255, 0.6));
+            clip-path: polygon(
+                40% 0%, 62% 0%, 46% 14%, 70% 14%, 42% 32%, 62% 32%, 30% 54%, 55% 54%, 24% 80%, 52% 80%, 38% 100%, 60% 100%,
+                44% 80%, 66% 80%, 48% 54%, 74% 54%, 58% 32%, 84% 32%, 62% 14%, 82% 14%
+            );
+            opacity: 0;
+            animation: stormBolt 5.2s ease-in-out infinite;
+            z-index: 0;
+            pointer-events: none;
+        }
+        @keyframes stormSkyFlash {
+            0%, 78%, 100% { opacity: 0; }
+            3% { opacity: 0.85; }
+            7% { opacity: 0.12; }
+            11% { opacity: 0.75; }
+            15% { opacity: 0; }
+            84% { opacity: 0.5; }
+            87% { opacity: 0; }
+        }
+        @keyframes stormBolt {
+            0%, 78%, 100% { opacity: 0; transform: scaleY(0.6); transform-origin: top center; }
+            3% { opacity: 1; transform: scaleY(1); }
+            7% { opacity: 0.2; transform: scaleY(1); }
+            11% { opacity: 1; transform: scaleY(1); }
+            15% { opacity: 0; }
+            84% { opacity: 0.65; transform: scaleY(1); }
+            87% { opacity: 0; }
+        }
         /* FONDO "ORO": brillo que barre la tarjeta */
         .pf-gold::after {
             content: '';
@@ -989,6 +1028,38 @@
         .try-avatar-big { font-size: 88px; line-height: 120px; position: relative; z-index: 1; }
         .try-banner-big { display: inline-block; padding: 28px 42px; border-radius: 16px; background: rgba(0, 0, 0, 0.45); font-size: 40px; position: relative; z-index: 1; }
         .try-emoji-big { font-size: 64px; position: relative; z-index: 1; }
+        .try-card {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            border: 3px solid #ffcc00;
+            border-radius: 12px;
+            background: rgba(5, 8, 14, 0.22);
+            box-sizing: border-box;
+            padding: 10px;
+            text-shadow: 0 2px 5px #000;
+        }
+        .try-card-avatar {
+            font-size: 56px;
+            line-height: 1;
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.65));
+        }
+        .try-card-name { font-size: 15px; font-weight: 800; color: #fff; letter-spacing: 0.5px; }
+        .try-card-sub { font-size: 10px; color: #ffcc00; font-weight: 800; letter-spacing: 1.5px; }
+        .try-card-stats { display: flex; gap: 8px; margin-top: 3px; }
+        .try-card-stats span {
+            font-size: 10px; color: #d8ecff; font-weight: 700;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 3px 9px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
         .try-name { font-size: 19px; font-weight: bold; color: #ffcc00; margin: 10px 0 4px; }
         .try-desc { font-size: 13px; color: #bbb; margin-bottom: 8px; }
         .try-msg { font-size: 12px; color: #2ede62; margin: 8px 0; min-height: 16px; }
@@ -1356,7 +1427,6 @@
         }
         #profile-panel .pf-lava-fill {
             z-index: 0 !important;
-            width: 100%;
         }
         #profile-panel .pf-bubble {
             z-index: 1;
@@ -1449,7 +1519,10 @@
             width: 100%; height: 54px; border-radius: 10px;
             border: 1px solid rgba(255, 255, 255, 0.2);
             background-size: cover; margin-bottom: 8px;
+            position: relative;
+            overflow: hidden;
         }
+        .fondo-swatch .pf-lava-fill { border-radius: 10px 10px 0 0; }
         .fondo-option span { font-size: 12px; color: #ffcc00; font-weight: 700; }
         .banner-option span { font-size: 12px; color: #ffcc00; font-weight: 700; }
         .skin-preview {
@@ -6356,6 +6429,8 @@ applyTranslations();
                 const opt = document.createElement('div');
                 opt.className = 'fondo-option' + (profile.fondo === f.id ? ' selected' : '') + (owned ? '' : ' locked');
                 opt.innerHTML = '<div class="fondo-swatch" style="' + (f.image ? 'background-image:' + f.image + ';' : 'background:#10131c;') + '"></div><span>' + (f.emoji ? f.emoji + ' ' : '') + f.label + (owned ? '' : ' 🔒') + '</span>';
+                const swatch = opt.querySelector('.fondo-swatch');
+                applyFondoAnim(swatch, f.anim || '');
                 opt.addEventListener('click', () => {
                     if (!owned) { openTryItem(f.id); return; }
                     selectFondo(f.id);
@@ -7078,7 +7153,7 @@ applyTranslations();
                 } else if (item.type === 'avatar') {
                     previewHtml = '<div class="shop-avatar-pv">' + item.emoji + '</div>';
                 } else if (item.type === 'fondo') {
-                    previewHtml = '<div class="shop-fondo-pv' + (item.anim === 'lava' ? ' pf-lava" style="background-image:' + (item.bg || 'linear-gradient(160deg,#8a2b0a,#140602)') : '" style="background-image:' + (item.bg || 'linear-gradient(140deg,#3b5e2b,#1a2b14)')) + '"><span class="shop-fondo-pv-emoji">' + item.emoji + '</span></div>';
+                    previewHtml = '<div class="shop-fondo-pv" style="background-image:' + (item.bg || 'linear-gradient(140deg,#3b5e2b,#1a2b14)') + '"><span class="shop-fondo-pv-emoji">' + item.emoji + '</span></div>';
                 }
                 div.innerHTML =
                     previewHtml +
@@ -7091,6 +7166,8 @@ applyTranslations();
                             ? '<button class="btn-main shop-buy" onclick="buyWithGems(\'' + item.id + '\')">' + gemPriceLabel(item) + (enough ? '' : ' · <span style="opacity:0.8;">' + shopDict('needMoreCoins') + '</span>') + '</button>'
                             : '<div class="shop-status soon">' + shopDict('shopSoon') + '</div>'));
                 shopGrid.appendChild(div);
+                const fondoPv = div.querySelector('.shop-fondo-pv');
+                if (fondoPv) applyFondoAnim(fondoPv, item.anim || '');
             });
         }
 
@@ -7148,7 +7225,16 @@ applyTranslations();
             pv.querySelectorAll('canvas.ff-skin-preview').forEach(c => c.remove());
             if (item.type === 'fondo') {
                 pv.style.backgroundImage = item.bg || 'linear-gradient(140deg,#3b5e2b,#1a2b14)';
-                pv.innerHTML = '<span class="try-emoji-big">' + item.emoji + '</span>';
+                pv.innerHTML =
+                    '<div class="try-card">' +
+                    '<div class="try-card-avatar">' + item.emoji + '</div>' +
+                    '<div class="try-card-name">' + (profile.name || 'Soldado') + '</div>' +
+                    '<div class="try-card-sub">NIVEL ' + (profile.level || 1) + '</div>' +
+                    '<div class="try-card-stats">' +
+                    '<span>BAJAS ' + (profile.kills || 0) + '</span>' +
+                    '<span>VICTORIAS ' + (profile.wins || 0) + '</span>' +
+                    '<span>PARTIDAS ' + (profile.matches || 0) + '</span>' +
+                    '</div></div>';
                 applyFondoAnim(pv, item.anim || '');
             } else if (item.type === 'skin') {
                 const c = document.createElement('canvas');
