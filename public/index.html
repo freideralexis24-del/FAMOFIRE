@@ -438,6 +438,47 @@
             flex-shrink: 0;
             transition: background 0.15s ease;
         }
+        .rename-input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 9px 10px;
+            border: 1px solid #6670a0;
+            border-radius: 8px;
+            background: #0b0f1ae0;
+            color: #ffe9b3;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 14px;
+            margin-top: 8px;
+            outline: none;
+        }
+        .rename-input:focus {
+            border-color: #00ffff;
+        }
+        .rename-preview {
+            margin-top: 8px;
+            font-size: 13px;
+            color: #ffd76a;
+            min-height: 15px;
+        }
+        .rename-msg {
+            margin-top: 6px;
+            font-size: 12px;
+            color: #ff8f8f;
+            min-height: 15px;
+        }
+        .rename-apply {
+            width: 100%;
+            margin-top: 8px;
+            background: linear-gradient(#f7b500, #d18f00);
+            color: #1a1403;
+            border-color: #ffdf7e;
+            font-weight: bold;
+        }
+        .rename-apply:hover {
+            background: linear-gradient(#ffce3d, #e0a000);
+        }
         .cfg-action-btn:hover {
             background: rgba(0, 255, 255, 0.12);
         }
@@ -2663,6 +2704,22 @@
                     </div>
                 </div>
                 <div class="cfg-section">
+                    <div class="cfg-section-title" data-i18n="renameTitle">NOMBRE DE SOLDADO</div>
+                    <div class="cfg-row">
+                        <div class="cfg-row-label">
+                            <div data-i18n="renameLabel">Cambiar nombre del soldado</div>
+                            <div class="cfg-row-hint" data-i18n="renameHint">Cuesta 20 🪙 · tu ID y progreso no cambian</div>
+                        </div>
+                        <button id="open-rename-btn" class="cfg-action-btn" data-i18n="renameChangeBtn">CAMBIAR</button>
+                    </div>
+                    <div id="rename-box" style="display: none;">
+                        <input id="rename-input" maxlength="12" placeholder="Nuevo nombre" autocomplete="off" class="rename-input" />
+                        <div id="rename-preview" class="rename-preview"></div>
+                        <div id="rename-msg" class="rename-msg"></div>
+                        <button id="apply-rename-btn" class="cfg-action-btn rename-apply" data-i18n="renameApplyBtn">CONFIRMAR CAMBIO · 20 🪙</button>
+                    </div>
+                </div>
+                <div class="cfg-section">
                     <div class="cfg-section-title cfg-title-danger" data-i18n="configSecDanger">ZONA DE RIESGO</div>
                     <div class="cfg-row">
                         <div class="cfg-row-label">
@@ -3415,6 +3472,17 @@ loginSection: "— INICIAR SESIÓN —",
                 errNameTaken: "⚠️ Ese nickname ya está registrado. Inicia sesión con tu contraseña",
                 errGeneric: "⚠️ Sin conexión con el servidor. Intenta de nuevo",
                 errConnecting: "Conectando al servidor... reintentando automáticamente",
+                renameTitle: "NOMBRE DE SOLDADO",
+                renameLabel: "Cambiar nombre del soldado",
+                renameHint: "Cuesta 20 🪙 · tu ID y progreso no cambian",
+                renameChangeBtn: "CAMBIAR",
+                renameApplyBtn: "CONFIRMAR CAMBIO · 20 🪙",
+                renamePreview: "Así se verá:",
+                renameShort: "⚠️ Mínimo 2 caracteres",
+                renameSame: "⚠️ Es el mismo nombre",
+                renameTaken: "⚠️ Ese nombre ya está en uso",
+                renameNoCoins: "⚠️ No tienes 20 🪙",
+                renameSuccess: "✅ ¡Nombre cambiado!",
                 nicknamePlaceholder: "Ingresa tu Nickname",
                 lobbyTitle: "SALA DE COMANDO",
                 soldierLabel: "Soldado",
@@ -3673,6 +3741,17 @@ loginSection: "— SIGN IN —",
                 errNameTaken: "⚠️ That nickname is already registered. Log in with your password",
                 errGeneric: "⚠️ No server connection. Try again",
                 errConnecting: "Connecting to server... retrying automatically",
+                renameTitle: "SOLDIER NAME",
+                renameLabel: "Change soldier name",
+                renameHint: "Costs 20 🪙 · your ID and progress stay the same",
+                renameChangeBtn: "CHANGE",
+                renameApplyBtn: "CONFIRM CHANGE · 20 🪙",
+                renamePreview: "It will look like:",
+                renameShort: "⚠️ Minimum 2 characters",
+                renameSame: "⚠️ That's the same name",
+                renameTaken: "⚠️ That name is already in use",
+                renameNoCoins: "⚠️ You don't have 20 🪙",
+                renameSuccess: "✅ Name changed!",
                 nicknamePlaceholder: "Enter your Nickname",
                 lobbyTitle: "COMMAND ROOM",
                 soldierLabel: "Soldier",
@@ -3931,6 +4010,17 @@ loginSection: "— 登录 —",
                 errNameTaken: "⚠️ 该昵称已被注册。请使用密码登录",
                 errGeneric: "⚠️ 无法连接服务器，请重试",
                 errConnecting: "正在连接服务器... 自动重试中",
+                renameTitle: "士兵名称",
+                renameLabel: "更改士兵名称",
+                renameHint: "花费 20 🪙 · ID 和进度不变",
+                renameChangeBtn: "更改",
+                renameApplyBtn: "确认更改 · 20 🪙",
+                renamePreview: "看起来像：",
+                renameShort: "⚠️ 最少 2 个字符",
+                renameSame: "⚠️ 名称相同",
+                renameTaken: "⚠️ 该名称已被使用",
+                renameNoCoins: "⚠️ 你没有 20 🪙",
+                renameSuccess: "✅ 名称已更改！",
                 nicknamePlaceholder: "输入您的昵称",
                 lobbyTitle: "指挥室",
                 soldierLabel: "士兵",
@@ -4189,6 +4279,17 @@ loginSection: "— ENTRAR —",
                 errNameTaken: "⚠️ Esse apelido já está registrado. Faça login com sua senha",
                 errGeneric: "⚠️ Sem conexão com o servidor. Tente novamente",
                 errConnecting: "Conectando ao servidor... tentando novamente automaticamente",
+                renameTitle: "NOME DO SOLDADO",
+                renameLabel: "Mudar nome do soldado",
+                renameHint: "Custa 20 🪙 · seu ID e progresso não mudam",
+                renameChangeBtn: "MUDAR",
+                renameApplyBtn: "CONFIRMAR MUDANÇA · 20 🪙",
+                renamePreview: "Vai ficar assim:",
+                renameShort: "⚠️ Mínimo de 2 caracteres",
+                renameSame: "⚠️ É o mesmo nome",
+                renameTaken: "⚠️ Esse nome já está em uso",
+                renameNoCoins: "⚠️ Você não tem 20 🪙",
+                renameSuccess: "✅ Nome alterado!",
                 nicknamePlaceholder: "Digite seu Apelido",
                 lobbyTitle: "SALA DE COMANDO",
                 soldierLabel: "Soldado",
@@ -5663,6 +5764,67 @@ applyTranslations();
             passwordInput.value = "";
             showLoginMessage("");
             stopLobbyMusic();
+        });
+
+        // ---- CAMBIO DE NOMBRE DE SOLDADO (cuesta 20 FamoCoins) ----
+        const openRenameBtn = document.getElementById('open-rename-btn');
+        const renameBox = document.getElementById('rename-box');
+        const renameInput = document.getElementById('rename-input');
+        const renamePreview = document.getElementById('rename-preview');
+        const renameMsg = document.getElementById('rename-msg');
+        const applyRenameBtn = document.getElementById('apply-rename-btn');
+        function normClientName(t) { return String(t || '').trim().toUpperCase().slice(0, 12); }
+        function updateRenamePreview() {
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            const v = normClientName(renameInput.value);
+            if (v.length < 2) { renamePreview.innerHTML = ''; return; }
+            // Vista previa en vivo: el nombre se muestra con el MISMO estilo del lobby
+            renamePreview.innerHTML = dict.renamePreview + ' <span style="color:#ffe9b3;background:#0b0f1a;padding:2px 10px;border-radius:8px;border:1px solid #c99b2e;">⚔️ ' + v + '</span>';
+        }
+        function showRenameMsg(txt, ok) {
+            renameMsg.innerText = txt;
+            renameMsg.style.color = ok ? '#7dff9b' : '#ff8f8f';
+        }
+        openRenameBtn.addEventListener('click', () => {
+            renameInput.value = profile.name || '';
+            renameMsg.innerText = '';
+            updateRenamePreview();
+            renameBox.style.display = 'block';
+        });
+        renameInput.addEventListener('input', () => { renameMsg.innerText = ''; updateRenamePreview(); });
+        applyRenameBtn.addEventListener('click', () => {
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            const v = normClientName(renameInput.value);
+            if (v.length < 2) { showRenameMsg(dict.renameShort, false); return; }
+            if (v === (profile.name || '').toUpperCase()) { showRenameMsg(dict.renameSame, false); return; }
+            if (!socket.connected) {
+                showRenameMsg(dict.errConnecting, false);
+                socket.once('connect', () => socket.emit('account-rename', { name: v }));
+                return;
+            }
+            showRenameMsg('...', false);
+            socket.emit('account-rename', { name: v });
+        });
+        socket.on('account-renamed', (r) => {
+            const dict = i18n[profile.language] || i18n["ESPAÑOL"];
+            if (!r || !r.ok) {
+                const m = r && r.error === 'name-taken' ? dict.renameTaken
+                    : r && r.error === 'no-coins' ? dict.renameNoCoins
+                    : r && r.error === 'short-name' ? dict.renameShort
+                    : r && r.error === 'same-name' ? dict.renameSame
+                    : dict.errGeneric;
+                showRenameMsg(m, false);
+                return;
+            }
+            profile.name = r.name;
+            profile.gems = typeof r.gems === 'number' ? r.gems : (profile.gems || 0);
+            localStorage.setItem('ff_username', r.name);
+            saveProfile();
+            updateLobbyUI();
+            renameBox.style.display = 'none';
+            openRenameBtn.innerText = dict.renameChangeBtn;
+            showRenameMsg('', false);
+            if (typeof showToast === 'function') showToast(dict.renameSuccess + ' (' + r.name + ')');
         });
 
         // ---- ELIMINAR CUENTA (definitivo) ----

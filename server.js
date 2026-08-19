@@ -1397,6 +1397,39 @@ socket.emit('account-result', { ok: true, account: { id: accounts[name].id, name
     socket.emit('account-result', { ok: true, google: true, hasPassword: !!(acc.password && !String(acc.password).includes('\\google')), account: { id: acc.id, name, googleEmail: acc.googleEmail || '', points: acc.points, level: acc.level, exp: acc.exp, matches: acc.matches || 0, wins: acc.wins || 0, kills: acc.kills || 0, dmg: acc.dmg || 0, deaths: acc.deaths || 0, gems: acc.gems || 0 } });
   });
 
+  // ---- CAMBIO DE NOMBRE de soldado (cuesta 20 FamoCoins) ----
+// Cualquier cuenta logueada puede elegir un nombre nuevo pagando 20 🪙. El ID,
+// las monedas, la tienda y el progreso se conservan: solo cambia la CLAVE de la
+// cuenta (su nombre). Los nombres no permitidos: mismo nombre, nombre en uso,
+// menos de 2 caracteres o sin saldo suficiente.
+const RENAME_COST = 20;
+socket.on('account-rename', async (data = {}) => {
+    if (!socket.data.account) return socket.emit('account-renamed', { ok: false, error: 'not-found' });
+    await ensureAccounts();
+    const oldName = socket.data.account;
+    const acc = accounts[oldName];
+    if (!acc) return socket.emit('account-renamed', { ok: false, error: 'not-found' });
+    const name = normName(data.name);
+    if (name.length < 2) return socket.emit('account-renamed', { ok: false, error: 'short-name' });
+    if (name === oldName) return socket.emit('account-renamed', { ok: false, error: 'same-name' });
+    if (accounts[name]) return socket.emit('account-renamed', { ok: false, error: 'name-taken' });
+    if ((Number(acc.gems) || 0) < RENAME_COST) return socket.emit('account-renamed', { ok: false, error: 'no-coins' });
+    acc.gems = (Number(acc.gems) || 0) - RENAME_COST;
+    accounts[name] = acc;
+    delete accounts[oldName];
+    // Mover el candado de sesión única y el estado del socket al nombre nuevo.
+    const lock = accountLocks.get(oldName);
+    if (lock) { accountLocks.delete(oldName); accountLocks.set(name, lock); }
+    socket.data.account = name;
+    socket.data.name = name;
+    socket.data.points = acc.points;
+    // La BD indexa por nombre (clave primaria): se borra la fila vieja y el
+    // siguiente saveAccounts() crea/actualiza la fila con el nombre nuevo.
+    if (db) { try { await db.query('DELETE FROM accounts WHERE name = $1', [oldName]); } catch (e) { console.error('[RENAME] no se pudo borrar la fila vieja:', e.message); } }
+    saveAccounts();
+    socket.emit('account-renamed', { ok: true, name, gems: acc.gems, id: acc.id });
+  });
+
   socket.on('account-update', (data = {}) => {
     if (!socket.data.account) return;
     const acc = accounts[socket.data.account];
